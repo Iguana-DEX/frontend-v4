@@ -4,6 +4,7 @@ import { farmsV3 as farm1 } from '@pancakeswap/farms/constants/1'
 import { farmsV3 as farm5 } from '@pancakeswap/farms/constants/5'
 import { farmsV3 as farm56 } from '@pancakeswap/farms/constants/56'
 import { farmsV3 as farm97 } from '@pancakeswap/farms/constants/97'
+import { farmsV3 as farm128123 } from '@pancakeswap/farms/constants/128123'
 import { tradingRewardV3Pair as tradingRewardV3Pair56 } from './56'
 
 export const tradingRewardPairConfigChainMap: Record<FarmV3SupportedChainId, ComputedFarmConfigV3[]> = {
@@ -13,4 +14,5 @@ export const tradingRewardPairConfigChainMap: Record<FarmV3SupportedChainId, Com
   [ChainId.BSC_TESTNET]: farm97,
   [ChainId.POLYGON_ZKEVM_TESTNET]: [],
   [ChainId.ZKSYNC_TESTNET]: [],
+  [ChainId.ETHERLINK_TESTNET]: farm128123,
 }
