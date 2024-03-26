@@ -5,6 +5,7 @@ import {
   ethereumTokens,
   goerliTestnetTokens,
   zkSyncTestnetTokens,
+  etherlinkTestnetTokens,
 } from '@pancakeswap/tokens'
 import type { CommonPrice } from '../../src/fetchFarmsV3'
 import type { FarmV3SupportedChainId } from '../../src'
@@ -23,6 +24,7 @@ export const CHAIN_ID_TO_CHAIN_NAME = {
   [ChainId.BSC_TESTNET]: 'bsc',
   [ChainId.POLYGON_ZKEVM_TESTNET]: '',
   [ChainId.ZKSYNC_TESTNET]: '',
+  [ChainId.ETHERLINK_TESTNET]: '',
 } satisfies Record<FarmV3SupportedChainId, string>
 
 export const priceHelperTokens = {
@@ -53,4 +55,8 @@ export const DEFAULT_COMMON_PRICE: Record<FarmV3SupportedChainId, CommonPrice> =
     [zkSyncTestnetTokens.mock.address]: '10',
   },
   [ChainId.POLYGON_ZKEVM_TESTNET]: {},
+  [ChainId.ETHERLINK_TESTNET]: {
+    [etherlinkTestnetTokens.eusd.address]: '1',
+    [etherlinkTestnetTokens.usdt.address]: '1',
+  },
 }

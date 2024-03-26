@@ -91,12 +91,12 @@ const lineaTestnet = {
 } as const satisfies Chain
 
 const etherlinkTestnet = {
-  id: 128123,
+  id: 128_123,
   name: 'Etherlink Testnet',
   network: 'Etherlink Testnet',
   nativeCurrency: {
     decimals: 18,
-    name: 'XTZ',
+    name: 'tez',
     symbol: 'XTZ',
   },
   rpcUrls: {
@@ -106,6 +106,12 @@ const etherlinkTestnet = {
   blockExplorers: {
     etherscan: { name: 'Testnet Explorer', url: 'https://testnet-explorer.etherlink.com/' },
     default: { name: 'Testnet Explorer', url: 'https://testnet-explorer.etherlink.com/' },
+  },
+  contracts: {
+    multicall3: {
+      address: '0xcA11bde05977b3631167028862bE2a173976CA11',
+      blockCreated: 500,
+    },
   },
 } as const satisfies Chain
 
