@@ -59,7 +59,14 @@ export const INIT_CODE_HASH_MAP = {
 } as const satisfies Record<ChainId, Hash>
 
 export const WXTZ = {
-  [ChainId.ETHERLINK_TESTNET]: new ERC20Token(ChainId.ETHERLINK_TESTNET, '0xB1Ea698633d57705e93b0E40c1077d46CD6A51d8', 18, 'WXTZ', 'Wrapped XTZ', 'https://weth.io'),
+  [ChainId.ETHERLINK_TESTNET]: new ERC20Token(
+    ChainId.ETHERLINK_TESTNET,
+    '0xB1Ea698633d57705e93b0E40c1077d46CD6A51d8',
+    18,
+    'WXTZ',
+    'Wrapped XTZ',
+    'https://etherlink.com'
+  ),
 }
 
 export const WETH9 = {
@@ -151,6 +158,14 @@ export const WETH9 = {
     'Wrapped Ether',
     'https://weth.io'
   ),
+  [ChainId.ETHERLINK_TESTNET]: new ERC20Token(
+    ChainId.ETHERLINK_TESTNET,
+    '0x8DEF68408Bc96553003094180E5C90d9fe5b88C1',
+    18,
+    'ETH',
+    'ETH',
+    'https://ethereum.org'
+  ),
 }
 
 export const WBNB = {
@@ -192,7 +207,7 @@ export const WNATIVE = {
   [ChainId.ZKSYNC]: WETH9[ChainId.ZKSYNC],
   [ChainId.ZKSYNC_TESTNET]: WETH9[ChainId.ZKSYNC_TESTNET],
   [ChainId.LINEA_TESTNET]: WETH9[ChainId.LINEA_TESTNET],
-  [ChainId.ETHERLINK_TESTNET]: WXTZ[ChainId.ETHERLINK_TESTNET], 
+  [ChainId.ETHERLINK_TESTNET]: WXTZ[ChainId.ETHERLINK_TESTNET],
 } satisfies Record<ChainId, ERC20Token>
 
 const ETHER = { name: 'Ether', symbol: 'ETH', decimals: 18 } as const
@@ -221,8 +236,8 @@ export const NATIVE = {
   [ChainId.ZKSYNC]: ETHER,
   [ChainId.ZKSYNC_TESTNET]: ETHER,
   [ChainId.LINEA_TESTNET]: ETHER,
-  [ChainId.ETHERLINK_TESTNET]:{
-    name: 'XTZ',
+  [ChainId.ETHERLINK_TESTNET]: {
+    name: 'tez',
     symbol: 'XTZ',
     decimals: 18,
   },

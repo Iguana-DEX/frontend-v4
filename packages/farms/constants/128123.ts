@@ -5,23 +5,23 @@ import { defineFarmV3Configs } from '../src/defineFarmV3Configs'
 export const farmsV3 = defineFarmV3Configs([
   {
     pid: 1,
-    lpAddress: '0xae62072e5e25fE2D811Da7e4E33F75E0524B8FdC',
-    token0: etherlinkTestnetTokens.wxtz,
-    token1: etherlinkTestnetTokens.ign,
-    feeAmount: FeeAmount.LOW,
-  },
-  {
-    pid: 2,
-    lpAddress: '0xfc45871d6c0df3cdae736db52b2d81ac61ecf6ef',
-    token0: etherlinkTestnetTokens.weth,
-    token1: etherlinkTestnetTokens.ign,
+    lpAddress: '0x5EFf51E8718F7b36D09CBc0506f653E886eBdAdb',
+    token0: etherlinkTestnetTokens.ign,
+    token1: etherlinkTestnetTokens.wxtz,
     feeAmount: FeeAmount.MEDIUM,
   },
   {
+    pid: 2,
+    lpAddress: '0x71C5C28442353877f6a4A196f95Ee4CfB0Dcb5Aa',
+    token0: etherlinkTestnetTokens.wxtz,
+    token1: etherlinkTestnetTokens.eusd,
+    feeAmount: FeeAmount.LOW,
+  },
+  {
     pid: 3,
-    lpAddress: '0x9c7505095aa5a1b2227822ba47d13054ec570972',
-    token0: etherlinkTestnetTokens.usdc,
-    token1: etherlinkTestnetTokens.ign,
-    feeAmount: FeeAmount.HIGH,
+    lpAddress: '0x6Cd45Ef02989A9188A9d8B170b86FAAA6d2B194C',
+    token0: etherlinkTestnetTokens.eusd,
+    token1: etherlinkTestnetTokens.usdt,
+    feeAmount: FeeAmount.LOWEST,
   },
 ])

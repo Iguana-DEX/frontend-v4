@@ -52,7 +52,7 @@ export const SUGGESTED_BASES: ChainTokenList = {
   [ChainId.ZKSYNC]: [zksyncTokens.usdc, zksyncTokens.weth],
   [ChainId.ZKSYNC_TESTNET]: [zkSyncTestnetTokens.usdc, zkSyncTestnetTokens.weth],
   [ChainId.LINEA_TESTNET]: [lineaTestnetTokens.usdc, lineaTestnetTokens.weth],
-  [ChainId.ETHERLINK_TESTNET]: [etherlinkTestnetTokens.weth, etherlinkTestnetTokens.wxtz],
+  [ChainId.ETHERLINK_TESTNET]: [etherlinkTestnetTokens.wxtz, etherlinkTestnetTokens.eusd],
 }
 
 // used to construct the list of all pairs we consider by default in the frontend
@@ -68,7 +68,13 @@ export const BASES_TO_TRACK_LIQUIDITY_FOR: ChainTokenList = {
   [ChainId.ZKSYNC]: [zksyncTokens.usdc, zksyncTokens.weth],
   [ChainId.ZKSYNC_TESTNET]: [zkSyncTestnetTokens.usdc, zkSyncTestnetTokens.weth],
   [ChainId.LINEA_TESTNET]: [lineaTestnetTokens.usdc, lineaTestnetTokens.weth],
-  [ChainId.ETHERLINK_TESTNET]: [etherlinkTestnetTokens.weth, etherlinkTestnetTokens.wxtz],
+  [ChainId.ETHERLINK_TESTNET]: [
+    etherlinkTestnetTokens.wxtz,
+    etherlinkTestnetTokens.eusd,
+    etherlinkTestnetTokens.usdc,
+    etherlinkTestnetTokens.usdt,
+    etherlinkTestnetTokens.ign,
+  ],
 }
 
 export const PINNED_PAIRS: { readonly [chainId in ChainId]?: [Token, Token][] } = {
@@ -91,6 +97,11 @@ export const PINNED_PAIRS: { readonly [chainId in ChainId]?: [Token, Token][] } 
   [ChainId.ZKSYNC]: [[zksyncTokens.usdc, zksyncTokens.weth]],
   [ChainId.ZKSYNC_TESTNET]: [[zkSyncTestnetTokens.usdc, zkSyncTestnetTokens.weth]],
   [ChainId.LINEA_TESTNET]: [[lineaTestnetTokens.usdc, lineaTestnetTokens.weth]],
+  [ChainId.ETHERLINK_TESTNET]: [
+    [etherlinkTestnetTokens.ign, etherlinkTestnetTokens.wxtz],
+    [etherlinkTestnetTokens.wxtz, etherlinkTestnetTokens.eusd],
+    [etherlinkTestnetTokens.usdt, etherlinkTestnetTokens.eusd],
+  ],
 }
 
 export const BIG_INT_ZERO = 0n
