@@ -1,14 +1,12 @@
-# 🥞 Pancake Frontend
+# 🦎 IguanaDEX Frontend
 
 <p align="center">
-  <a href="https://pancakeswap.finance">
-      <img src="https://pancakeswap.finance/logo.png" height="128">
+  <a href="https://iguanadex.com">
+      <img src="https://i.postimg.cc/X73GL1y8/Cute-Iguana-no-bg.webp" height="300">
   </a>
 </p>
 
-This project contains the main features of the pancake application.
-
-If you want to contribute, please refer to the [contributing guidelines](./CONTRIBUTING.md) of this project.
+This repository contains the source code for the [IguanaDEX website](https://iguanadex.com).
 
 ## Documentation
 
@@ -41,42 +39,11 @@ pnpm start
 ```
 </details>
 
-## `apps/aptos`
-<details>
-<summary>
-How to start
-</summary>
-
-```sh
-pnpm dev:aptos
-```
-```sh
-pnpm build:aptos
-```
-</details>
-
-## `apps/blog`
-<details>
-<summary>
-How to start
-</summary>
-
-```sh
-pnpm dev:blog
-```
-```sh
-pnpm build:blog
-```
-</details>
-
-
 ## Packages
 
 | Package                                                       | Description                                                                                                            |
 |---------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
 | [sdk](/packages/swap-sdk)                                     | An SDK for building applications on top of Pancakeswap                                                                 |
-| [aptos-swap-sdk](/packages/aptos-swap-sdk)                    | Aptos version of Swap SDK                                                                                              |
 | [swap-sdk-core](/packages/swap-sdk-core)                      | Swap SDK Shared code                                                                                                   |
 | [wagmi](/packages/wagmi)                                      | Extension for [wagmi](https://github.com/wagmi-dev/wagmi), including bsc chain and binance wallet connector            |
-| [awgmi](/packages/awgmi)                                      | connect to Aptos with similar wagmi React hooks.                                                                       |
 
