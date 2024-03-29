@@ -4,6 +4,7 @@ import LogoRound from "../Svg/Icons/LogoRound";
 import Text from "../Text/Text";
 import Skeleton from "../Skeleton/Skeleton";
 import { Colors } from "../../theme";
+import styles from "./styles.module.css";
 
 export interface Props {
   color?: keyof Colors;
@@ -33,11 +34,12 @@ const CakePrice: React.FC<React.PropsWithChildren<Props>> = ({
 }) => {
   return cakePriceUsd ? (
     <PriceLink
-      href={`https://iguanadex.finance/swap?outputCurrency=0x6333657f8fd60593282213664ed25fFb88aB5A59&chainId=${chainId}`}
+      href={`https://iguanadex.com/swap?outputCurrency=0xBeEfb119631691a1e0D9378fA7864fC6E67A72Ad&chainId=${chainId}`}
       target="_blank"
+      // className={styles.priceLink}
     >
-      <LogoRound width="24px" mr="8px" />
-      <Text color={color} bold>{`$${cakePriceUsd.toFixed(3)}`}</Text>
+      <LogoRound width="24px" mr="8px" className={styles.priceLink} />
+      <Text mr="8px" ml="8px" color={color} bold>{`$${cakePriceUsd.toFixed(3)}`}</Text>
     </PriceLink>
   ) : showSkeleton ? (
     <Skeleton width={80} height={24} />

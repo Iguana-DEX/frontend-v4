@@ -7,6 +7,11 @@ import modImage from './mod-tc-desktop.png'
 import modMobileImage from './mod-tc-mobile.png'
 import lotteryMobileImage from './lotteryMobile.png'
 import modWhiteLogo from './mod-white-logo.png'
+import baseBg from './base-bg.png'
+import baseBgMobile from './base-bg-mobile.png'
+import baseMoon from './base-moon.png'
+import baseTree from './base-tree.png'
+import candleChart from './candle-chart.png'
 import perpetualImage from './perpetual.png'
 import perpetualMobileImage from './perpetualMobile.png'
 import Aptos from './Aptos.png'
@@ -70,6 +75,11 @@ export {
   competitionMobileImage,
   IFOMobileImage,
   modWhiteLogo,
+  baseBg,
+  baseBgMobile,
+  baseMoon,
+  baseTree,
+  candleChart,
   perpetualImage,
   perpetualMobileImage,
   Aptos,

@@ -5,7 +5,6 @@ import {
   EarnFillIcon,
   EarnIcon,
   MenuItemsType,
-  MoreIcon,
   SwapFillIcon,
   SwapIcon,
 } from '@pancakeswap/uikit'
@@ -32,48 +31,31 @@ const config: (t: ContextApi['t']) => ConfigMenuItemsType[] = (t) => [
         href: '/swap',
       },
       {
-        label: t('Liquidity'),
-        href: '/liquidity',
-      },
-      {
         label: t('Bridge'),
-        href: 'https://bridge.pancakeswap.finance/aptos',
+        href: 'https://bridge.etherlink.com',
         type: DropdownMenuItemType.EXTERNAL_LINK,
       },
     ],
   },
   {
     label: t('Earn'),
-    href: '/farms',
+    href: '/liquidity',
     icon: EarnIcon,
     fillIcon: EarnFillIcon,
     image: '/images/decorations/pe2.png',
     items: [
       {
+        label: t('Liquidity Pools'),
+        href: '/liquidity',
+      },
+      {
         label: t('Farms'),
         href: '/farms',
       },
-      {
-        label: t('Pools'),
-        href: '/pools',
-      },
-    ],
-  },
-  {
-    label: '',
-    href: '/ifo',
-    icon: MoreIcon,
-    hideSubNav: true,
-    items: [
-      {
-        label: t('IFO'),
-        href: '/ifo',
-      },
-      {
-        label: t('Blog'),
-        href: 'https://blog.pancakeswap.finance',
-        type: DropdownMenuItemType.EXTERNAL_LINK,
-      },
+      // {
+      //   label: t('Pools'),
+      //   href: '/pools',
+      // },
     ],
   },
 ]

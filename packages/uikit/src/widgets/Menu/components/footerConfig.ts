@@ -7,49 +7,23 @@ export const footerLinks: (t: ContextApi["t"]) => FooterLinkType[] = (t) => [
     items: [
       {
         label: t("Contact"),
-        href: "https://docs.pancakeswap.finance/contact-us",
-        isHighlighted: true,
-      },
-      {
-        label: t("Brand"),
-        href: "https://docs.pancakeswap.finance/brand",
-      },
-      {
-        label: t("Blog"),
-        href: "https://blog.pancakeswap.finance/",
+        href: "https://docs.iguanadex.com/community/contact-us",
       },
       {
         label: t("Community"),
-        href: "https://docs.pancakeswap.finance/contact-us/telegram",
+        href: "https://discord.com/invite/yq5bUaT7Cm",
       },
       {
-        label: t("Litepaper"),
-        href: "https://v2litepaper.pancakeswap.finance/",
+        label: t("Brand Assets"),
+        href: "https://github.com/Iguana-DEX/assets/tree/main/iguana_brand_assets",
       },
       {
-        label: t("CAKE Emission Projection"),
-        href: "https://analytics.pancakeswap.finance/",
+        label: t("IGN"),
+        href: "https://docs.iguanadex.com/readme/tokenomics",
       },
       {
         label: t("Terms Of Service"),
-        href: "https://pancakeswap.finance/terms-of-service",
-      },
-    ],
-  },
-  {
-    label: t("Help"),
-    items: [
-      {
-        label: t("Customer Support"),
-        href: "https://docs.pancakeswap.finance/contact-us/customer-support",
-      },
-      {
-        label: t("Troubleshooting"),
-        href: "https://docs.pancakeswap.finance/help/troubleshooting",
-      },
-      {
-        label: t("Guides"),
-        href: "https://docs.pancakeswap.finance/get-started",
+        href: "https://iguanadex.com/terms-of-service",
       },
     ],
   },
@@ -57,7 +31,7 @@ export const footerLinks: (t: ContextApi["t"]) => FooterLinkType[] = (t) => [
     label: t("Developers"),
     items: [
       {
-        label: "Github",
+        label: "GitHub",
         href: "https://github.com/pancakeswap",
       },
       {
@@ -65,16 +39,8 @@ export const footerLinks: (t: ContextApi["t"]) => FooterLinkType[] = (t) => [
         href: "https://docs.pancakeswap.finance",
       },
       {
-        label: t("Bug Bounty"),
-        href: "https://docs.pancakeswap.finance/code/bug-bounty",
-      },
-      {
         label: t("Audits"),
         href: "https://docs.pancakeswap.finance/help/faq#is-pancakeswap-safe-has-pancakeswap-been-audited",
-      },
-      {
-        label: t("Careers"),
-        href: "https://docs.pancakeswap.finance/hiring/become-a-chef",
       },
     ],
   },

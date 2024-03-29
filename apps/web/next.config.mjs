@@ -70,6 +70,11 @@ const config = {
         hostname: 'static-nft.pancakeswap.com',
         pathname: '/mainnet/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'raw.githubusercontent.com',
+        // pathname: '/Iguana-DEX/assets/main/**',
+      },
     ],
   },
   async rewrites() {
@@ -185,7 +190,7 @@ const config = {
         source: '/images/tokens/:address',
         destination: 'https://tokens.pancakeswap.finance/images/:address',
         permanent: false,
-      }
+      },
     ]
   },
   webpack: (webpackConfig, { webpack, isServer }) => {
