@@ -74,12 +74,6 @@ export const TradeSummary = memo(function TradeSummary({
                     </Text>
                     {`: ${t('The difference between the market price and estimated price due to trade size.')}`}
                   </Text>
-                  <Text mt="10px">
-                    <Text bold display="inline-block">
-                      {t('MM')}
-                    </Text>
-                    {`: ${t('No slippage against quote from market maker')}`}
-                  </Text>
                 </>
               }
               ml="4px"
@@ -114,23 +108,10 @@ export const TradeSummary = memo(function TradeSummary({
                       style={{ display: 'inline' }}
                       ml="4px"
                       external
-                      href={
-                        isMM
-                          ? 'https://docs.pancakeswap.finance/products/pancakeswap-exchange/market-maker-integration#fees'
-                          : 'https://docs.pancakeswap.finance/products/pancakeswap-exchange/faq#what-will-be-the-trading-fee-breakdown-for-v3-exchange'
-                      }
+                      href="https://docs.iguanadex.com/products/DEX/faq#what-will-be-the-trading-fee-breakdown-for-v3-exchange"
                     >
                       {t('Fee Breakdown and Tokenomics')}
                     </Link>
-                  </Text>
-                  <Text mt="10px">
-                    <Text bold display="inline-block">
-                      {t('MM')}
-                    </Text>
-                    :{' '}
-                    {t(
-                      'PancakeSwap does not charge any fees for trades. However, the market makers charge an implied fee of 0.05% - 0.25% (non-stablecoin) / 0.01% (stablecoin) factored into the quotes provided by them.',
-                    )}
                   </Text>
                 </>
               }

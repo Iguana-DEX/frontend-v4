@@ -12,7 +12,7 @@ export const footerLinks: FooterLinkType[] = [
       },
       {
         label: "IGN",
-        href: "https://docs.iguanadex.com/readme/tokenomics",
+        href: "https://docs.iguanadex.com/iguanadex-on-mainnet/tokenomics",
       },
     ],
   },

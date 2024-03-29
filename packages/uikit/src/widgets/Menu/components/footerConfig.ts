@@ -19,7 +19,7 @@ export const footerLinks: (t: ContextApi["t"]) => FooterLinkType[] = (t) => [
       },
       {
         label: t("IGN"),
-        href: "https://docs.iguanadex.com/readme/tokenomics",
+        href: "https://docs.iguanadex.com/iguanadex-on-mainnet/tokenomics",
       },
       {
         label: t("Terms Of Service"),
@@ -32,15 +32,15 @@ export const footerLinks: (t: ContextApi["t"]) => FooterLinkType[] = (t) => [
     items: [
       {
         label: "GitHub",
-        href: "https://github.com/pancakeswap",
+        href: "https://github.com/Iguana-DEX",
       },
       {
         label: t("Documentation"),
-        href: "https://docs.pancakeswap.finance",
+        href: "https://docs.iguanadex.com",
       },
       {
         label: t("Audits"),
-        href: "https://docs.pancakeswap.finance/help/faq#is-pancakeswap-safe-has-pancakeswap-been-audited",
+        href: "https://docs.iguanadex.com/iguanadex-on-mainnet/security-audits",
       },
     ],
   },
