@@ -12,6 +12,6 @@ export const SEO: DefaultSeoProps = {
   openGraph: {
     title: '🦎 IguanaDEX - Trade, earn and discover new horizons',
     description: 'Crypto trading made simple.',
-    images: [{ url: 'https://raw.githubusercontent.com/Iguana-DEX/assets/main/iguana_brand_assets/hero.jpg' }],
+    images: [{ url: 'https://raw.githubusercontent.com/Iguana-DEX/assets/main/iguana_brand_assets/hero.webp' }],
   },
 }

@@ -18,7 +18,7 @@ export const footerLinks: (t: ContextApi["t"]) => FooterLinkType[] = (t) => [
         href: "https://github.com/Iguana-DEX/assets/tree/main/iguana_brand_assets",
       },
       {
-        label: t("IGN"),
+        label: t("IGN Token"),
         href: "https://docs.iguanadex.com/iguanadex-on-mainnet/tokenomics",
       },
       {

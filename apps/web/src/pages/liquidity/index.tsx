@@ -200,11 +200,11 @@ export default function PoolListPage() {
 
   return (
     <Page>
-      {isMigrationSupported && (
+      {/* {isMigrationSupported && (
         <Flex m="24px 0" maxWidth="854px">
           <FarmV3MigrationBanner />
         </Flex>
-      )}
+      )} */}
       <AppBody
         style={{
           maxWidth: '854px',

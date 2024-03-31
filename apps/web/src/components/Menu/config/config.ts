@@ -93,28 +93,6 @@ const config: (
       items: [].map((item) => addMenuItemSupported(item, chainId)),
     },
     {
-      label: t('NFTs'),
-      href: `${nftsBaseUrl}`,
-      icon: NftIcon,
-      fillIcon: NftFillIcon,
-      supportChainIds: SUPPORT_ONLY_BSC,
-      image: '/images/decorations/nft.png',
-      items: [
-        {
-          label: t('Overview'),
-          href: `${nftsBaseUrl}`,
-        },
-        {
-          label: t('Collections'),
-          href: `${nftsBaseUrl}/collections`,
-        },
-        {
-          label: t('Activity'),
-          href: `${nftsBaseUrl}/activity`,
-        },
-      ],
-    },
-    {
       label: t('Earn'),
       href: '/liquidity',
       icon: EarnIcon,

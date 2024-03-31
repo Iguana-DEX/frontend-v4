@@ -6,11 +6,10 @@ import { memo } from 'react'
 import styled from 'styled-components'
 import * as S from './Styled'
 import { flyingAnim } from './animations'
-import { baseBg, baseBgMobile, baseMoon, baseTree } from './images'
+import { baseBg, baseBgMobile, baseTree } from './images'
 
 const iguanaLogo = 'https://raw.githubusercontent.com/Iguana-DEX/assets/main/iguana_brand_assets/logo-dark.webp'
 const etherlinkLogo = 'https://raw.githubusercontent.com/Iguana-DEX/assets/main/chains/etherlink.svg'
-const iggiesClub = 'https://raw.githubusercontent.com/Iguana-DEX/assets/main/iguana_brand_assets/iggies-club.webp'
 
 const RightWrapper = styled.div`
   position: absolute;

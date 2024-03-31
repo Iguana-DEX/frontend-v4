@@ -11,7 +11,7 @@ export const footerLinks: FooterLinkType[] = [
         href: "https://docs.iguanadex.com/community/contact-us",
       },
       {
-        label: "IGN",
+        label: "IGN Token",
         href: "https://docs.iguanadex.com/iguanadex-on-mainnet/tokenomics",
       },
     ],
@@ -40,7 +40,7 @@ export const socials = [
   {
     label: "Github",
     icon: GithubIcon,
-    href: "https://github.com/Iguana-DEX/",
+    href: "https://github.com/Iguana-DEX",
   },
   {
     label: "Discord",

@@ -131,7 +131,7 @@ const Hero = () => {
             {t('Welcome to the rainforest.')}
           </Heading>
           <Heading scale="md" mb="24px">
-            {t('Trade Spot, NFTs and Perpetual Swaps.')}
+            {t('Crypto Coins and Perpetuals')}
           </Heading>
           <Flex>
             {!account && <ConnectWalletButton mr="8px" />}

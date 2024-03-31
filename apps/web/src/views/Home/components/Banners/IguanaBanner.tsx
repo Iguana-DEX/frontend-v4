@@ -45,40 +45,21 @@ const RightWrapper = styled.div`
   }
 `
 
-const Title = styled.div`
+const Header = styled.div`
+  padding-right: 100px;
   position: relative;
   font-family: 'Kanit';
   font-style: normal;
+  font-weight: 800;
+  font-size: 30px;
   line-height: 98%;
   letter-spacing: 0.01em;
-  font-feature-settings: 'liga' off;
-  background: linear-gradient(166.02deg, #ffb237 -5.1%, #ffeb37 75.24%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 16px;
-  font-size: 24px;
-  font-weight: 800;
-
-  &::after {
-    letter-spacing: 0.01em;
-    font-feature-settings: 'liga' off;
-    background: linear-gradient(0deg, #832e00, #832e00), linear-gradient(18.74deg, #ffdf37 7.81%, #ffeb37 81.03%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    content: attr(data-text);
-    text-shadow: 1.27551px 1.27551px 1.02041px rgba(0, 0, 0, 0.2);
-    -webkit-text-stroke: 4px #832e00;
-    position: absolute;
-    left: 0;
-    top: 0;
-    z-index: -1;
-  }
-
-  ${({ theme }) => theme.mediaQueries.md} {
-    font-size: 32px;
-    margin-bottom: 4px;
+  color: #ffffff;
+  margin-top: 18px;
+  margin-bottom: 20px;
+  ${({ theme }) => theme.mediaQueries.sm} {
+    margin-top: 10px;
+    margin-bottom: 10px;
   }
 `
 
@@ -151,10 +132,10 @@ const IguanaBanner = () => {
             <Devider />
             <Image src={galxeLogo} alt="galxeLogo" width={isMobile ? 52 : 77} height={isMobile ? 9 : 14} unoptimized />
           </Flex> */}
-          <Title data-text={title}>{title}</Title>
+          <Header data-text={title}>{title}</Header>
           {!isMobile && (
-            <Text color="#FFFFF" fontSize={24} fontWeight={700} mb="0px" mt="10px">
-              {t('Spot, NFTs and Perpetuals')}
+            <Text color="#5ec4d1" fontSize={22} fontWeight={600} mb="0px" mt="10px">
+              {t('Crypto Coins and Perpetuals')}
             </Text>
           )}
           <Flex mt="28px">
