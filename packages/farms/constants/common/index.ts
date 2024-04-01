@@ -24,7 +24,7 @@ export const CHAIN_ID_TO_CHAIN_NAME = {
   [ChainId.BSC_TESTNET]: 'bsc',
   [ChainId.POLYGON_ZKEVM_TESTNET]: '',
   [ChainId.ZKSYNC_TESTNET]: '',
-  [ChainId.ETHERLINK_TESTNET]: '',
+  [ChainId.ETHERLINK_TESTNET]: 'etherlink',
 } satisfies Record<FarmV3SupportedChainId, string>
 
 export const priceHelperTokens = {

@@ -1,4 +1,6 @@
 import { etherlinkTestnetTokens } from '@pancakeswap/tokens'
+import { getAddress } from 'viem'
+import { SerializedFarmConfig } from '..'
 import { FeeAmount } from '@pancakeswap/v3-sdk'
 import { defineFarmV3Configs } from '../src/defineFarmV3Configs'
 
@@ -25,3 +27,37 @@ export const farmsV3 = defineFarmV3Configs([
     feeAmount: FeeAmount.LOWEST,
   },
 ])
+
+const farms: SerializedFarmConfig[] = [
+  {
+    pid: 1,
+    vaultPid: 1,
+    lpSymbol: 'IGN-WXTZ LP',
+    lpAddress: '0xF8E1FA0648F87c115F26E43271B3D6e4a80A2944',
+    quoteToken: etherlinkTestnetTokens.ign,
+    token: etherlinkTestnetTokens.wxtz,
+  },
+  {
+    pid: 2,
+    vaultPid: 2,
+    lpSymbol: 'WXTZ-EUSD LP',
+    lpAddress: '0x846f5e6DDb29dC5D07f8dE0a980E30cb5aa07109',
+    quoteToken: etherlinkTestnetTokens.wxtz,
+    token: etherlinkTestnetTokens.eusd,
+  },
+  {
+    pid: 3,
+    vaultPid: 3,
+    lpSymbol: 'EUSD-USDT LP',
+    lpAddress: '0x846f5e6DDb29dC5D07f8dE0a980E30cb5aa07109',
+    quoteToken: etherlinkTestnetTokens.eusd,
+    token: etherlinkTestnetTokens.usdt,
+  },
+].map((p) => ({
+  ...p,
+  token: p.token.serialize,
+  quoteToken: p.quoteToken.serialize,
+  lpAddress: getAddress(p.lpAddress),
+}))
+
+export default farms
