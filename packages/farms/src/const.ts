@@ -1,6 +1,6 @@
 import { ChainId } from '@pancakeswap/sdk'
 
-export const supportedChainIdV2 = [ChainId.GOERLI, ChainId.BSC, ChainId.BSC_TESTNET, ChainId.ETHEREUM] as const
+export const supportedChainIdV2 = [ChainId.GOERLI, ChainId.BSC, ChainId.BSC_TESTNET, ChainId.ETHEREUM, ChainId.ETHERLINK_TESTNET] as const
 export const supportedChainIdV3 = [
   ChainId.GOERLI,
   ChainId.BSC,
@@ -21,6 +21,7 @@ export type FarmV3SupportedChainId = (typeof supportedChainIdV3)[number]
 export const masterChefAddresses = {
   [ChainId.BSC_TESTNET]: '0xB4A466911556e39210a6bB2FaECBB59E4eB7E43d',
   [ChainId.BSC]: '0xa5f8C5Dbd5F286960b9d90548680aE5ebFf07652',
+  [ChainId.ETHERLINK_TESTNET]: '0xa481Be7D0740CA4cC127d3956D75d131d3a48C45',
 } as const
 
 export const masterChefV3Addresses = {
