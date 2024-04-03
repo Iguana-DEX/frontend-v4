@@ -85,7 +85,7 @@ export const BASES_TO_CHECK_TRADES_AGAINST: ChainTokenList = {
   [ChainId.ZKSYNC]: [zksyncTokens.usdc, zksyncTokens.weth],
   [ChainId.ZKSYNC_TESTNET]: [zkSyncTestnetTokens.usdc, zkSyncTestnetTokens.weth],
   [ChainId.LINEA_TESTNET]: [lineaTestnetTokens.usdc, lineaTestnetTokens.weth],
-  [ChainId.ETHERLINK_TESTNET]: [etherlinkTestnetTokens.usdc, etherlinkTestnetTokens.weth],
+  [ChainId.ETHERLINK_TESTNET]: [etherlinkTestnetTokens.eusd, etherlinkTestnetTokens.wxtz],
 }
 
 /**

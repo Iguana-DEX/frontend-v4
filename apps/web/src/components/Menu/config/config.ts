@@ -56,6 +56,10 @@ const config: (
           href: '/swap',
         },
         {
+          label: t('Liquidity Pools'),
+          href: '/liquidity',
+        },
+        {
           label: t('Perpetual Swaps'),
           href: getPerpetualUrl({
             chainId,
@@ -64,6 +68,9 @@ const config: (
           }),
           confirmModalId: 'usCitizenConfirmModal',
           type: DropdownMenuItemType.EXTERNAL_LINK,
+        },
+        {
+          type: DropdownMenuItemType.DIVIDER,
         },
         {
           label: t('Bridge'),
@@ -99,10 +106,6 @@ const config: (
       fillIcon: EarnFillIcon,
       image: '/images/decorations/pe2.png',
       items: [
-        {
-          label: t('Liquidity Pools'),
-          href: '/liquidity',
-        },
         {
           label: t('Farms'),
           href: '/farms',
