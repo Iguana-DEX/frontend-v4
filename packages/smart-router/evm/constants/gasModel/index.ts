@@ -19,7 +19,6 @@ export const usdGasTokensByChain = {
   [ChainId.GOERLI]: [goerliTestnetTokens.usdc],
   [ChainId.BSC]: [bscTokens.busd],
   [ChainId.BSC_TESTNET]: [bscTestnetTokens.busd],
-  // TODO: new chains
   [ChainId.ARBITRUM_ONE]: [arbitrumTokens.usdc],
   [ChainId.ARBITRUM_GOERLI]: [arbitrumGoerliTokens.usdc],
   [ChainId.POLYGON_ZKEVM]: [polygonZkEvmTokens.usdt],
@@ -27,7 +26,7 @@ export const usdGasTokensByChain = {
   [ChainId.ZKSYNC]: [zksyncTokens.usdc],
   [ChainId.ZKSYNC_TESTNET]: [zkSyncTestnetTokens.usdc],
   [ChainId.LINEA_TESTNET]: [lineaTestnetTokens.usdc],
-  [ChainId.ETHERLINK_TESTNET]: [etherlinkTestnetTokens.usdc],
+  [ChainId.ETHERLINK_TESTNET]: [etherlinkTestnetTokens.eusd],
 } satisfies Record<ChainId, Token[]>
 
 export * from './v2'

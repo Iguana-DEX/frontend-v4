@@ -20,5 +20,5 @@ export const CHAIN_ID_TO_CHAIN_NAME = {
   [ChainId.ZKSYNC]: 'era',
   [ChainId.ZKSYNC_TESTNET]: '',
   [ChainId.LINEA_TESTNET]: '',
-  [ChainId.ETHERLINK_TESTNET]: 'etherlink',
+  [ChainId.ETHERLINK_TESTNET]: 'etherlink_testnet',
 } satisfies Record<ChainId, string>

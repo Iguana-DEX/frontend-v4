@@ -27,6 +27,8 @@ export const V3_BSC_INFO_CLIENT = `https://open-platform.nodereal.io/${
 export const INFO_CLIENT_ETH = 'https://api.thegraph.com/subgraphs/name/pancakeswap/exhange-eth'
 export const BLOCKS_CLIENT = 'https://api.thegraph.com/subgraphs/name/pancakeswap/blocks'
 export const BLOCKS_CLIENT_ETH = 'https://api.thegraph.com/subgraphs/name/blocklytics/ethereum-blocks'
+export const BLOCKS_CLIENT_ETHERLINK =
+  'https://api.studio.thegraph.com/query/69431/blocks-etherlink-testnet/version/latest'
 export const STABLESWAP_SUBGRAPH_CLIENT = 'https://api.thegraph.com/subgraphs/name/pancakeswap/exchange-stableswap'
 export const GRAPH_API_NFTMARKET = 'https://api.thegraph.com/subgraphs/name/pancakeswap/nft-market'
 export const GRAPH_HEALTH = 'https://api.thegraph.com/index-node/graphql'
@@ -47,11 +49,14 @@ export const INFO_CLIENT_WITH_CHAIN = {
   [ChainId.ZKSYNC_TESTNET]: 'https://api.studio.thegraph.com/query/45376/exchange-v2-zksync-testnet/version/latest',
   [ChainId.LINEA_TESTNET]: 'https://thegraph.goerli.zkevm.consensys.net/subgraphs/name/pancakeswap/exhange-eth/',
   [ChainId.ARBITRUM_ONE]: 'https://thegraph.com/hosted-service/subgraph/chef-jojo/exchange-v2-arb',
+  [ChainId.ETHERLINK_TESTNET]:
+    'https://api.studio.thegraph.com/query/69431/exchange-v2-etherlink-testnet/version/latest',
 }
 
 export const BLOCKS_CLIENT_WITH_CHAIN = {
   [ChainId.BSC]: BLOCKS_CLIENT,
   [ChainId.ETHEREUM]: BLOCKS_CLIENT_ETH,
+  [ChainId.ETHERLINK_TESTNET]: BLOCKS_CLIENT_ETHERLINK,
 }
 
 export const ASSET_CDN = 'https://assets.pancakeswap.finance'
