@@ -58,5 +58,6 @@ export const DEFAULT_COMMON_PRICE: Record<FarmV3SupportedChainId, CommonPrice> =
   [ChainId.ETHERLINK_TESTNET]: {
     [etherlinkTestnetTokens.eusd.address]: '1',
     [etherlinkTestnetTokens.usdt.address]: '1',
+    [etherlinkTestnetTokens.usdc.address]: '1',
   },
 }
