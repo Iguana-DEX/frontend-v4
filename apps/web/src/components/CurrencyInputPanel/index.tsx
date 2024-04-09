@@ -1,32 +1,33 @@
-import { useMemo, useState, memo, useCallback } from 'react'
-import { Currency, Pair, Token, Percent, CurrencyAmount } from '@pancakeswap/sdk'
+import { useTranslation } from '@pancakeswap/localization'
+import { Currency, CurrencyAmount, Pair, Percent, Token } from '@pancakeswap/sdk'
+import { WrappedTokenInfo } from '@pancakeswap/token-lists'
+import { bscTokens, ethereumTokens } from '@pancakeswap/tokens'
 import {
-  Button,
-  Text,
-  useModal,
-  Flex,
+  ArrowDropDownIcon,
   Box,
+  Button,
   CopyButton,
+  Flex,
+  LinkExternal,
   Loading,
   Skeleton,
-  Swap as SwapUI,
-  ArrowDropDownIcon,
+  Text,
+  useModal,
 } from '@pancakeswap/uikit'
-import styled, { css } from 'styled-components'
-import { isAddress } from 'utils'
-import { useTranslation } from '@pancakeswap/localization'
-import { WrappedTokenInfo } from '@pancakeswap/token-lists'
 import { formatAmount } from '@pancakeswap/utils/formatFractions'
+import { CurrencyLogo, DoubleCurrencyLogo, Swap as SwapUI } from '@pancakeswap/widgets-internal'
+import { memo, useCallback, useMemo } from 'react'
+import { styled } from 'styled-components'
+import { safeGetAddress } from 'utils'
 
-import { useStablecoinPriceAmount } from 'hooks/useBUSDPrice'
 import { formatNumber } from '@pancakeswap/utils/formatBalance'
+import { useStablecoinPriceAmount } from 'hooks/useStablecoinPrice'
 import { StablePair } from 'views/AddLiquidity/AddStableLiquidity/hooks/useStableLPDerivedMintInfo'
 
 import { FiatLogo } from 'components/Logo/CurrencyLogo'
+import { useCurrencyBalance } from 'state/wallet/hooks'
 import { useAccount } from 'wagmi'
-import { useCurrencyBalance } from '../../state/wallet/hooks'
 import CurrencySearchModal from '../SearchModal/CurrencySearchModal'
-import { CurrencyLogo, DoubleCurrencyLogo } from '../Logo'
 
 import AddToWalletButton from '../AddToWallet/AddToWalletButton'
 
@@ -37,24 +38,12 @@ const InputRow = styled.div<{ selected: boolean }>`
   justify-content: flex-end;
   padding: ${({ selected }) => (selected ? '0.75rem 0.5rem 0.75rem 1rem' : '0.75rem 0.75rem 0.75rem 1rem')};
 `
-const CurrencySelectButton = styled(Button).attrs({ variant: 'text', scale: 'sm' })<{ zapStyle?: ZapStyle }>`
+const CurrencySelectButton = styled(Button).attrs({ variant: 'text', scale: 'sm' })`
   padding: 0px;
-
-  ${({ zapStyle, theme }) =>
-    zapStyle &&
-    css`
-      padding: 8px;
-      background: ${theme.colors.background};
-      border: 1px solid ${theme.colors.cardBorder};
-      border-radius: ${zapStyle === 'zap' ? '0px' : '8px'} 8px 0px 0px;
-      height: auto;
-    `};
 `
 
-type ZapStyle = 'noZap' | 'zap'
-
 interface CurrencyInputPanelProps {
-  value: string
+  value: string | undefined
   onUserInput: (value: string) => void
   onInputBlur?: () => void
   onPercentInput?: (percent: number) => void
@@ -74,7 +63,6 @@ interface CurrencyInputPanelProps {
   showCommonBases?: boolean
   commonBasesType?: string
   showSearchInput?: boolean
-  zapStyle?: ZapStyle
   beforeButton?: React.ReactNode
   disabled?: boolean
   error?: boolean | string
@@ -100,7 +88,6 @@ const CurrencyInputPanel = memo(function CurrencyInputPanel({
   currency,
   disableCurrencySelect = false,
   hideBalance = false,
-  zapStyle,
   beforeButton,
   pair = null, // used for double token logo
   otherCurrency,
@@ -124,14 +111,14 @@ const CurrencyInputPanel = memo(function CurrencyInputPanel({
 
   const mode = id
   const token = pair ? pair.liquidityToken : currency?.isToken ? currency : null
-  const tokenAddress = token ? isAddress(token.address) : null
+  const tokenAddress = token ? safeGetAddress(token.address) : null
 
   const amountInDollar = useStablecoinPriceAmount(
-    showUSDPrice ? currency : undefined,
-    Number.isFinite(+value) ? +value : undefined,
+    showUSDPrice ? currency ?? undefined : undefined,
+    value !== undefined && Number.isFinite(+value) ? +value : undefined,
     {
       hideIfPriceImpactTooHigh: true,
-      enabled: Number.isFinite(+value),
+      enabled: Boolean(value !== undefined && Number.isFinite(+value)),
     },
   )
 
@@ -160,7 +147,6 @@ const CurrencyInputPanel = memo(function CurrencyInputPanel({
   const handleUserInput = useCallback(
     (val: string) => {
       onUserInput(val)
-      setCurrentClickedPercent('')
     },
     [onUserInput],
   )
@@ -171,17 +157,14 @@ const CurrencyInputPanel = memo(function CurrencyInputPanel({
     }
   }, [onPresentCurrencyModal, disableCurrencySelect])
 
-  const [currentClickedPercent, setCurrentClickedPercent] = useState('')
-
   const isAtPercentMax = (maxAmount && value === maxAmount.toExact()) || (lpPercent && lpPercent === '100')
 
-  const balance = !hideBalance && !!currency && formatAmount(selectedCurrencyBalance, 6)
+  const balance = !hideBalance && !!currency ? formatAmount(selectedCurrencyBalance, 6) : undefined
   return (
     <SwapUI.CurrencyInputPanel
       id={id}
       disabled={disabled}
       error={error as boolean}
-      zapStyle={zapStyle}
       value={value}
       onInputBlur={onInputBlur}
       onUserInput={handleUserInput}
@@ -192,8 +175,8 @@ const CurrencyInputPanel = memo(function CurrencyInputPanel({
           <Flex alignItems="center">
             {beforeButton}
             <CurrencySelectButton
-              zapStyle={zapStyle}
               className="open-currency-select-button"
+              data-dd-action-name="Select currency"
               selected={!!currency}
               onClick={onCurrencySelectClick}
             >
@@ -229,12 +212,14 @@ const CurrencyInputPanel = memo(function CurrencyInputPanel({
             {token && tokenAddress ? (
               <Flex style={{ gap: '4px' }} ml="4px" alignItems="center">
                 <CopyButton
+                  data-dd-action-name="Copy token address"
                   width="16px"
                   buttonColor="textSubtle"
                   text={tokenAddress}
                   tooltipMessage={t('Token address copied')}
                 />
                 <AddToWalletButton
+                  data-dd-action-name="Add to wallet"
                   variant="text"
                   p="0"
                   height="auto"
@@ -246,10 +231,23 @@ const CurrencyInputPanel = memo(function CurrencyInputPanel({
                 />
               </Flex>
             ) : null}
+            {token && tokenAddress && (token.equals(bscTokens.insp) || token.equals(ethereumTokens.insp)) ? (
+              <LinkExternal
+                ml="4px"
+                data-dd-action-name="Token campaign"
+                style={{ textDecoration: 'none' }}
+                showExternalIcon={false}
+                href="https://blog.pancakeswap.finance/articles/introducing-ins-pire-fiesta-swap-to-earn-155-000-insp-with-inspect-on-pancake-swap?utm_source=Swappage&utm_medium=website&utm_campaign=INSPSwappage&utm_id=INSPcampaign"
+              >
+                🎁
+              </LinkExternal>
+            ) : null}
           </Flex>
+
           {account && !hideBalanceComp && (
             <Text
-              onClick={!disabled && onMax}
+              data-dd-action-name="Token balance"
+              onClick={!disabled ? onMax : undefined}
               color="textSubtle"
               fontSize="12px"
               ellipsis
@@ -257,7 +255,7 @@ const CurrencyInputPanel = memo(function CurrencyInputPanel({
               style={{ display: 'inline', cursor: 'pointer' }}
             >
               {!hideBalance && !!currency
-                ? balance?.replace('.', '')?.length > 12
+                ? (balance?.replace('.', '')?.length || 0) > 12
                   ? balance
                   : t('Balance: %balance%', { balance: balance ?? t('Loading') })
                 : ' -'}
@@ -274,7 +272,7 @@ const CurrencyInputPanel = memo(function CurrencyInputPanel({
                   <Loading width="14px" height="14px" />
                 ) : showUSDPrice && Number.isFinite(amountInDollar) ? (
                   <Text fontSize="12px" color="textSubtle" ellipsis>
-                    {`~${formatNumber(amountInDollar)} USD`}
+                    {`~${amountInDollar ? formatNumber(amountInDollar) : 0} USD`}
                   </Text>
                 ) : (
                   <Box height="18px" />
@@ -289,7 +287,6 @@ const CurrencyInputPanel = memo(function CurrencyInputPanel({
                   showQuickInputButton &&
                   onPercentInput &&
                   [25, 50, 75].map((percent) => {
-                    const isAtClickedPercent = currentClickedPercent === percent.toString()
                     const isAtCurrentPercent =
                       (maxAmount && value !== '0' && value === percentAmount[percent]) ||
                       (lpPercent && lpPercent === percent.toString())
@@ -297,13 +294,13 @@ const CurrencyInputPanel = memo(function CurrencyInputPanel({
                     return (
                       <Button
                         key={`btn_quickCurrency${percent}`}
+                        data-dd-action-name={`Balance percent ${percent}`}
                         onClick={() => {
                           onPercentInput(percent)
-                          setCurrentClickedPercent(percent.toString())
                         }}
                         scale="xs"
                         mr="5px"
-                        variant={isAtClickedPercent || isAtCurrentPercent ? 'primary' : 'secondary'}
+                        variant={isAtCurrentPercent ? 'primary' : 'secondary'}
                         style={{ textTransform: 'uppercase' }}
                       >
                         {percent}%
@@ -312,11 +309,11 @@ const CurrencyInputPanel = memo(function CurrencyInputPanel({
                   })}
                 {maxAmount?.greaterThan(0) && showMaxButton && (
                   <Button
+                    data-dd-action-name="Balance percent max"
                     onClick={(e) => {
                       e.stopPropagation()
                       e.preventDefault()
                       onMax?.()
-                      setCurrentClickedPercent('MAX')
                     }}
                     scale="xs"
                     variant={isAtPercentMax ? 'primary' : 'secondary'}

@@ -1,11 +1,11 @@
 import { getVersionUpgrade, VersionUpgrade } from '@pancakeswap/token-lists'
 import { acceptListUpdate, updateListVersion, useFetchListCallback } from '@pancakeswap/token-lists/react'
+import { useQuery } from '@tanstack/react-query'
 import { UNSUPPORTED_LIST_URLS } from 'config/constants/lists'
 import { useEffect } from 'react'
 import { useAllLists } from 'state/lists/hooks'
-import useSWRImmutable from 'swr/immutable'
 import { useActiveListUrls } from './hooks'
-import { useListState, initialState, useListStateReady } from './index'
+import { initialState, useListState, useListStateReady } from './index'
 
 export default function Updater(): null {
   const [listState, dispatch] = useListState()
@@ -25,29 +25,38 @@ export default function Updater(): null {
   const fetchList = useFetchListCallback(dispatch)
 
   // whenever a list is not loaded and not loading, try again to load it
-  useSWRImmutable(isReady && ['first-fetch-token-list', lists], () => {
-    Object.keys(lists).forEach((listUrl) => {
-      const list = lists[listUrl]
-      if (!list.current && !list.loadingRequestId && !list.error) {
-        fetchList(listUrl).catch((error) => console.debug('list added fetching error', error))
-      }
-    })
+  useQuery({
+    queryKey: ['first-fetch-token-list', lists],
+    queryFn: async () => {
+      Object.keys(lists).forEach((listUrl) => {
+        const list = lists[listUrl]
+        if (!list.current && !list.loadingRequestId && !list.error) {
+          fetchList(listUrl).catch((error) => console.debug('list added fetching error', error))
+        }
+      })
+    },
+    enabled: Boolean(isReady),
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   })
 
-  useSWRImmutable(
-    isReady && listState !== initialState && ['token-list'],
-    async () => {
+  useQuery({
+    queryKey: ['token-list'],
+    queryFn: async () => {
       return Promise.all(
         Object.keys(lists).map((url) =>
           fetchList(url).catch((error) => console.debug('interval list fetching error', error)),
         ),
       )
     },
-    {
-      dedupingInterval: 1000 * 60 * 10,
-      refreshInterval: 1000 * 60 * 10,
-    },
-  )
+    enabled: Boolean(isReady && listState !== initialState),
+    staleTime: 1000 * 60 * 10,
+    refetchInterval: 1000 * 60 * 10,
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  })
 
   // if any lists from unsupported lists are loaded, check them too (in case new updates since last visit)
   useEffect(() => {

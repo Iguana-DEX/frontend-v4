@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
-import styled, { css } from "styled-components";
+import { useEffect, useState } from "react";
+import { css, styled } from "styled-components";
 import { Box, BoxProps } from "../Box";
+import { Image } from "../Image";
 import { ArrowDropDownIcon } from "../Svg";
 import { Text } from "../Text";
 
@@ -9,7 +10,6 @@ const DropDownHeader = styled.div`
   height: 40px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   padding: 0px 16px;
   box-shadow: ${({ theme }) => theme.shadows.inset};
   border: 1px solid ${({ theme }) => theme.colors.inputSecondary};
@@ -19,7 +19,7 @@ const DropDownHeader = styled.div`
 `;
 
 const DropDownListContainer = styled.div`
-  min-width: 136px;
+  min-width: 100px;
   height: 0;
   position: absolute;
   overflow: hidden;
@@ -30,10 +30,6 @@ const DropDownListContainer = styled.div`
   transform-origin: top;
   opacity: 0;
   width: 100%;
-
-  ${({ theme }) => theme.mediaQueries.sm} {
-    min-width: 168px;
-  }
 `;
 
 const DropDownContainer = styled(Box)<{ isOpen: boolean }>`
@@ -43,13 +39,9 @@ const DropDownContainer = styled(Box)<{ isOpen: boolean }>`
   background: ${({ theme }) => theme.colors.input};
   border-radius: 16px;
   height: 40px;
-  min-width: 136px;
+  min-width: 125px;
   user-select: none;
   z-index: 20;
-
-  ${({ theme }) => theme.mediaQueries.sm} {
-    min-width: 168px;
-  }
 
   ${(props) =>
     props.isOpen &&
@@ -87,6 +79,7 @@ const DropDownList = styled.ul`
 `;
 
 const ListItem = styled.li`
+  display: flex;
   list-style: none;
   padding: 8px 16px;
   &:hover {
@@ -104,6 +97,7 @@ export interface SelectProps extends BoxProps {
 export interface OptionProps {
   label: string;
   value: any;
+  imageUrl?: string;
 }
 
 const Select: React.FunctionComponent<React.PropsWithChildren<SelectProps>> = ({
@@ -122,7 +116,8 @@ const Select: React.FunctionComponent<React.PropsWithChildren<SelectProps>> = ({
     event.stopPropagation();
   };
 
-  const onOptionClicked = (selectedIndex: number) => () => {
+  const onOptionClicked = (selectedIndex: number) => (e: React.MouseEvent) => {
+    e.stopPropagation();
     setSelectedOptionIndex(selectedIndex);
     setIsOpen(false);
     setOptionSelected(true);
@@ -153,8 +148,18 @@ const Select: React.FunctionComponent<React.PropsWithChildren<SelectProps>> = ({
   return (
     <DropDownContainer isOpen={isOpen} {...props}>
       <DropDownHeader onClick={toggling}>
+        {options?.[selectedOptionIndex]?.imageUrl && (
+          <Image
+            mr="4px"
+            width={24}
+            height={24}
+            alt="picked-image"
+            style={{ borderRadius: "50%", overflow: "hidden" }}
+            src={options?.[selectedOptionIndex]?.imageUrl}
+          />
+        )}
         <Text color={!optionSelected && placeHolderText ? "text" : undefined}>
-          {!optionSelected && placeHolderText ? placeHolderText : options[selectedOptionIndex].label}
+          {!optionSelected && placeHolderText ? placeHolderText : options[selectedOptionIndex]?.label}
         </Text>
       </DropDownHeader>
       <ArrowDropDownIcon color="text" onClick={toggling} />
@@ -163,6 +168,16 @@ const Select: React.FunctionComponent<React.PropsWithChildren<SelectProps>> = ({
           {options.map((option, index) =>
             placeHolderText || index !== selectedOptionIndex ? (
               <ListItem onClick={onOptionClicked(index)} key={option.label}>
+                {option?.imageUrl && (
+                  <Image
+                    mr="4px"
+                    width={24}
+                    height={24}
+                    alt={`picked-image-${option.label}`}
+                    style={{ borderRadius: "50%", overflow: "hidden" }}
+                    src={option.imageUrl}
+                  />
+                )}
                 <Text>{option.label}</Text>
               </ListItem>
             ) : null

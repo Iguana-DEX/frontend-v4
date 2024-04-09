@@ -2,35 +2,32 @@ import { useTranslation } from '@pancakeswap/localization'
 import { useToast } from '@pancakeswap/uikit'
 import { ToastDescriptionWithTx } from 'components/Toast'
 import { useCallback, useState } from 'react'
-import { WaitForTransactionResult, SendTransactionResult } from 'wagmi/actions'
+import { getViemErrorMessage, parseViemError } from 'utils/errors'
 import { isUserRejected, logError } from 'utils/sentry'
-import { BaseError, Hash, UnknownRpcError } from 'viem'
+import { Hash } from 'viem'
+import { SendTransactionResult, WaitForTransactionResult } from 'wagmi/actions'
 import { usePublicNodeWaitForTransaction } from './usePublicNodeWaitForTransaction'
 
 export type CatchTxErrorReturn = {
-  fetchWithCatchTxError: (fn: () => Promise<SendTransactionResult | Hash>) => Promise<WaitForTransactionResult>
-  fetchTxResponse: (fn: () => Promise<SendTransactionResult | Hash>) => Promise<SendTransactionResult>
+  fetchWithCatchTxError: (
+    fn: () => Promise<SendTransactionResult | Hash | undefined>,
+  ) => Promise<WaitForTransactionResult | null>
+  fetchTxResponse: (
+    fn: () => Promise<SendTransactionResult | Hash | undefined>,
+  ) => Promise<SendTransactionResult | null>
   loading: boolean
   txResponseLoading: boolean
 }
 
-/// only show corrected parsed viem error
-export function parseError<TError>(err: TError): BaseError | null {
-  if (err instanceof BaseError) {
-    return err
-  }
-  if (typeof err === 'string') {
-    return new UnknownRpcError(new Error(err))
-  }
-  if (err instanceof Error) {
-    return new UnknownRpcError(err)
-  }
-  return null
-}
-
 const notPreview = process.env.NEXT_PUBLIC_VERCEL_ENV !== 'preview'
 
-export default function useCatchTxError(): CatchTxErrorReturn {
+type Params = {
+  throwUserRejectError?: boolean
+  throwCustomError?: () => void
+}
+
+export default function useCatchTxError(params?: Params): CatchTxErrorReturn {
+  const { throwUserRejectError = false, throwCustomError } = params || {}
   const { t } = useTranslation()
   const { toastError, toastSuccess } = useToast()
   const [loading, setLoading] = useState(false)
@@ -40,7 +37,7 @@ export default function useCatchTxError(): CatchTxErrorReturn {
   const handleNormalError = useCallback(
     (error) => {
       logError(error)
-      const err = parseError(error)
+      const err = parseViemError(error)
       if (err) {
         toastError(
           t('Error'),
@@ -58,13 +55,13 @@ export default function useCatchTxError(): CatchTxErrorReturn {
   const handleTxError = useCallback(
     (error, hash) => {
       logError(error)
-      const err = parseError(error)
+      const err = parseViemError(error)
       toastError(
         t('Failed'),
         <ToastDescriptionWithTx txHash={hash}>
           {err
             ? t('Transaction failed with error: %reason%', {
-                reason: notPreview ? err.shortMessage || err.message : err.message,
+                reason: notPreview ? getViemErrorMessage(err) : err.message,
               })
             : t('Transaction failed. For detailed error message:')}
         </ToastDescriptionWithTx>,
@@ -74,34 +71,40 @@ export default function useCatchTxError(): CatchTxErrorReturn {
   )
 
   const fetchWithCatchTxError = useCallback(
-    async (callTx: () => Promise<SendTransactionResult | Hash>): Promise<WaitForTransactionResult | null> => {
-      let tx: SendTransactionResult | Hash = null
+    async (
+      callTx: () => Promise<SendTransactionResult | Hash | undefined>,
+    ): Promise<WaitForTransactionResult | null> => {
+      let tx: SendTransactionResult | Hash | null | undefined = null
 
       try {
         setLoading(true)
 
-        /**
-         * https://github.com/vercel/swr/pull/1450
-         *
-         * wait for useSWRMutation finished, so we could apply SWR in case manually trigger tx call
-         */
         tx = await callTx()
-
+        if (!tx) {
+          return null
+        }
         const hash = typeof tx === 'string' ? tx : tx.hash
-
         toastSuccess(`${t('Transaction Submitted')}!`, <ToastDescriptionWithTx txHash={hash} />)
 
         const receipt = await waitForTransaction({
           hash,
         })
-        return receipt
+        if (receipt?.status === 'success') {
+          return receipt
+        }
+        throw Error(t('Failed'))
       } catch (error: any) {
         if (!isUserRejected(error)) {
           if (!tx) {
             handleNormalError(error)
+          } else if (throwCustomError) {
+            throwCustomError()
           } else {
             handleTxError(error, typeof tx === 'string' ? tx : tx.hash)
           }
+        }
+        if (throwUserRejectError) {
+          throw error
         }
       } finally {
         setLoading(false)
@@ -109,12 +112,12 @@ export default function useCatchTxError(): CatchTxErrorReturn {
 
       return null
     },
-    [toastSuccess, t, waitForTransaction, handleNormalError, handleTxError],
+    [toastSuccess, t, waitForTransaction, throwUserRejectError, throwCustomError, handleNormalError, handleTxError],
   )
 
   const fetchTxResponse = useCallback(
-    async (callTx: () => Promise<SendTransactionResult | Hash>): Promise<SendTransactionResult> => {
-      let tx: SendTransactionResult | Hash = null
+    async (callTx: () => Promise<SendTransactionResult | Hash | undefined>): Promise<SendTransactionResult | null> => {
+      let tx: SendTransactionResult | Hash | null | undefined = null
 
       try {
         setTxResponseLoading(true)
@@ -125,6 +128,8 @@ export default function useCatchTxError(): CatchTxErrorReturn {
          * wait for useSWRMutation finished, so we could apply SWR in case manually trigger tx call
          */
         tx = await callTx()
+
+        if (!tx) return null
 
         const hash = typeof tx === 'string' ? tx : tx.hash
 

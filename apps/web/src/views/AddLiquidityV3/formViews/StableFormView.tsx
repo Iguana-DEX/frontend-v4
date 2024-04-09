@@ -1,31 +1,32 @@
 import { CommonBasesType } from 'components/SearchModal/types'
 
-import { AutoColumn, Button, Dots, RowBetween, Text, Box, AutoRow, Flex, QuestionHelper } from '@pancakeswap/uikit'
+import { AutoColumn, AutoRow, Box, Button, Dots, Flex, QuestionHelper, RowBetween, Text } from '@pancakeswap/uikit'
 
 import { CommitButton } from 'components/CommitButton'
 import CurrencyInputPanel from 'components/CurrencyInputPanel'
 
-import { Field } from 'state/mint/actions'
 import { ApprovalState } from 'hooks/useApproveCallback'
+import { Field } from 'state/mint/actions'
 import { logGTMClickAddLiquidityEvent } from 'utils/customGTMEventTracking'
 
-import { useIsExpertMode } from '@pancakeswap/utils/user'
-import useActiveWeb3React from 'hooks/useActiveWeb3React'
-import ConnectWalletButton from 'components/ConnectWalletButton'
 import { useTranslation } from '@pancakeswap/localization'
+import { useIsExpertMode } from '@pancakeswap/utils/user'
 import { LightGreyCard } from 'components/Card'
+import ConnectWalletButton from 'components/ConnectWalletButton'
+import useActiveWeb3React from 'hooks/useActiveWeb3React'
 
-import { CurrencyLogo } from 'components/Logo'
-import { useTotalUSDValue } from 'components/PositionCard'
 import { CurrencyAmount, Percent } from '@pancakeswap/sdk'
 import { BIG_ONE_HUNDRED } from '@pancakeswap/utils/bigNumber'
-import { AddStableChildrenProps } from 'views/AddLiquidity/AddStableLiquidity'
+import FormattedCurrencyAmount from 'components/FormattedCurrencyAmount/FormattedCurrencyAmount'
+import { CurrencyLogo } from 'components/Logo'
+import { useTotalUSDValue } from 'components/PositionCard'
 import { useIsTransactionUnsupported, useIsTransactionWarning } from 'hooks/Trades'
+import { AddStableChildrenProps } from 'views/AddLiquidity/AddStableLiquidity'
 import { FormattedSlippage } from 'views/AddLiquidity/AddStableLiquidity/components/FormattedSlippage'
-import FormattedCurrencyAmount from 'components/Chart/FormattedCurrencyAmount/FormattedCurrencyAmount'
 
-import { RowFixed } from '../../../components/Layout/Row'
+import { RowFixed } from 'components/Layout/Row'
 
+import { ReactElement } from 'react'
 import { HideMedium, MediumOnly, RightContainer } from './V3FormView'
 
 export default function StableFormView({
@@ -54,7 +55,7 @@ export default function StableFormView({
   price,
   maxAmounts,
 }: AddStableChildrenProps & {
-  stableLpFee: number
+  stableLpFee?: number
 }) {
   const addIsUnsupported = useIsTransactionUnsupported(currencies?.CURRENCY_A, currencies?.CURRENCY_B)
   const addIsWarning = useIsTransactionWarning(currencies?.CURRENCY_A, currencies?.CURRENCY_B)
@@ -63,8 +64,8 @@ export default function StableFormView({
   const { t } = useTranslation()
   const expertMode = useIsExpertMode()
 
-  const reservedToken0 = pair?.token0 ? CurrencyAmount.fromRawAmount(pair.token0, reserves[0].toString()) : null
-  const reservedToken1 = pair?.token1 ? CurrencyAmount.fromRawAmount(pair.token1, reserves[1].toString()) : null
+  const reservedToken0 = pair?.token0 ? CurrencyAmount.fromRawAmount(pair.token0, reserves[0].toString()) : undefined
+  const reservedToken1 = pair?.token1 ? CurrencyAmount.fromRawAmount(pair.token1, reserves[1].toString()) : undefined
 
   const totalLiquidityUSD = useTotalUSDValue({
     currency0: pair?.token0,
@@ -73,7 +74,7 @@ export default function StableFormView({
     token1Deposited: reservedToken1,
   })
 
-  let buttons = null
+  let buttons: ReactElement
   if (addIsUnsupported || addIsWarning) {
     buttons = (
       <Button disabled mb="4px">

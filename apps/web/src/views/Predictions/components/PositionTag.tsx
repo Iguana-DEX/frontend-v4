@@ -1,5 +1,5 @@
 import { ReactNode } from 'react'
-import styled from 'styled-components'
+import { styled } from 'styled-components'
 import {
   ArrowUpIcon,
   ArrowDownIcon,
@@ -10,7 +10,7 @@ import {
   TooltipText,
   InfoIcon,
 } from '@pancakeswap/uikit'
-import { BetPosition } from 'state/types'
+import { BetPosition } from '@pancakeswap/prediction'
 import { useTranslation } from '@pancakeswap/localization'
 
 interface TagProps extends FlexProps {

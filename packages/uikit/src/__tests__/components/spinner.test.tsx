@@ -1,5 +1,6 @@
-import { renderWithProvider } from "../../testHelpers";
+import { expect, it } from "vitest";
 import { Spinner } from "../../components/Spinner";
+import { renderWithProvider } from "../../testHelpers";
 
 it("renders correctly", () => {
   const { asFragment } = renderWithProvider(<Spinner />);
@@ -34,8 +35,6 @@ it("renders correctly", () => {
 
     <div
         class="c0"
-        height="153.216"
-        width="128"
       >
         <div
           class="c1"

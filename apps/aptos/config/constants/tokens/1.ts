@@ -132,4 +132,27 @@ export const mainnetTokens = {
     'Thala Token',
     'https://www.thalalabs.xyz/',
   ),
+  amapt: new Coin(
+    ChainId.MAINNET,
+    '0x111ae3e5bc816a5e63c2da97d0aa3886519e0cd5e4b046659fa35796bd11542a::amapt_token::AmnisApt',
+    8,
+    'amAPT',
+    'Amnis Aptos Coin',
+  ),
+  gui: new Coin(
+    ChainId.MAINNET,
+    '0xe4ccb6d39136469f376242c31b34d10515c8eaaa38092f804db8e08a8f53c5b2::assets_v1::EchoCoin002',
+    6,
+    'GUI',
+    'GUI INU',
+    'https://www.guiinu.com/',
+  ),
+  stAPT: new Coin(
+    ChainId.MAINNET,
+    '0x111ae3e5bc816a5e63c2da97d0aa3886519e0cd5e4b046659fa35796bd11542a::stapt_token::StakedApt',
+    8,
+    'stAPT',
+    'Staked Aptos Coin',
+    'https://stake.amnis.finance/',
+  ),
 }

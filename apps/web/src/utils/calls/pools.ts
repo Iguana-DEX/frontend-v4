@@ -1,5 +1,5 @@
-import { ChainId } from '@pancakeswap/sdk'
-import { getPoolsConfig } from '@pancakeswap/pools'
+import { ChainId } from '@pancakeswap/chains'
+import { SerializedPool, getPoolsConfig } from '@pancakeswap/pools'
 
 import chunk from 'lodash/chunk'
 import { publicClient } from 'utils/wagmi'
@@ -36,11 +36,13 @@ const ABI = [
 /**
  * Returns the total number of pools that were active at a given block
  */
-export const getActivePools = async (chainId: ChainId, block?: number) => {
+export const getActivePools = async (chainId: ChainId, block?: number): Promise<SerializedPool[]> => {
   const poolsConfig = getPoolsConfig(chainId)
   const eligiblePools = poolsConfig
-    .filter((pool) => pool.sousId !== 0)
-    .filter((pool) => pool.isFinished === false || pool.isFinished === undefined)
+    ? poolsConfig
+        .filter((pool) => pool.sousId !== 0)
+        .filter((pool) => pool.isFinished === false || pool.isFinished === undefined)
+    : []
   const startBlockCalls = eligiblePools.map(
     ({ contractAddress }) =>
       ({
@@ -71,7 +73,7 @@ export const getActivePools = async (chainId: ChainId, block?: number) => {
   const startBlocks = blockCallsRaw[0]
   const endBlocks = blockCallsRaw[1]
 
-  return eligiblePools.reduce((accum, poolCheck, index) => {
+  return eligiblePools.reduce<SerializedPool[]>((accum, poolCheck, index) => {
     const startBlock = startBlocks[index] ? startBlocks[index] : null
     const endBlock = endBlocks[index] ? endBlocks[index] : null
 

@@ -2,7 +2,7 @@ import { useTranslation } from '@pancakeswap/localization'
 import { Card, CardBody, CardHeader, Flex, Heading, Text } from '@pancakeswap/uikit'
 import { getBalanceNumber } from '@pancakeswap/utils/formatBalance'
 import { Auction, Bidder } from 'config/constants/types'
-import styled from 'styled-components'
+import { styled } from 'styled-components'
 import { HARD_CODED_START_AUCTION_ID } from '../constants'
 import useCongratulateAuctionWinner from '../hooks/useCongratulateAuctionWinner'
 import { useV3FarmAuctionConfig } from '../hooks/useV3FarmAuctionConfig'
@@ -26,8 +26,8 @@ const CongratulationsCard: React.FC<React.PropsWithChildren<{ currentAuction: Au
     return null
   }
 
-  const { auction, bidderData } = wonAuction
-  const { amount, position } = bidderData
+  const { auction, bidderData } = wonAuction ?? {}
+  const { amount, position } = bidderData ?? {}
   return (
     <StyledReclaimBidCard mb={['24px', null, null, '0']}>
       <CardHeader>

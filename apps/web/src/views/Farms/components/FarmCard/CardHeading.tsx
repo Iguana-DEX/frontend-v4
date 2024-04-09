@@ -1,10 +1,14 @@
 import { Token } from '@pancakeswap/sdk'
-import { AutoRow, Farm as FarmUI, Flex, Heading, Skeleton, Tag, useTooltip } from '@pancakeswap/uikit'
+import { AutoRow, Box, FarmMultiplierInfo, Flex, Heading, Skeleton, Tag, useTooltip } from '@pancakeswap/uikit'
 import { FeeAmount } from '@pancakeswap/v3-sdk'
+import { FarmWidget } from '@pancakeswap/widgets-internal'
 import { TokenPairImage } from 'components/TokenImage'
-import styled from 'styled-components'
+import { styled } from 'styled-components'
+import { Address } from 'viem'
+import BoostedTag from '../YieldBooster/components/BoostedTag'
 
-const { FarmAuctionTag, StableFarmTag, V2Tag, V3FeeTag } = FarmUI.Tags
+const { FarmAuctionTag, StableFarmTag, V2Tag, V3FeeTag } = FarmWidget.Tags
+const { MerklNotice } = FarmWidget
 
 type ExpandableSectionProps = {
   lpLabel?: string
@@ -19,6 +23,11 @@ type ExpandableSectionProps = {
   pid?: number
   farmCakePerSecond?: string
   totalMultipliers?: string
+  merklLink?: string
+  hasBothFarmAndMerkl?: boolean
+  isBoosted?: boolean
+  lpAddress?: Address
+  merklApr?: number
 }
 
 const Wrapper = styled(Flex)`
@@ -42,10 +51,13 @@ const CardHeading: React.FC<React.PropsWithChildren<ExpandableSectionProps>> = (
   feeAmount,
   farmCakePerSecond,
   totalMultipliers,
+  merklLink,
+  hasBothFarmAndMerkl,
+  isBoosted,
+  merklApr,
 }) => {
   const isReady = multiplier !== undefined
-
-  const multiplierTooltipContent = FarmUI.FarmMultiplierInfo({
+  const multiplierTooltipContent = FarmMultiplierInfo({
     farmCakePerSecond: farmCakePerSecond ?? '-',
     totalMultipliers: totalMultipliers ?? '-',
   })
@@ -63,14 +75,26 @@ const CardHeading: React.FC<React.PropsWithChildren<ExpandableSectionProps>> = (
       )}
       <Flex flexDirection="column" alignItems="flex-end" width="100%">
         {isReady ? (
-          <Heading mb="4px">{lpLabel?.split(' ')?.[0] ?? ''}</Heading>
+          <Heading mb="4px" display="inline-flex">
+            {lpLabel?.split(' ')?.[0] ?? ''}
+            {merklLink ? (
+              <Box mr="-4px" ml="4px">
+                <MerklNotice.WithTooltip
+                  placement="top"
+                  tooltipOffset={[0, 10]}
+                  merklLink={merklLink}
+                  hasFarm={hasBothFarmAndMerkl}
+                  merklApr={merklApr}
+                />
+              </Box>
+            ) : null}
+          </Heading>
         ) : (
           <Skeleton mb="4px" width={60} height={18} />
         )}
         <AutoRow gap="4px" justifyContent="flex-end">
           {isReady && isStable ? <StableFarmTag /> : version === 2 ? <V2Tag /> : null}
           {isReady && version === 3 && <V3FeeTag feeAmount={feeAmount} />}
-          {/* {isReady && boosted && <BoostedTag />} */}
           {isReady && isCommunityFarm && <FarmAuctionTag mr="-4px" />}
           {isReady ? (
             <Flex ref={targetRef}>
@@ -80,6 +104,7 @@ const CardHeading: React.FC<React.PropsWithChildren<ExpandableSectionProps>> = (
           ) : (
             <Skeleton ml="4px" width={42} height={28} />
           )}
+          {isReady && isBoosted && <BoostedTag mr="-4px" />}
         </AutoRow>
       </Flex>
     </Wrapper>

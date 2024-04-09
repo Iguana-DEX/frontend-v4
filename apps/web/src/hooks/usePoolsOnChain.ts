@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-shadow, no-await-in-loop, no-constant-condition, no-console */
 import { BigintIsh, Currency } from '@pancakeswap/sdk'
-import { OnChainProvider, Pool, SmartRouter } from '@pancakeswap/smart-router/evm'
+import { OnChainProvider, Pool, SmartRouter } from '@pancakeswap/smart-router'
+
 import { useQuery } from '@tanstack/react-query'
-import { useMemo, useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 
 import { getViemClients } from 'utils/viem'
 
@@ -35,7 +36,12 @@ function candidatePoolsOnChainHookFactory<TPool extends Pool>(
   ) {
     const fetchingBlock = useRef<string | null>(null)
     const key = useMemo(() => {
-      if (!currencyA || !currencyB || currencyA.wrapped.equals(currencyB.wrapped)) {
+      if (
+        !currencyA ||
+        !currencyB ||
+        currencyA.chainId !== currencyB.chainId ||
+        currencyA.wrapped.equals(currencyB.wrapped)
+      ) {
         return ''
       }
       const symbols = currencyA.wrapped.sortsBefore(currencyB.wrapped)
@@ -49,15 +55,19 @@ function candidatePoolsOnChainHookFactory<TPool extends Pool>(
     }, [currencyA, currencyB])
 
     const queryEnabled = !!(enabled && blockNumber && key && pairs)
-    const poolState = useQuery(
-      [poolType, 'pools', key],
-      async () => {
+    const poolState = useQuery({
+      queryKey: [poolType, 'pools', key],
+
+      queryFn: async () => {
+        if (!blockNumber || !pairs) {
+          throw new Error('Failed to get pools on chain. Missing valid params')
+        }
         fetchingBlock.current = blockNumber.toString()
         try {
           const label = `[POOLS_ONCHAIN](${poolType}) ${key} at block ${fetchingBlock.current}`
-          SmartRouter.metric(label)
+          SmartRouter.logger.metric(label)
           const pools = await getPoolsOnChain(pairs, getViemClients, blockNumber)
-          SmartRouter.metric(label, pools)
+          SmartRouter.logger.metric(label, pools)
 
           return {
             pools,
@@ -68,13 +78,12 @@ function candidatePoolsOnChainHookFactory<TPool extends Pool>(
           fetchingBlock.current = null
         }
       },
-      {
-        enabled: queryEnabled,
-        refetchOnWindowFocus: false,
-      },
-    )
 
-    const { refetch, data, isLoading, isFetching: isValidating } = poolState
+      enabled: queryEnabled,
+      refetchOnWindowFocus: false,
+    })
+
+    const { refetch, data, isLoading, isFetching: isValidating, dataUpdatedAt } = poolState
     useEffect(() => {
       // Revalidate pools if block number increases
       if (
@@ -95,6 +104,7 @@ function candidatePoolsOnChainHookFactory<TPool extends Pool>(
       syncing: isValidating,
       blockNumber: data?.blockNumber,
       key: data?.key,
+      dataUpdatedAt,
     }
   }
 }

@@ -1,5 +1,6 @@
+import { ChainId } from '@pancakeswap/chains'
 import { useTranslation } from '@pancakeswap/localization'
-import { ChainId, NATIVE } from '@pancakeswap/sdk'
+import { NATIVE } from '@pancakeswap/sdk'
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -13,18 +14,19 @@ import {
   UserMenuItem,
   useTooltip,
 } from '@pancakeswap/uikit'
-import { useNetwork } from 'wagmi'
+import { ASSET_CDN } from 'config/constants/endpoints'
 import { useActiveChainId, useLocalNetworkChain } from 'hooks/useActiveChainId'
 import { useNetworkConnectorUpdater } from 'hooks/useActiveWeb3React'
 import { useHover } from 'hooks/useHover'
 import { useSessionChainId } from 'hooks/useSessionChainId'
 import { useSwitchNetwork } from 'hooks/useSwitchNetwork'
-import { useMemo } from 'react'
-import { useRouter } from 'next/router'
-import { chains } from 'utils/wagmi'
 import Image from 'next/image'
-import { ASSET_CDN } from 'config/constants/endpoints'
-
+import { useRouter } from 'next/router'
+import { useMemo } from 'react'
+import { useUserShowTestnet } from 'state/user/hooks/useUserShowTestnet'
+import { chainNameConverter } from 'utils/chainNameConverter'
+import { chains } from 'utils/wagmi'
+import { useNetwork } from 'wagmi'
 import { ChainLogo } from './Logo/ChainLogo'
 
 const AptosChain = {
@@ -34,6 +36,7 @@ const AptosChain = {
 
 const NetworkSelect = ({ switchNetwork, chainId }) => {
   const { t } = useTranslation()
+  const [showTestnet] = useUserShowTestnet()
 
   return (
     <>
@@ -42,10 +45,13 @@ const NetworkSelect = ({ switchNetwork, chainId }) => {
       </Box>
       <UserMenuDivider />
       {chains
-        .filter(
-          (chain) =>
-            chain.id === ChainId.LINEA_TESTNET || !('testnet' in chain && chain.testnet) || chain.id === chainId,
-        )
+        .filter((chain) => {
+          if (chain.id === chainId) return true
+          if ('testnet' in chain && chain.testnet) {
+            return showTestnet
+          }
+          return true
+        })
         .map((chain) => (
           <UserMenuItem
             key={chain.id}
@@ -54,11 +60,11 @@ const NetworkSelect = ({ switchNetwork, chainId }) => {
           >
             <ChainLogo chainId={chain.id} />
             <Text color={chain.id === chainId ? 'secondary' : 'text'} bold={chain.id === chainId} pl="12px">
-              {chain.name}
+              {chainNameConverter(chain.name)}
             </Text>
           </UserMenuItem>
         ))}
-      {/* <UserMenuItem
+      <UserMenuItem
         key={`aptos-${AptosChain.id}`}
         style={{ justifyContent: 'flex-start' }}
         as="a"
@@ -75,7 +81,7 @@ const NetworkSelect = ({ switchNetwork, chainId }) => {
         <Text color="text" pl="12px">
           {AptosChain.name}
         </Text>
-      </UserMenuItem> */}
+      </UserMenuItem>
     </>
   )
 }
@@ -117,7 +123,7 @@ const WrongNetworkSelect = ({ switchNetwork, chainId }) => {
         <UserMenuItem ref={ref1} onClick={() => setSessionChainId(chain.id)} style={{ justifyContent: 'flex-start' }}>
           <ChainLogo chainId={chain.id} />
           <Text color="secondary" bold pl="12px">
-            {chain.name}
+            {chainNameConverter(chain.name)}
           </Text>
         </UserMenuItem>
       )}
@@ -126,7 +132,7 @@ const WrongNetworkSelect = ({ switchNetwork, chainId }) => {
       </Box>
       <UserMenuItem onClick={() => switchNetwork(localChainId)} style={{ justifyContent: 'flex-start' }}>
         <ChainLogo chainId={localChainId} />
-        <Text pl="12px">{localChainName}</Text>
+        <Text pl="12px">{chainNameConverter(localChainName)}</Text>
       </UserMenuItem>
       <Button mx="16px" my="8px" scale="sm" onClick={() => switchNetwork(localChainId)}>
         {t('Switch network in wallet')}
@@ -146,8 +152,16 @@ const SHORT_SYMBOL = {
   [ChainId.POLYGON_ZKEVM_TESTNET]: 'tZkEVM',
   [ChainId.ZKSYNC]: 'zkSync',
   [ChainId.ZKSYNC_TESTNET]: 'tZkSync',
+  [ChainId.LINEA]: 'Linea',
   [ChainId.LINEA_TESTNET]: 'tLinea',
-  [ChainId.ETHERLINK_TESTNET]: 'tXTZ',
+  [ChainId.OPBNB]: 'opBNB',
+  [ChainId.OPBNB_TESTNET]: 'tOpBNB',
+  [ChainId.BASE]: 'Base',
+  [ChainId.BASE_TESTNET]: 'tBase',
+  [ChainId.SCROLL_SEPOLIA]: 'tScroll',
+  [ChainId.SEPOLIA]: 'sepolia',
+  [ChainId.BASE_SEPOLIA]: 'Base Sepolia',
+  [ChainId.ARBITRUM_SEPOLIA]: 'Arb Sepolia',
 } as const satisfies Record<ChainId, string>
 
 export const NetworkSwitcher = () => {
@@ -162,7 +176,9 @@ export const NetworkSwitcher = () => {
     () => chains.find((c) => c.id === (isLoading ? pendingChainId || chainId : chainId)),
     [isLoading, pendingChainId, chainId],
   )
-  const symbol = SHORT_SYMBOL[foundChain?.id] ?? NATIVE[foundChain?.id]?.symbol ?? foundChain?.nativeCurrency?.symbol
+  const symbol =
+    (foundChain?.id ? SHORT_SYMBOL[foundChain.id] ?? NATIVE[foundChain.id]?.symbol : undefined) ??
+    foundChain?.nativeCurrency?.symbol
   const { targetRef, tooltip, tooltipVisible } = useTooltip(
     t('Unable to switch network. Please try it on your wallet'),
     { placement: 'bottom' },
@@ -174,11 +190,6 @@ export const NetworkSwitcher = () => {
     return null
   }
 
-  let avatarSrc = `${ASSET_CDN}/web/chains/${chainId}.png`
-  if (chainId === ChainId.ETHERLINK_TESTNET || chainId === ChainId.ETHERLINK_TESTNET) {
-    avatarSrc = 'https://raw.githubusercontent.com/Iguana-DEX/assets/main/chains/etherlink.svg'
-  }
-
   return (
     <Box ref={cannotChangeNetwork ? targetRef : null} height="100%">
       {cannotChangeNetwork && tooltipVisible && tooltip}
@@ -186,7 +197,7 @@ export const NetworkSwitcher = () => {
         mr="8px"
         placement="bottom"
         variant={isLoading ? 'pending' : isWrongNetwork ? 'danger' : 'default'}
-        avatarSrc={avatarSrc}
+        avatarSrc={`${ASSET_CDN}/web/chains/${chainId}.png`}
         disabled={cannotChangeNetwork}
         text={
           isLoading ? (
@@ -195,8 +206,8 @@ export const NetworkSwitcher = () => {
             t('Network')
           ) : foundChain ? (
             <>
-              <Box display={['none', null, null, null, null, 'block']}>{foundChain.name}</Box>
-              <Box display={['block', null, null, null, null, 'none']}>{symbol}</Box>
+              <Box display={['none', null, null, null, null, null, 'block']}>{chainNameConverter(foundChain.name)}</Box>
+              <Box display={['block', null, null, null, null, null, 'none']}>{symbol}</Box>
             </>
           ) : (
             t('Select a Network')

@@ -1,14 +1,20 @@
-import { ChainId, ERC20Token } from '@pancakeswap/sdk'
+import { ChainId } from '@pancakeswap/chains'
+import { ERC20Token } from '@pancakeswap/sdk'
 import {
+  arbitrumTokens,
+  baseTokens,
   bscTestnetTokens,
   bscTokens,
   ethereumTokens,
   goerliTestnetTokens,
+  lineaTokens,
+  opBnbTokens,
+  polygonZkEvmTokens,
   zkSyncTestnetTokens,
-  etherlinkTestnetTokens,
+  zksyncTokens,
 } from '@pancakeswap/tokens'
-import type { CommonPrice } from '../../src/fetchFarmsV3'
 import type { FarmV3SupportedChainId } from '../../src'
+import type { CommonPrice } from '../../src/fetchFarmsV3'
 
 export const CAKE_BNB_LP_MAINNET = '0x0eD7e52944161450477ee417DE9Cd3a859b14fD0'
 
@@ -16,16 +22,6 @@ export type PriceHelper = {
   chain: string
   list: ERC20Token[]
 }
-
-export const CHAIN_ID_TO_CHAIN_NAME = {
-  [ChainId.BSC]: 'bsc',
-  [ChainId.ETHEREUM]: 'ethereum',
-  [ChainId.GOERLI]: 'ethereum',
-  [ChainId.BSC_TESTNET]: 'bsc',
-  [ChainId.POLYGON_ZKEVM_TESTNET]: '',
-  [ChainId.ZKSYNC_TESTNET]: '',
-  [ChainId.ETHERLINK_TESTNET]: 'etherlink',
-} satisfies Record<FarmV3SupportedChainId, string>
 
 export const priceHelperTokens = {
   [ChainId.ETHEREUM]: {
@@ -35,6 +31,30 @@ export const priceHelperTokens = {
   [ChainId.BSC]: {
     chain: 'bsc',
     list: [bscTokens.wbnb, bscTokens.usdt, bscTokens.busd, bscTokens.eth],
+  },
+  [ChainId.POLYGON_ZKEVM]: {
+    chain: 'polygon_zkevm',
+    list: [polygonZkEvmTokens.weth, polygonZkEvmTokens.usdc, polygonZkEvmTokens.usdt, polygonZkEvmTokens.matic],
+  },
+  [ChainId.ZKSYNC]: {
+    chain: 'zksync',
+    list: [zksyncTokens.weth, zksyncTokens.usdc, zksyncTokens.usdt],
+  },
+  [ChainId.ARBITRUM_ONE]: {
+    chain: 'arbitrum',
+    list: [arbitrumTokens.weth, arbitrumTokens.usdc, arbitrumTokens.usdt, arbitrumTokens.arb, arbitrumTokens.usdplus],
+  },
+  [ChainId.LINEA]: {
+    chain: 'linea',
+    list: [lineaTokens.weth, lineaTokens.usdc, lineaTokens.usdt, lineaTokens.wbtc, lineaTokens.dai],
+  },
+  [ChainId.BASE]: {
+    chain: 'base',
+    list: [baseTokens.weth, baseTokens.usdbc, baseTokens.dai, baseTokens.cbETH, baseTokens.usdc],
+  },
+  [ChainId.OPBNB]: {
+    chain: 'opbnb',
+    list: [opBnbTokens.wbnb, opBnbTokens.usdt],
   },
 } satisfies Record<number, PriceHelper>
 
@@ -54,9 +74,12 @@ export const DEFAULT_COMMON_PRICE: Record<FarmV3SupportedChainId, CommonPrice> =
   [ChainId.ZKSYNC_TESTNET]: {
     [zkSyncTestnetTokens.mock.address]: '10',
   },
+  [ChainId.POLYGON_ZKEVM]: {},
+  [ChainId.ZKSYNC]: {},
   [ChainId.POLYGON_ZKEVM_TESTNET]: {},
-  [ChainId.ETHERLINK_TESTNET]: {
-    [etherlinkTestnetTokens.eusd.address]: '1',
-    [etherlinkTestnetTokens.usdt.address]: '1',
-  },
+  [ChainId.ARBITRUM_ONE]: {},
+  [ChainId.LINEA]: {},
+  [ChainId.BASE]: {},
+  [ChainId.OPBNB_TESTNET]: {},
+  [ChainId.OPBNB]: {},
 }

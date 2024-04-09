@@ -1,4 +1,4 @@
-import { ChainId } from '@pancakeswap/sdk'
+import { ChainId } from '@pancakeswap/chains'
 import { GraphQLClient } from 'graphql-request'
 import { POOL_HIDE } from '../../constants'
 import { ChartDayData, PoolChartEntry, PoolData } from '../../types'
@@ -13,8 +13,11 @@ import { fetchTopPoolAddresses } from '../pool/topPools'
 export async function fetchTVLOffset(dataClient: GraphQLClient, chainId: ChainId) {
   try {
     const { addresses } = await fetchTopPoolAddresses(dataClient, chainId)
-    const { data } = await fetchPoolDatas(dataClient, addresses, [])
+    const { data } = await fetchPoolDatas(dataClient, addresses || [], [])
 
+    if (!data) {
+      throw new Error(`Invalid data ${data}`)
+    }
     return Object.keys(data).reduce((accum: number, poolAddress) => {
       const poolData: PoolData = data[poolAddress]
       return accum + poolData.tvlUSD

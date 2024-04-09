@@ -1,36 +1,37 @@
 import {
-  Flex,
-  IconButton,
-  Button,
-  useModal,
-  Grid,
   Box,
+  Button,
+  Flex,
+  Grid,
   Heading,
+  IconButton,
+  ScanLink,
   VisibilityOff,
   VisibilityOn,
-  NextLinkFromReactRouter as ReactRouterLink,
-  ScanLink,
+  useModal,
 } from '@pancakeswap/uikit'
+import { NextLinkFromReactRouter as ReactRouterLink } from '@pancakeswap/widgets-internal'
+
 import { useTranslation } from '@pancakeswap/localization'
-import { getBlockExploreLink, isAddress } from 'utils'
 import { formatNumber } from '@pancakeswap/utils/formatBalance'
 import truncateHash from '@pancakeswap/utils/truncateHash'
-import { Achievement, Profile } from 'state/types'
-import { useAccount } from 'wagmi'
-import { useMemo } from 'react'
-import useGetUsernameWithVisibility from 'hooks/useUsernameWithVisibility'
 import { useDomainNameForAddress } from 'hooks/useDomain'
-import EditProfileAvatar from './EditProfileAvatar'
+import useGetUsernameWithVisibility from 'hooks/useUsernameWithVisibility'
+import { useMemo } from 'react'
+import { Achievement, Profile } from 'state/types'
+import { getBlockExploreLink, safeGetAddress } from 'utils'
+import { useAccount } from 'wagmi'
 import BannerHeader from '../../Nft/market/components/BannerHeader'
-import StatBox, { StatBoxItem } from '../../Nft/market/components/StatBox'
-import EditProfileModal from './EditProfileModal'
 import AvatarImage from '../../Nft/market/components/BannerHeader/AvatarImage'
+import StatBox, { StatBoxItem } from '../../Nft/market/components/StatBox'
+import EditProfileAvatar from './EditProfileAvatar'
+import EditProfileModal from './EditProfileModal'
 
 interface HeaderProps {
   accountPath: string
-  profile: Profile
-  achievements: Achievement[]
-  nftCollected: number
+  profile: Profile | null
+  achievements: Achievement[] | null
+  nftCollected: number | null
   isAchievementsLoading: boolean
   isNftLoading: boolean
   isProfileLoading: boolean
@@ -52,7 +53,7 @@ const ProfileHeader: React.FC<React.PropsWithChildren<HeaderProps>> = ({
   const { address: account } = useAccount()
   const { domainName, avatar: avatarFromDomain } = useDomainNameForAddress(accountPath)
   const { usernameWithVisibility, userUsernameVisibility, setUserUsernameVisibility } = useGetUsernameWithVisibility(
-    profile?.username,
+    profile?.username || '',
   )
   const [onEditProfileModal] = useModal(
     <EditProfileModal
@@ -63,7 +64,7 @@ const ProfileHeader: React.FC<React.PropsWithChildren<HeaderProps>> = ({
     false,
   )
 
-  const isConnectedAccount = isAddress(account) === isAddress(accountPath)
+  const isConnectedAccount = safeGetAddress(account) === safeGetAddress(accountPath)
   const numNftCollected = !isNftLoading ? (nftCollected ? formatNumber(nftCollected, 0, 0) : '-') : null
   const numPoints = !isProfileLoading ? (profile?.points ? formatNumber(profile.points, 0, 0) : '-') : null
   const numAchievements = !isAchievementsLoading

@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 import { Flex, Spinner, Text } from '@pancakeswap/uikit'
 import { useAccount } from 'wagmi'
-import styled from 'styled-components'
+import { styled } from 'styled-components'
 import ConnectWalletButton from 'components/ConnectWalletButton'
 import { useTranslation } from '@pancakeswap/localization'
 import { fetchNodeHistory } from 'state/predictions'
 import { getFilteredBets } from 'state/predictions/helpers'
+import { useActiveChainId } from 'hooks/useActiveChainId'
 import useLocalDispatch from 'contexts/LocalRedux/useLocalDispatch'
 import {
   useGetCurrentEpoch,
@@ -48,6 +49,7 @@ const SpinnerWrapper = styled.div`
 const History = () => {
   const { address: account } = useAccount()
   const dispatch = useLocalDispatch()
+  const { chainId } = useActiveChainId()
   const isHistoryPaneOpen = useIsHistoryPaneOpen()
   const isFetchingHistory = useGetIsFetchingHistory()
   const historyFilter = useGetHistoryFilter()
@@ -58,15 +60,15 @@ const History = () => {
   const [activeTab, setActiveTab] = useState(HistoryTabs.ROUNDS)
 
   useEffect(() => {
-    if (account && isHistoryPaneOpen) {
-      dispatch(fetchNodeHistory({ account }))
+    if (account && isHistoryPaneOpen && chainId) {
+      dispatch(fetchNodeHistory({ account, chainId }))
     }
-  }, [account, currentEpoch, isHistoryPaneOpen, dispatch])
+  }, [account, currentEpoch, isHistoryPaneOpen, chainId, dispatch])
 
   const results = getFilteredBets(bets, historyFilter)
   const hasBetHistory = results && results.length > 0
 
-  let activeTabComponent = null
+  let activeTabComponent: ReactNode | null = null
 
   switch (activeTab) {
     case HistoryTabs.PNL:

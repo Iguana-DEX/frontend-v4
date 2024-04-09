@@ -1,8 +1,9 @@
 import { gql, GraphQLClient } from 'graphql-request'
 
 import { Block } from 'state/info/types'
+import { escapeRegExp } from 'utils'
+import isUndefinedOrNull from '@pancakeswap/utils/isUndefinedOrNull'
 import { PoolData, TokenData } from '../../types'
-import { escapeRegExp, notEmpty } from '../../utils'
 import { fetchPoolDatas } from '../pool/poolData'
 import { fetchedTokenDatas } from '../token/tokenData'
 import { NODE_REAL_ADDRESS_LIMIT } from '../../constants'
@@ -122,7 +123,7 @@ interface PoolRes {
 export async function fetchSearchResults(
   client: GraphQLClient,
   value: string,
-  blocks: Block[],
+  blocks?: Block[],
 ): Promise<{
   tokens: TokenData[]
   pools: PoolData[]
@@ -152,7 +153,7 @@ export async function fetchSearchResults(
     const tokensData = await fetchedTokenDatas(client, tokenAddress, blocks)
     const poolsData = await fetchPoolDatas(client, poolAddress, blocks)
     const filteredSortedTokens = Object.values(tokensData?.data ?? {})
-      .filter(notEmpty)
+      .filter((token) => !isUndefinedOrNull(token))
       .filter((t) => {
         const regexMatches = Object.keys(t).map((tokenEntryKey) => {
           const isAddress = value.slice(0, 2) === '0x'
@@ -171,7 +172,7 @@ export async function fetchSearchResults(
       })
 
     const filteredSortedPools = Object.values(poolsData?.data ?? {})
-      .filter(notEmpty)
+      .filter((pool) => !isUndefinedOrNull(pool))
       .filter((t) => {
         const regexMatches = Object.keys(t).map((key) => {
           const isAddress = value.slice(0, 2) === '0x'
@@ -181,7 +182,7 @@ export async function fetchSearchResults(
           if ((key === 'token0' || key === 'token1') && !isAddress) {
             return (
               t[key].name.match(new RegExp(escapeRegExp(value), 'i')) ||
-              t[key].symbol.toLocaleLowerCase().match(new RegExp(escapeRegExp(value.toLocaleLowerCase()), 'i'))
+              t[key].symbol.toLowerCase().match(new RegExp(escapeRegExp(value.toLocaleLowerCase()), 'i'))
             )
           }
           return false

@@ -1,23 +1,15 @@
 /* eslint-disable prefer-destructuring */
 /* eslint-disable consistent-return */
 /* eslint-disable class-methods-use-this */
-import { Chain, ConnectorNotFoundError, WindowProvider } from 'wagmi'
+import { Chain, ConnectorNotFoundError, WindowProvider, Address } from 'wagmi'
 import { InjectedConnector } from 'wagmi/connectors/injected'
-import { Address, getConfig } from '@wagmi/core'
-import '@wagmi/core/window'
+import 'wagmi/window'
 import { getAddress, ResourceUnavailableRpcError, ProviderRpcError, UserRejectedRequestError } from 'viem'
 
 declare global {
   interface Window {
     trustwallet?: WindowProvider
   }
-}
-
-const mappingNetwork: Record<number, string> = {
-  1: 'eth-mainnet',
-  5: 'eth-goerli',
-  56: 'bsc-mainnet',
-  97: 'bsc-testnet',
 }
 
 export function getTrustWalletProvider(): WindowProvider | undefined {
@@ -57,7 +49,7 @@ export class TrustWalletConnector extends InjectedConnector {
   readonly id = 'trustWallet'
 
   constructor({
-    chains: _chains,
+    chains,
     options: _options,
   }: {
     chains?: Chain[]
@@ -71,7 +63,7 @@ export class TrustWalletConnector extends InjectedConnector {
       shimDisconnect: _options?.shimDisconnect ?? false,
       shimChainChangedDisconnect: _options?.shimChainChangedDisconnect ?? true,
     }
-    const chains = _chains?.filter((c) => !!mappingNetwork[c.id])
+
     super({
       chains,
       options,
@@ -108,7 +100,7 @@ export class TrustWalletConnector extends InjectedConnector {
       // Attempt to show wallet select prompt with `wallet_requestPermissions` when
       // `shimDisconnect` is active and account is in disconnected state (flag in storage)
       let account: Address | null = null
-      if (this.options?.shimDisconnect && !getConfig().storage?.getItem(this.shimDisconnectKey)) {
+      if (this.options?.shimDisconnect && !this.storage?.getItem(this.shimDisconnectKey)) {
         account = await this.getAccount().catch(() => null)
         const isConnected = !!account
         if (isConnected) {
@@ -146,7 +138,7 @@ export class TrustWalletConnector extends InjectedConnector {
       }
 
       if (this.options?.shimDisconnect) {
-        getConfig().storage?.setItem(this.shimDisconnectKey, true)
+        this.storage?.setItem(this.shimDisconnectKey, true)
       }
 
       return { account, chain: { id, unsupported }, provider }

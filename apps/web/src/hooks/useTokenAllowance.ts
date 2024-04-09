@@ -1,23 +1,54 @@
-import { Token, CurrencyAmount } from '@pancakeswap/sdk'
+import { CurrencyAmount, Token } from '@pancakeswap/sdk'
 import { useMemo } from 'react'
+import { erc20ABI } from 'wagmi'
 
-import { useTokenContract } from './useContract'
-import { useSingleCallResult } from '../state/multicall/hooks'
+import { QueryObserverResult, useQuery } from '@tanstack/react-query'
+import { FAST_INTERVAL } from 'config/constants'
+import { useActiveChainId } from 'hooks/useActiveChainId'
+import { publicClient } from 'utils/wagmi'
 
-function useTokenAllowance(token?: Token, owner?: string, spender?: string): CurrencyAmount<Token> | undefined {
-  const contract = useTokenContract(token?.address)
+function useTokenAllowance(
+  token?: Token,
+  owner?: string,
+  spender?: string,
+): {
+  allowance: CurrencyAmount<Token> | undefined
+  refetch: () => Promise<QueryObserverResult<bigint>>
+} {
+  const { chainId } = useActiveChainId()
 
   const inputs = useMemo(() => [owner, spender] as [`0x${string}`, `0x${string}`], [owner, spender])
-  const allowance = useSingleCallResult({
-    contract: spender && owner ? contract : null,
-    functionName: 'allowance',
-    args: inputs,
-  }).result
+
+  const { data: allowance, refetch } = useQuery({
+    queryKey: [chainId, token?.address, owner, spender],
+
+    queryFn: () => {
+      if (!token) {
+        throw new Error('No token')
+      }
+      return publicClient({ chainId }).readContract({
+        abi: erc20ABI,
+        address: token?.address,
+        functionName: 'allowance',
+        args: inputs,
+      })
+    },
+
+    refetchInterval: FAST_INTERVAL,
+    retry: true,
+    refetchOnWindowFocus: false,
+    enabled: Boolean(spender && owner && token),
+  })
 
   return useMemo(
-    () =>
-      token && typeof allowance !== 'undefined' ? CurrencyAmount.fromRawAmount(token, allowance.toString()) : undefined,
-    [token, allowance],
+    () => ({
+      allowance:
+        token && typeof allowance !== 'undefined'
+          ? CurrencyAmount.fromRawAmount(token, allowance.toString())
+          : undefined,
+      refetch,
+    }),
+    [token, refetch, allowance],
   )
 }
 

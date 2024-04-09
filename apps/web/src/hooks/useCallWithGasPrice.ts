@@ -1,6 +1,8 @@
 import { useCallback } from 'react'
 import { useGasPrice } from 'state/user/hooks'
+import { calculateGasMargin } from 'utils'
 import { publicClient } from 'utils/wagmi'
+import type { EstimateContractGasParameters } from 'viem'
 import {
   Abi,
   Account,
@@ -11,10 +13,8 @@ import {
   InferFunctionName,
   WriteContractParameters,
 } from 'viem'
-import { EstimateContractGasParameters } from 'viem/dist/types/actions/public/estimateContractGas'
 import { useWalletClient } from 'wagmi'
 import { SendTransactionResult } from 'wagmi/actions'
-import { calculateGasMargin } from 'utils'
 import { useActiveChainId } from './useActiveChainId'
 
 export function useCallWithGasPrice() {
@@ -68,11 +68,17 @@ export function useCallWithGasPrice() {
         ? GetFunctionArgs<TAbi, _FunctionName>['args']
         : never,
     >(
-      contract: { abi: TAbi; account: Account; chain: Chain; address: Address },
+      contract: { abi: TAbi; account: Account | undefined; chain: Chain | undefined; address: Address } | null,
       methodName: InferFunctionName<TAbi, TFunctionName>,
       methodArgs?: Args extends never ? undefined : Args,
       overrides?: Omit<CallParameters, 'chain' | 'to' | 'data'>,
     ): Promise<SendTransactionResult> => {
+      if (!contract) {
+        throw new Error('No valid contract')
+      }
+      if (!walletClient) {
+        throw new Error('No valid wallet connect')
+      }
       const { gas: gas_, ...overrides_ } = overrides || {}
       let gas = gas_
       if (!gas) {
@@ -94,6 +100,7 @@ export function useCallWithGasPrice() {
         functionName: methodName,
         args: methodArgs,
         gasPrice,
+        // for some reason gas price is insamely high when using maxuint approval, so commenting out for now
         gas: calculateGasMargin(gas),
         value: 0n,
         ...overrides_,

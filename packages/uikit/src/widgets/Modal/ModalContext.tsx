@@ -3,7 +3,8 @@ import { AnimatePresence, LazyMotion, m } from "framer-motion";
 import React, { createContext, useCallback, useMemo, useRef, useState } from "react";
 import { isMobile } from "react-device-detect";
 import { createPortal } from "react-dom";
-import styled from "styled-components";
+import { styled } from "styled-components";
+import get from "lodash/get";
 import { mountAnimation, unmountAnimation } from "../../components/BottomDrawer/styles";
 import { Overlay } from "../../components/Overlay";
 import { useIsomorphicEffect } from "../../hooks";
@@ -61,7 +62,7 @@ export const StyledModalWrapper = styled(m.div)`
       }
     }
   }
-`;
+` as typeof m.div;
 
 export const Context = createContext<ModalsContext>({
   isOpen: false,
@@ -105,13 +106,17 @@ const ModalProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
 
   const handleOverlayDismiss = useCallback(() => {
     if (closeOnOverlayClick) {
+      const customOnDismiss = get(modalNode, "props.customOnDismiss") as any;
+      customOnDismiss?.();
       handleDismiss();
     }
-  }, [closeOnOverlayClick, handleDismiss]);
+  }, [closeOnOverlayClick, handleDismiss, modalNode]);
 
   const providerValue = useMemo(() => {
     return { isOpen, nodeId, modalNode, setModalNode, onPresent: handlePresent, onDismiss: handleDismiss };
   }, [isOpen, nodeId, modalNode, setModalNode, handlePresent, handleDismiss]);
+
+  const handleAnimationStart = useCallback(() => animationHandler(animationRef.current), []);
 
   const portal = useMemo(() => getPortalRoot(), []);
 
@@ -122,10 +127,14 @@ const ModalProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
           <LazyMotion features={isMobile ? DomMax : DomAnimation}>
             <AnimatePresence>
               {isOpen && (
-                <DismissableLayer role="dialog" disableOutsidePointerEvents onEscapeKeyDown={handleOverlayDismiss}>
+                <DismissableLayer
+                  role="dialog"
+                  disableOutsidePointerEvents={false}
+                  onEscapeKeyDown={handleOverlayDismiss}
+                >
                   <StyledModalWrapper
                     ref={animationRef}
-                    onAnimationStart={() => animationHandler(animationRef.current)}
+                    onAnimationStart={handleAnimationStart}
                     {...animationMap}
                     variants={animationVariants}
                     transition={{ duration: 0.3 }}

@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { request, gql } from 'graphql-request'
-import { bscRpcProvider } from 'utils/providers'
 import { GRAPH_HEALTH } from 'config/constants/endpoints'
+import { publicClient } from 'utils/wagmi'
+import { ChainId } from '@pancakeswap/chains'
 import { useSlowRefreshEffect } from './useRefreshEffect'
 
 export enum SubgraphStatus {
@@ -23,7 +24,7 @@ export type SubgraphHealthState = {
 const NOT_OK_BLOCK_DIFFERENCE = 200 // ~15 minutes delay
 const WARNING_BLOCK_DIFFERENCE = 50 // ~2.5 minute delay
 
-const useSubgraphHealth = (subgraphName?: string) => {
+const useSubgraphHealth = (chainId?: ChainId, subgraphName?: string) => {
   const [sgHealth, setSgHealth] = useState<SubgraphHealthState>({
     status: SubgraphStatus.UNKNOWN,
     currentBlock: 0,
@@ -40,7 +41,7 @@ const useSubgraphHealth = (subgraphName?: string) => {
             request(
               GRAPH_HEALTH,
               gql`
-            query getNftMarketSubgraphHealth {
+            query getSubgraphHealth {
               indexingStatusForCurrentVersion(subgraphName: "${subgraphName}") {
                 health
                 chains {
@@ -55,7 +56,11 @@ const useSubgraphHealth = (subgraphName?: string) => {
             }
           `,
             ),
-            currentBlockNumber ? Promise.resolve(currentBlockNumber) : Number(bscRpcProvider.getBlockNumber()),
+            currentBlockNumber
+              ? Promise.resolve(currentBlockNumber)
+              : publicClient({ chainId })
+                  ?.getBlockNumber()
+                  .then((blockNumber) => Number(blockNumber)),
           ])
 
           const isHealthy = indexingStatusForCurrentVersion?.health === 'healthy'
@@ -94,7 +99,7 @@ const useSubgraphHealth = (subgraphName?: string) => {
         getSubgraphHealth()
       }
     },
-    [subgraphName],
+    [subgraphName, chainId],
   )
 
   return sgHealth

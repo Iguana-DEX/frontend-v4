@@ -1,13 +1,15 @@
 /* eslint-disable no-param-reassign */
 import { gql } from 'graphql-request'
+import { subgraphTokenSymbol } from 'state/info/constant'
 import { Block, PoolData } from 'state/info/types'
 import { getChangeForPeriod } from 'utils/getChangeForPeriod'
 import { getLpFeesAndApr } from 'utils/getLpFeesAndApr'
 import { getAmountChange, getPercentChange } from 'views/Info/utils/infoDataHelpers'
-import { subgraphTokenSymbol } from 'state/info/constant'
 
+import { safeGetAddress } from 'utils'
 import {
   MultiChainName,
+  STABLESWAP_SUBGRAPHS_START_BLOCK,
   checkIsStableSwap,
   getMultiChainQueryEndPointWithStableSwap,
   multiChainQueryMainToken,
@@ -23,6 +25,7 @@ interface PoolFields {
   volumeOutUSD?: string
   token0Price: string
   token1Price: string
+  timestamp: number
   token0?: {
     id: string
     symbol: string
@@ -81,6 +84,7 @@ const POOL_AT_BLOCK = (chainName: MultiChainName, block: number | null, pools: s
     ${volumeOutUSDString}
     token0Price
     token1Price
+    timestamp
     token0 {
       id
       symbol
@@ -102,14 +106,28 @@ export const fetchPoolData = async (
   poolAddresses: string[],
   chainName: MultiChainName = 'BSC',
 ) => {
+  const isStableSwap = checkIsStableSwap()
+  const startBlock = isStableSwap ? STABLESWAP_SUBGRAPHS_START_BLOCK[chainName] : undefined
   try {
     const query = gql`
       query pools {
         now: ${POOL_AT_BLOCK(chainName, null, poolAddresses)}
         oneDayAgo: ${POOL_AT_BLOCK(chainName, block24h, poolAddresses)}
-        twoDaysAgo: ${POOL_AT_BLOCK(chainName, block48h, poolAddresses)}
-        oneWeekAgo: ${POOL_AT_BLOCK(chainName, block7d, poolAddresses)}
-        twoWeeksAgo: ${POOL_AT_BLOCK(chainName, block14d, poolAddresses)}
+        ${
+          ((Boolean(startBlock) && startBlock <= block48h) || !startBlock) && block48h > 0
+            ? `twoDaysAgo: ${POOL_AT_BLOCK(chainName, block48h, poolAddresses)}`
+            : ''
+        }
+        ${
+          ((Boolean(startBlock) && startBlock <= block7d) || !startBlock) && block7d > 0
+            ? `oneWeekAgo: ${POOL_AT_BLOCK(chainName, block7d, poolAddresses)}`
+            : ''
+        }
+        ${
+          ((Boolean(startBlock) && startBlock <= block14d) || !startBlock) && block14d > 0
+            ? `twoWeeksAgo: ${POOL_AT_BLOCK(chainName, block14d, poolAddresses)}`
+            : ''
+        }
       }
     `
     const data = await getMultiChainQueryEndPointWithStableSwap(chainName).request<PoolsQueryResponse>(query)
@@ -130,7 +148,7 @@ export const parsePoolData = (pairs?: PoolFields[]) => {
     accum[poolData.id.toLowerCase()] = {
       ...poolData,
       volumeUSD: parseFloat(volumeUSD),
-      volumeOutUSD: volumeOutUSD && parseFloat(volumeOutUSD),
+      volumeOutUSD: volumeOutUSD ? parseFloat(volumeOutUSD) : 0,
       reserveUSD: parseFloat(reserveUSD),
       reserve0: parseFloat(reserve0),
       reserve1: parseFloat(reserve1),
@@ -147,12 +165,11 @@ export const fetchAllPoolDataWithAddress = async (
   poolAddresses: string[],
 ) => {
   const [block24h, block48h, block7d, block14d] = blocks ?? []
-
   const { data } = await fetchPoolData(
-    block24h.number,
-    block48h.number,
-    block7d.number,
-    block14d.number,
+    block24h?.number ?? 0,
+    block48h?.number ?? 0,
+    block7d?.number ?? 0,
+    block14d?.number ?? 0,
     poolAddresses,
     chainName,
   )
@@ -187,6 +204,7 @@ export const fetchAllPoolDataWithAddress = async (
 
     const liquidityToken0 = current ? current.reserve0 : 0
     const liquidityToken1 = current ? current.reserve1 : 0
+    const timestamp = current?.timestamp ?? 0
 
     const { totalFees24h, totalFees7d, lpFees24h, lpFees7d, lpApr7d } = getLpFeesAndApr(
       volumeUSD,
@@ -195,19 +213,22 @@ export const fetchAllPoolDataWithAddress = async (
     )
 
     if (current) {
+      const token0Address = safeGetAddress(current?.token0?.id)
+      const token1Address = safeGetAddress(current?.token1?.id)
       accum[address] = {
         data: {
           address,
           token0: {
             address: current?.token0?.id ?? '',
             name: current?.token0?.name ?? '',
-            symbol: subgraphTokenSymbol[current?.token0?.id?.toLocaleLowerCase()] ?? current?.token0?.symbol ?? '',
+            symbol: !token0Address ? '' : subgraphTokenSymbol[token0Address] ?? current?.token0?.symbol ?? '',
           },
           token1: {
             address: current?.token1?.id ?? '',
             name: current?.token1?.name ?? '',
-            symbol: subgraphTokenSymbol[current?.token1?.id?.toLocaleLowerCase()] ?? current?.token1?.symbol ?? '',
+            symbol: !token1Address ? '' : subgraphTokenSymbol[token1Address] ?? current?.token1?.symbol ?? '',
           },
+          timestamp,
           token0Price: current.token0Price,
           token1Price: current.token1Price,
           volumeUSD,

@@ -1,13 +1,13 @@
-import { useMemo } from 'react'
-import styled from 'styled-components'
-import { Flex, Box, Text, Balance } from '@pancakeswap/uikit'
-import BigNumber from 'bignumber.js'
 import { useTranslation } from '@pancakeswap/localization'
-import { useVaultApy } from 'hooks/useVaultApy'
-import { weeksToSeconds } from 'views/Pools/components/utils/formatSecondsToWeeks'
+import { Balance, Box, Flex, Text } from '@pancakeswap/uikit'
 import { getBalanceNumber } from '@pancakeswap/utils/formatBalance'
-import { distanceToNowStrictWithUnit } from 'utils/timeHelper'
-import { DeserializedPublicData, DeserializedPotteryUserData, PotteryDepositStatus } from 'state/types'
+import BigNumber from 'bignumber.js'
+import { useVaultApy } from 'hooks/useVaultApy'
+import { useMemo } from 'react'
+import { DeserializedPotteryUserData, DeserializedPublicData, PotteryDepositStatus } from 'state/types'
+import { styled } from 'styled-components'
+import { distanceToNowStrict } from 'utils/timeHelper'
+import { weeksToSeconds } from 'views/Pools/components/utils/formatSecondsToWeeks'
 
 const Container = styled(Flex)`
   flex-direction: column;
@@ -16,7 +16,7 @@ const Container = styled(Flex)`
 `
 
 interface CardFooterProps {
-  account: string
+  account?: string
   publicData: DeserializedPublicData
   userData: DeserializedPotteryUserData
 }
@@ -86,7 +86,7 @@ const CardFooter: React.FC<React.PropsWithChildren<CardFooterProps>> = ({ accoun
             <Box>
               {account ? (
                 <>
-                  <Text bold>{distanceToNowStrictWithUnit(daysRemaining, 'day')}</Text>
+                  <Text bold>{distanceToNowStrict(daysRemaining)}</Text>
                 </>
               ) : (
                 <Text bold as="span">

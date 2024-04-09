@@ -1,13 +1,14 @@
 import { FarmWithStakedValue } from '@pancakeswap/farms'
 import { useTranslation } from '@pancakeswap/localization'
-import { Card, ExpandableSectionButton, Farm as FarmUI, Flex, Skeleton, Text, useModalV2 } from '@pancakeswap/uikit'
+import { Card, ExpandableSectionButton, Flex, Skeleton, Text, useModalV2 } from '@pancakeswap/uikit'
+import { FarmWidget } from '@pancakeswap/widgets-internal'
 import BigNumber from 'bignumber.js'
 import { BASE_ADD_LIQUIDITY_URL } from 'config'
 import { CHAIN_QUERY_NAME } from 'config/chains'
 import { useActiveChainId } from 'hooks/useActiveChainId'
 import { useCallback, useMemo, useState } from 'react'
 import { multiChainPaths } from 'state/info/constant'
-import styled from 'styled-components'
+import { styled } from 'styled-components'
 import { getBlockExploreLink } from 'utils'
 import getLiquidityUrlPathParts from 'utils/getLiquidityUrlPathParts'
 import { unwrappedToken } from 'utils/wrappedCurrency'
@@ -18,7 +19,7 @@ import ApyButton from './ApyButton'
 import CardActionsContainer from './CardActionsContainer'
 import CardHeading from './CardHeading'
 
-const { DetailsSection } = FarmUI.FarmCard
+const { DetailsSection } = FarmWidget.FarmCard
 
 const StyledCard = styled(Card)`
   align-self: baseline;
@@ -44,7 +45,7 @@ const ExpandingWrapper = styled.div`
 
 interface FarmCardProps {
   farm: FarmWithStakedValue
-  displayApr: string
+  displayApr: string | null
   removed: boolean
   cakePrice?: BigNumber
   account?: string
@@ -76,23 +77,28 @@ const FarmCard: React.FC<React.PropsWithChildren<FarmCardProps>> = ({
       : ''
 
   const lpLabel = farm.lpSymbol && farm.lpSymbol.replace(/pancake/gi, '')
-  const earnLabel = farm.dual ? farm.dual.earnLabel : t('CAKE + Fees')
+  const earnLabel = t('CAKE + Fees')
 
   const liquidityUrlPathParts = getLiquidityUrlPathParts({
     quoteTokenAddress: farm.quoteToken.address,
     tokenAddress: farm.token.address,
-    chainId,
+    chainId: farm.token.chainId,
   })
+
   const addLiquidityUrl = `${BASE_ADD_LIQUIDITY_URL}/v2/${liquidityUrlPathParts}`
   const { lpAddress, stableSwapAddress, stableLpFee } = farm
   const isPromotedFarm = farm.token.symbol === 'CAKE'
 
   const infoUrl = useMemo(() => {
     if (farm.isStable) {
-      return `/info${multiChainPaths[chainId]}/pairs/${stableSwapAddress}?type=stableSwap&chain=${CHAIN_QUERY_NAME[chainId]}`
+      return `/info${multiChainPaths[farm.token.chainId]}/pairs/${stableSwapAddress}?type=stableSwap&chain=${
+        CHAIN_QUERY_NAME[farm.token.chainId]
+      }`
     }
-    return `/info${multiChainPaths[chainId]}/pairs/${lpAddress}?chain=${CHAIN_QUERY_NAME[chainId]}`
-  }, [chainId, farm.isStable, lpAddress, stableSwapAddress])
+    return `/info${multiChainPaths[farm.token.chainId]}/pairs/${lpAddress}?chain=${
+      CHAIN_QUERY_NAME[farm.token.chainId]
+    }`
+  }, [farm, lpAddress, stableSwapAddress])
 
   const toggleExpandableSection = useCallback(() => {
     setShowExpandableSection((prev) => !prev)
@@ -146,7 +152,7 @@ const FarmCard: React.FC<React.PropsWithChildren<FarmCardProps>> = ({
                     addLiquidityUrl={addLiquidityUrl}
                     cakePrice={cakePrice}
                     apr={farm.apr}
-                    displayApr={displayApr}
+                    displayApr={displayApr ?? undefined}
                     lpRewardsApr={farm.lpRewardsApr}
                     strikethrough={false}
                     useTooltipText

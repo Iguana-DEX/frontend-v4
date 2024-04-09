@@ -1,21 +1,21 @@
-import { parseEther } from 'viem'
 import { SerializedFarmsState } from '@pancakeswap/farms'
-import { Token } from '@pancakeswap/sdk'
 import { SerializedPoolWithInfo } from '@pancakeswap/pools'
-import { Address } from 'wagmi'
+import { BetPosition, PredictionStatus, PredictionsChartView } from '@pancakeswap/prediction'
 import BigNumber from 'bignumber.js'
 import {
   CampaignType,
-  TFetchStatus,
   LotteryStatus,
   LotteryTicket,
+  TFetchStatus,
   Team,
   TranslatableText,
 } from 'config/constants/types'
+import { parseEther } from 'viem'
+import { Address } from 'wagmi'
 import { NftToken } from './nftMarket/types'
 
 export enum GAS_PRICE {
-  default = '3',
+  default = '1',
   fast = '4',
   instant = '5',
   testnet = '10',
@@ -132,15 +132,15 @@ export interface DeserializedLockedCakeVault extends Omit<DeserializedCakeVault,
 
 export interface SerializedLockedCakeVault extends Omit<SerializedCakeVault, 'userData'> {
   totalLockedAmount?: SerializedBigNumber
-  userData?: SerializedLockedVaultUser
+  userData: SerializedLockedVaultUser
 }
 
 export interface SerializedCakeVault {
   totalShares?: SerializedBigNumber
   pricePerFullShare?: SerializedBigNumber
   totalCakeInVault?: SerializedBigNumber
-  fees?: SerializedVaultFees
-  userData?: SerializedVaultUser
+  fees: SerializedVaultFees
+  userData: SerializedVaultUser
 }
 
 // Ifo
@@ -175,29 +175,6 @@ export interface Achievement {
 }
 
 // Predictions
-
-export enum BetPosition {
-  BULL = 'Bull',
-  BEAR = 'Bear',
-  HOUSE = 'House',
-}
-
-export enum PredictionStatus {
-  INITIAL = 'initial',
-  LIVE = 'live',
-  PAUSED = 'paused',
-  ERROR = 'error',
-}
-
-export enum PredictionSupportedSymbol {
-  BNB = 'BNB',
-  CAKE = 'CAKE',
-}
-
-export enum PredictionsChartView {
-  TradingView = 'TradingView',
-  Chainlink = 'Chainlink Oracle',
-}
 
 export interface Round {
   id: string
@@ -308,8 +285,8 @@ export interface ReduxNodeRound {
   rewardBaseCalAmount: string
   rewardAmount: string
   oracleCalled: boolean
-  lockOracleId: string
-  closeOracleId: string
+  lockOracleId: string | null
+  closeOracleId: string | null
 }
 
 export interface NodeRound {
@@ -319,20 +296,20 @@ export interface NodeRound {
   closeTimestamp: number | null
   lockPrice: bigint | null
   closePrice: bigint | null
-  totalAmount: bigint
-  bullAmount: bigint
-  bearAmount: bigint
-  rewardBaseCalAmount: bigint
-  rewardAmount: bigint
+  totalAmount: bigint | null
+  bullAmount: bigint | null
+  bearAmount: bigint | null
+  rewardBaseCalAmount: bigint | null
+  rewardAmount: bigint | null
   oracleCalled: boolean
-  closeOracleId: string
-  lockOracleId: string
+  closeOracleId: string | null
+  lockOracleId: string | null
 }
 
 export type LeaderboardFilterTimePeriod = '1d' | '7d' | '1m' | 'all'
 
 export interface LeaderboardFilter {
-  address?: string
+  address?: null | string
   orderBy?: string
   timePeriod?: LeaderboardFilterTimePeriod
 }
@@ -359,13 +336,13 @@ export interface PredictionsState {
     [key: string]: boolean
   }
   leaderboard: {
-    selectedAddress: string
+    selectedAddress: null | string
     loadingState: TFetchStatus
     filters: LeaderboardFilter
     skip: number
     hasMoreResults: boolean
     addressResults: {
-      [key: string]: PredictionUser
+      [key: string]: null | PredictionUser
     }
     results: PredictionUser[]
   }
@@ -471,7 +448,7 @@ export interface LotteryState {
   isTransitioning: boolean
   currentRound: LotteryResponse & { userTickets?: LotteryRoundUserTickets }
   lotteriesData?: LotteryRoundGraphEntity[]
-  userLotteryData?: LotteryUserGraphEntity
+  userLotteryData: LotteryUserGraphEntity
 }
 
 export interface LotteryRoundGraphEntity {
@@ -502,17 +479,9 @@ export interface UserRound {
   tickets?: LotteryTicket[]
 }
 
-export interface PredictionConfig {
-  address: Address
-  api: string
-  chainlinkOracleAddress: Address
-  displayedDecimals: number
-  token: Token
-}
-
 // Pottery
 export interface PotteryState {
-  lastVaultAddress: Address
+  lastVaultAddress: Address | null
   publicData: SerializedPotteryPublicData
   userData: SerializedPotteryUserData
   finishedRoundInfo: PotteryRoundInfo

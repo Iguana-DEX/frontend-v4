@@ -1,6 +1,6 @@
-import { vi } from "vitest";
-import { renderWithProvider } from "../../testHelpers";
+import { expect, it, vi } from "vitest";
 import BalanceInput from "../../components/BalanceInput/BalanceInput";
+import { renderWithProvider } from "../../testHelpers";
 
 const handleChange = vi.fn();
 
@@ -10,7 +10,25 @@ it("renders correctly", () => {
   );
   expect(asFragment()).toMatchInlineSnapshot(`
     <DocumentFragment>
-      .c6 {
+      .c2 {
+      width: 100%;
+    }
+
+    .c1 {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .c3 {
+      display: flex;
+    }
+
+    .c4 {
+      display: flex;
+      align-items: center;
+    }
+
+    .c7 {
       color: var(--colors-textSubtle);
       font-weight: 400;
       line-height: 1.5;
@@ -18,33 +36,7 @@ it("renders correctly", () => {
       text-align: right;
     }
 
-    .c2 {
-      width: 100%;
-    }
-
-    .c1 {
-      display: -webkit-box;
-      display: -webkit-flex;
-      display: -ms-flexbox;
-      display: flex;
-      -webkit-box-pack: end;
-      -webkit-justify-content: flex-end;
-      -ms-flex-pack: end;
-      justify-content: flex-end;
-    }
-
-    .c3 {
-      display: -webkit-box;
-      display: -webkit-flex;
-      display: -ms-flexbox;
-      display: flex;
-      -webkit-align-items: center;
-      -webkit-box-align: center;
-      -ms-flex-align: center;
-      align-items: center;
-    }
-
-    .c4 {
+    .c5 {
       background-color: var(--colors-input);
       border-radius: 16px;
       box-shadow: var(--shadows-inset);
@@ -58,30 +50,18 @@ it("renders correctly", () => {
       border: 1px solid var(--colors-inputSecondary);
     }
 
-    .c4::-webkit-input-placeholder {
+    .c5::placeholder {
       color: var(--colors-textSubtle);
     }
 
-    .c4::-moz-placeholder {
-      color: var(--colors-textSubtle);
-    }
-
-    .c4:-ms-input-placeholder {
-      color: var(--colors-textSubtle);
-    }
-
-    .c4::placeholder {
-      color: var(--colors-textSubtle);
-    }
-
-    .c4:disabled {
+    .c5:disabled {
       background-color: var(--colors-backgroundDisabled);
       box-shadow: none;
       color: var(--colors-textDisabled);
       cursor: not-allowed;
     }
 
-    .c4:focus:not(:disabled) {
+    .c5:focus:not(:disabled) {
       box-shadow: var(--shadows-focus);
     }
 
@@ -93,7 +73,7 @@ it("renders correctly", () => {
       padding: 8px 16px;
     }
 
-    .c5 {
+    .c6 {
       background: transparent;
       border-radius: 0;
       box-shadow: none;
@@ -103,23 +83,11 @@ it("renders correctly", () => {
       border: none;
     }
 
-    .c5::-webkit-input-placeholder {
+    .c6 ::placeholder {
       color: var(--colors-textSubtle);
     }
 
-    .c5::-moz-placeholder {
-      color: var(--colors-textSubtle);
-    }
-
-    .c5:-ms-input-placeholder {
-      color: var(--colors-textSubtle);
-    }
-
-    .c5::placeholder {
-      color: var(--colors-textSubtle);
-    }
-
-    .c5:focus:not(:disabled) {
+    .c6:focus:not(:disabled) {
       box-shadow: none;
     }
 
@@ -130,28 +98,28 @@ it("renders correctly", () => {
           class="c1"
         >
           <div
-            class="c2"
-            width="100%"
+            class="c2 c3"
           >
             <div
-              class="c3"
+              class="c2"
             >
-              <input
-                class="c4 c5"
-                inputmode="decimal"
-                min="0"
-                pattern="^[0-9]*[.,]?[0-9]{0,18}$"
-                placeholder="0.0"
-                scale="md"
-                value="14"
-              />
-            </div>
-            <div
-              class="c6"
-              color="textSubtle"
-              font-size="12px"
-            >
-              15 USD
+              <div
+                class="c4"
+              >
+                <input
+                  class="c5 c6"
+                  inputmode="decimal"
+                  min="0"
+                  pattern="^[0-9]*[.,]?[0-9]{0,18}$"
+                  placeholder="0.0"
+                  value="14"
+                />
+              </div>
+              <div
+                class="c7"
+              >
+                15 USD
+              </div>
             </div>
           </div>
         </div>
@@ -166,14 +134,32 @@ it("renders correctly with unit prop", () => {
   );
   expect(asFragment()).toMatchInlineSnapshot(`
     <DocumentFragment>
-      .c6 {
+      .c2 {
+      width: 100%;
+    }
+
+    .c1 {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .c3 {
+      display: flex;
+    }
+
+    .c4 {
+      display: flex;
+      align-items: center;
+    }
+
+    .c7 {
       color: var(--colors-text);
       font-weight: 400;
       line-height: 1.5;
       font-size: 16px;
     }
 
-    .c8 {
+    .c9 {
       color: var(--colors-textSubtle);
       font-weight: 400;
       line-height: 1.5;
@@ -181,33 +167,7 @@ it("renders correctly with unit prop", () => {
       text-align: right;
     }
 
-    .c2 {
-      width: 100%;
-    }
-
-    .c1 {
-      display: -webkit-box;
-      display: -webkit-flex;
-      display: -ms-flexbox;
-      display: flex;
-      -webkit-box-pack: end;
-      -webkit-justify-content: flex-end;
-      -ms-flex-pack: end;
-      justify-content: flex-end;
-    }
-
-    .c3 {
-      display: -webkit-box;
-      display: -webkit-flex;
-      display: -ms-flexbox;
-      display: flex;
-      -webkit-align-items: center;
-      -webkit-box-align: center;
-      -ms-flex-align: center;
-      align-items: center;
-    }
-
-    .c4 {
+    .c5 {
       background-color: var(--colors-input);
       border-radius: 16px;
       box-shadow: var(--shadows-inset);
@@ -221,34 +181,22 @@ it("renders correctly with unit prop", () => {
       border: 1px solid var(--colors-inputSecondary);
     }
 
-    .c4::-webkit-input-placeholder {
+    .c5::placeholder {
       color: var(--colors-textSubtle);
     }
 
-    .c4::-moz-placeholder {
-      color: var(--colors-textSubtle);
-    }
-
-    .c4:-ms-input-placeholder {
-      color: var(--colors-textSubtle);
-    }
-
-    .c4::placeholder {
-      color: var(--colors-textSubtle);
-    }
-
-    .c4:disabled {
+    .c5:disabled {
       background-color: var(--colors-backgroundDisabled);
       box-shadow: none;
       color: var(--colors-textDisabled);
       cursor: not-allowed;
     }
 
-    .c4:focus:not(:disabled) {
+    .c5:focus:not(:disabled) {
       box-shadow: var(--shadows-focus);
     }
 
-    .c7 {
+    .c8 {
       margin-left: 4px;
       text-align: right;
       color: var(--colors-textSubtle);
@@ -263,7 +211,7 @@ it("renders correctly with unit prop", () => {
       padding: 8px 16px;
     }
 
-    .c5 {
+    .c6 {
       background: transparent;
       border-radius: 0;
       box-shadow: none;
@@ -273,23 +221,11 @@ it("renders correctly with unit prop", () => {
       border: none;
     }
 
-    .c5::-webkit-input-placeholder {
+    .c6 ::placeholder {
       color: var(--colors-textSubtle);
     }
 
-    .c5::-moz-placeholder {
-      color: var(--colors-textSubtle);
-    }
-
-    .c5:-ms-input-placeholder {
-      color: var(--colors-textSubtle);
-    }
-
-    .c5::placeholder {
-      color: var(--colors-textSubtle);
-    }
-
-    .c5:focus:not(:disabled) {
+    .c6:focus:not(:disabled) {
       box-shadow: none;
     }
 
@@ -300,35 +236,33 @@ it("renders correctly with unit prop", () => {
           class="c1"
         >
           <div
-            class="c2"
-            width="100%"
+            class="c2 c3"
           >
             <div
-              class="c3"
+              class="c2"
             >
-              <input
-                class="c4 c5"
-                inputmode="decimal"
-                min="0"
-                pattern="^[0-9]*[.,]?[0-9]{0,18}$"
-                placeholder="0.0"
-                scale="md"
-                value="14"
-              />
               <div
-                class="c6 c7"
-                color="text"
-                font-size="16px"
+                class="c4"
               >
-                CAKE
+                <input
+                  class="c5 c6"
+                  inputmode="decimal"
+                  min="0"
+                  pattern="^[0-9]*[.,]?[0-9]{0,18}$"
+                  placeholder="0.0"
+                  value="14"
+                />
+                <div
+                  class="c7 c8"
+                >
+                  CAKE
+                </div>
               </div>
-            </div>
-            <div
-              class="c8"
-              color="textSubtle"
-              font-size="12px"
-            >
-              15 USD
+              <div
+                class="c9"
+              >
+                15 USD
+              </div>
             </div>
           </div>
         </div>
@@ -349,25 +283,43 @@ it("renders correctly with unit prop and switchEditingUnits", () => {
   );
   expect(asFragment()).toMatchInlineSnapshot(`
     <DocumentFragment>
-      .c13 {
-      -webkit-align-self: center;
-      -ms-flex-item-align: center;
+      .c2 {
+      width: 100%;
+    }
+
+    .c10 {
+      padding-left: 12px;
+    }
+
+    .c1 {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .c3 {
+      display: flex;
+    }
+
+    .c4 {
+      display: flex;
+      align-items: center;
+    }
+
+    .c14 {
       align-self: center;
       fill: var(--colors-textSubtle);
       color: var(--colors-textSubtle);
-      -webkit-flex-shrink: 0;
-      -ms-flex-negative: 0;
       flex-shrink: 0;
     }
 
-    .c6 {
+    .c7 {
       color: var(--colors-text);
       font-weight: 400;
       line-height: 1.5;
       font-size: 16px;
     }
 
-    .c8 {
+    .c9 {
       color: var(--colors-textSubtle);
       font-weight: 400;
       line-height: 1.5;
@@ -375,101 +327,7 @@ it("renders correctly with unit prop and switchEditingUnits", () => {
       text-align: right;
     }
 
-    .c10 {
-      position: relative;
-      -webkit-align-items: center;
-      -webkit-box-align: center;
-      -ms-flex-align: center;
-      align-items: center;
-      border: 0;
-      border-radius: 16px;
-      box-shadow: 0px -1px 0px 0px rgba(14,14,44,0.4) inset;
-      cursor: pointer;
-      display: -webkit-inline-box;
-      display: -webkit-inline-flex;
-      display: -ms-inline-flexbox;
-      display: inline-flex;
-      font-family: inherit;
-      font-size: 16px;
-      font-weight: 600;
-      -webkit-box-pack: center;
-      -webkit-justify-content: center;
-      -ms-flex-pack: center;
-      justify-content: center;
-      -webkit-letter-spacing: 0.03em;
-      -moz-letter-spacing: 0.03em;
-      -ms-letter-spacing: 0.03em;
-      letter-spacing: 0.03em;
-      line-height: 1;
-      opacity: 1;
-      outline: 0;
-      -webkit-transition: background-color 0.2s,opacity 0.2s;
-      transition: background-color 0.2s,opacity 0.2s;
-      height: 32px;
-      padding: 0 16px;
-      background-color: transparent;
-      color: var(--colors-primary);
-      box-shadow: none;
-    }
-
-    .c10:focus-visible {
-      outline: none;
-      box-shadow: var(--shadows-focus);
-    }
-
-    .c10:active:not(:disabled):not(.pancake-button--disabled):not(.pancake-button--disabled) {
-      opacity: 0.85;
-      -webkit-transform: translateY(1px);
-      -ms-transform: translateY(1px);
-      transform: translateY(1px);
-      box-shadow: none;
-    }
-
-    .c10:disabled,
-    .c10.pancake-button--disabled {
-      background-color: var(--colors-backgroundDisabled);
-      border-color: var(--colors-backgroundDisabled);
-      box-shadow: none;
-      color: var(--colors-textDisabled);
-      cursor: not-allowed;
-    }
-
-    .c11 {
-      padding: 2px;
-      width: 32px;
-    }
-
-    .c2 {
-      width: 100%;
-    }
-
-    .c9 {
-      padding-left: 12px;
-    }
-
-    .c1 {
-      display: -webkit-box;
-      display: -webkit-flex;
-      display: -ms-flexbox;
-      display: flex;
-      -webkit-box-pack: end;
-      -webkit-justify-content: flex-end;
-      -ms-flex-pack: end;
-      justify-content: flex-end;
-    }
-
-    .c3 {
-      display: -webkit-box;
-      display: -webkit-flex;
-      display: -ms-flexbox;
-      display: flex;
-      -webkit-align-items: center;
-      -webkit-box-align: center;
-      -ms-flex-align: center;
-      align-items: center;
-    }
-
-    .c4 {
+    .c5 {
       background-color: var(--colors-input);
       border-radius: 16px;
       box-shadow: var(--shadows-inset);
@@ -483,38 +341,75 @@ it("renders correctly with unit prop and switchEditingUnits", () => {
       border: 1px solid var(--colors-inputSecondary);
     }
 
-    .c4::-webkit-input-placeholder {
+    .c5::placeholder {
       color: var(--colors-textSubtle);
     }
 
-    .c4::-moz-placeholder {
-      color: var(--colors-textSubtle);
-    }
-
-    .c4:-ms-input-placeholder {
-      color: var(--colors-textSubtle);
-    }
-
-    .c4::placeholder {
-      color: var(--colors-textSubtle);
-    }
-
-    .c4:disabled {
+    .c5:disabled {
       background-color: var(--colors-backgroundDisabled);
       box-shadow: none;
       color: var(--colors-textDisabled);
       cursor: not-allowed;
     }
 
-    .c4:focus:not(:disabled) {
+    .c5:focus:not(:disabled) {
       box-shadow: var(--shadows-focus);
     }
 
+    .c11 {
+      position: relative;
+      align-items: center;
+      border: 0;
+      border-radius: 16px;
+      box-shadow: 0px -1px 0px 0px rgba(14, 14, 44, 0.4) inset;
+      cursor: pointer;
+      display: inline-flex;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 600;
+      justify-content: center;
+      letter-spacing: 0.03em;
+      line-height: 1;
+      opacity: 1;
+      outline: 0;
+      transition: background-color 0.2s,opacity 0.2s;
+      height: 32px;
+      padding: 0 16px;
+      background-color: transparent;
+      color: var(--colors-primary);
+      box-shadow: none;
+    }
+
+    .c11:focus-visible {
+      outline: none;
+      box-shadow: var(--shadows-focus);
+    }
+
+    .c11:active:not(:disabled):not(.pancake-button--disabled):not(.pancake-button--disabled) {
+      opacity: 0.85;
+      transform: translateY(1px);
+      box-shadow: none;
+    }
+
+    .c11:disabled,
+    .c11.pancake-button--disabled {
+      background-color: var(--colors-backgroundDisabled);
+      border-color: var(--colors-backgroundDisabled);
+      box-shadow: none;
+      color: var(--colors-textDisabled);
+      cursor: not-allowed;
+    }
+
     .c12 {
+      padding: 2px;
+      width: 32px;
+    }
+
+    .c13 {
       width: 16px;
     }
 
-    .c7 {
+    .c8 {
       margin-left: 4px;
       text-align: right;
       color: var(--colors-textSubtle);
@@ -529,7 +424,7 @@ it("renders correctly with unit prop and switchEditingUnits", () => {
       padding: 8px 16px;
     }
 
-    .c5 {
+    .c6 {
       background: transparent;
       border-radius: 0;
       box-shadow: none;
@@ -539,35 +434,22 @@ it("renders correctly with unit prop and switchEditingUnits", () => {
       border: none;
     }
 
-    .c5::-webkit-input-placeholder {
+    .c6 ::placeholder {
       color: var(--colors-textSubtle);
     }
 
-    .c5::-moz-placeholder {
-      color: var(--colors-textSubtle);
-    }
-
-    .c5:-ms-input-placeholder {
-      color: var(--colors-textSubtle);
-    }
-
-    .c5::placeholder {
-      color: var(--colors-textSubtle);
-    }
-
-    .c5:focus:not(:disabled) {
+    .c6:focus:not(:disabled) {
       box-shadow: none;
     }
 
-    @supports (-webkit-text-size-adjust:none) and (not (-ms-accelerator:true)) and (not (-moz-appearance:none)) {
-      .c13 {
-        -webkit-filter: none !important;
-        filter: none !important;
+    @supports (-webkit-text-size-adjust: none) and (not (-ms-accelerator: true)) and (not (-moz-appearance: none)) {
+      .c14 {
+        filter: none!important;
       }
     }
 
-    @media (hover:hover) {
-      .c10:hover:not(:disabled):not(.pancake-button--disabled):not(.pancake-button--disabled):not(:active) {
+    @media (hover: hover) {
+      .c11:hover:not(:disabled):not(.pancake-button--disabled):not(.pancake-button--disabled):not(:active) {
         opacity: 0.65;
       }
     }
@@ -579,46 +461,45 @@ it("renders correctly with unit prop and switchEditingUnits", () => {
           class="c1"
         >
           <div
-            class="c2"
-            width="100%"
+            class="c2 c3"
           >
             <div
-              class="c3"
+              class="c2"
             >
-              <input
-                class="c4 c5"
-                inputmode="decimal"
-                min="0"
-                pattern="^[0-9]*[.,]?[0-9]{0,18}$"
-                placeholder="0.0"
-                scale="md"
-                value="14"
-              />
               <div
-                class="c6 c7"
-                color="text"
-                font-size="16px"
+                class="c4"
               >
-                CAKE
+                <input
+                  class="c5 c6"
+                  inputmode="decimal"
+                  min="0"
+                  pattern="^[0-9]*[.,]?[0-9]{0,18}$"
+                  placeholder="0.0"
+                  value="14"
+                />
+                <div
+                  class="c7 c8"
+                >
+                  CAKE
+                </div>
               </div>
-            </div>
-            <div
-              class="c8"
-              color="textSubtle"
-              font-size="12px"
-            >
-              15 USD
+              <div
+                class="c9"
+              >
+                15 USD
+              </div>
             </div>
           </div>
           <div
-            class="c9 c3"
+            class="c10 c4"
           >
             <button
-              class="c10 c11 c12"
+              class="c11 c12 c13"
               scale="sm"
+              variant="text"
             >
               <svg
-                class="c13"
+                class="c14"
                 color="textSubtle"
                 viewBox="0 0 24 25"
                 width="20px"

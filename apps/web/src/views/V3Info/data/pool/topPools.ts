@@ -1,8 +1,8 @@
-import { ChainId } from '@pancakeswap/sdk'
+import { ChainId } from '@pancakeswap/chains'
 import { gql, GraphQLClient } from 'graphql-request'
 
+import isUndefinedOrNull from '@pancakeswap/utils/isUndefinedOrNull'
 import { POOL_HIDE } from '../../constants'
-import { notEmpty } from '../../utils'
 
 export const TOP_POOLS = gql`
   query topPools {
@@ -34,16 +34,18 @@ export async function fetchTopPoolAddresses(
       fetchPolicy: 'cache-first',
     })
 
-    const formattedData = data
-      ? data.pools
-          .map((p) => {
-            if (POOL_HIDE?.[chainId]?.includes(p.id.toLocaleLowerCase())) {
-              return undefined
-            }
-            return p.id
-          })
-          .filter(notEmpty)
-      : undefined
+    const formattedData = (
+      data
+        ? data.pools
+            .map((p) => {
+              if (POOL_HIDE?.[chainId]?.includes(p.id.toLowerCase())) {
+                return undefined
+              }
+              return p.id
+            })
+            .filter((pool) => !isUndefinedOrNull(pool))
+        : undefined
+    ) as string[] | undefined
 
     return {
       error: false,

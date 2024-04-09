@@ -8,17 +8,17 @@ import { useCallback, useContext, useEffect, useState } from 'react'
 import { useSwapActionHandlers } from 'state/swap/useSwapActionHandlers'
 import { currencyId } from 'utils/currencyId'
 
-import { useSwapHotTokenDisplay } from 'hooks/useSwapHotTokenDisplay'
 import { useCurrency } from 'hooks/Tokens'
+import { useSwapHotTokenDisplay } from 'hooks/useSwapHotTokenDisplay'
 import { Field } from 'state/swap/actions'
 import { useDefaultsFromURLSearch, useSingleTokenSwapInfo, useSwapState } from 'state/swap/hooks'
 import Page from '../Page'
+import { SwapFeaturesContext } from './SwapFeaturesContext'
+import { V3SwapForm } from './V3Swap'
 import PriceChartContainer from './components/Chart/PriceChartContainer'
 import HotTokenList from './components/HotTokenList'
 import useWarningImport from './hooks/useWarningImport'
-import { V3SwapForm } from './V3Swap'
 import { StyledInputCurrencyWrapper, StyledSwapContainer } from './styles'
-import { SwapFeaturesContext } from './SwapFeaturesContext'
 
 export default function Swap() {
   const { query } = useRouter()
@@ -35,21 +35,16 @@ export default function Swap() {
   const { t } = useTranslation()
   const [firstTime, setFirstTime] = useState(true)
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const toggleChartDisplayed = () => {
-    setIsChartDisplayed((currentIsChartDisplayed) => !currentIsChartDisplayed)
-  }
-
   useEffect(() => {
     if (firstTime && query.showTradingReward) {
       setFirstTime(false)
       setIsSwapHotTokenDisplay(true)
 
       if (!isSwapHotTokenDisplay && isChartDisplayed) {
-        toggleChartDisplayed()
+        setIsChartDisplayed?.((currentIsChartDisplayed) => !currentIsChartDisplayed)
       }
     }
-  }, [firstTime, isChartDisplayed, isSwapHotTokenDisplay, query, setIsSwapHotTokenDisplay, toggleChartDisplayed])
+  }, [firstTime, isChartDisplayed, isSwapHotTokenDisplay, query, setIsSwapHotTokenDisplay, setIsChartDisplayed])
 
   // swap state & price data
   const {
@@ -64,7 +59,13 @@ export default function Swap() {
     [Field.OUTPUT]: outputCurrency ?? undefined,
   }
 
-  const singleTokenPrice = useSingleTokenSwapInfo(inputCurrencyId, inputCurrency, outputCurrencyId, outputCurrency)
+  const singleTokenPrice = useSingleTokenSwapInfo(
+    inputCurrencyId,
+    inputCurrency,
+    outputCurrencyId,
+    outputCurrency,
+    isChartSupported,
+  )
   const warningSwapHandler = useWarningImport()
   useDefaultsFromURLSearch()
   const { onCurrencySelection } = useSwapActionHandlers()
@@ -116,7 +117,7 @@ export default function Swap() {
               />
             }
             isOpen={isChartDisplayed}
-            setIsOpen={setIsChartDisplayed}
+            setIsOpen={(isOpen) => setIsChartDisplayed?.(isOpen)}
           />
         )}
         {isDesktop && isSwapHotTokenDisplay && isHotTokenSupported && (

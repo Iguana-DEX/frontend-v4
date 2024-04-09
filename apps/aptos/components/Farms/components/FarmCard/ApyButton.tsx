@@ -1,10 +1,12 @@
+import { useAccountBalance } from '@pancakeswap/awgmi'
 import { useTranslation } from '@pancakeswap/localization'
-import { Text, TooltipText, useModal, useTooltip, Farm as FarmUI, RoiCalculatorModal } from '@pancakeswap/uikit'
+import { RoiCalculatorModal, Text, TooltipText, useModal, useTooltip } from '@pancakeswap/uikit'
+import { BIG_ZERO } from '@pancakeswap/utils/bigNumber'
+import { FarmWidget } from '@pancakeswap/widgets-internal'
 import BigNumber from 'bignumber.js'
 import useActiveWeb3React from 'hooks/useActiveWeb3React'
-import { BIG_ZERO } from '@pancakeswap/utils/bigNumber'
+import { useMemo } from 'react'
 import { useFarmUserInfoCache } from 'state/farms/hook'
-import { useAccountBalance } from '@pancakeswap/awgmi'
 import { FARM_DEFAULT_DECIMALS } from '../../constants'
 
 export interface ApyButtonProps {
@@ -24,6 +26,7 @@ export interface ApyButtonProps {
   hideButton?: boolean
   farmCakePerSecond?: string
   totalMultipliers?: string
+  dualTokenRewardApr?: number
 }
 
 const ApyButton: React.FC<React.PropsWithChildren<ApyButtonProps>> = ({
@@ -43,6 +46,7 @@ const ApyButton: React.FC<React.PropsWithChildren<ApyButtonProps>> = ({
   hideButton,
   farmCakePerSecond,
   totalMultipliers,
+  dualTokenRewardApr = 0,
 }) => {
   const { t } = useTranslation()
   const { account } = useActiveWeb3React()
@@ -65,8 +69,17 @@ const ApyButton: React.FC<React.PropsWithChildren<ApyButtonProps>> = ({
         {t('APR (incl. LP rewards)')}: <Text style={{ display: 'inline-block' }}>{`${displayApr}%`}</Text>
       </Text>
       <Text ml="5px">
-        *{t('Base APR (CAKE yield only)')}: {`${apr.toFixed(2)}%`}
+        {`*${t('Base APR (CAKE yield only)')}: ${apr.toLocaleString('en-US', {
+          maximumFractionDigits: 2,
+        })}%`}
       </Text>
+      {dualTokenRewardApr > 0 && (
+        <Text ml="5px">
+          {`*${t('Base APR (APT yield only)')}: ${dualTokenRewardApr.toLocaleString('en-US', {
+            maximumFractionDigits: 2,
+          })}%`}
+        </Text>
+      )}
       <Text ml="5px">
         *{t('LP Rewards APR')}: {lpRewardsApr === 0 ? '-' : lpRewardsApr}%
       </Text>
@@ -75,6 +88,15 @@ const ApyButton: React.FC<React.PropsWithChildren<ApyButtonProps>> = ({
       placement: 'top',
     },
   )
+
+  const combineApr = useMemo(() => {
+    let total = new BigNumber(apr).plus(lpRewardsApr ?? 0)
+    if (dualTokenRewardApr) {
+      total = new BigNumber(apr).plus(lpRewardsApr ?? 0).plus(dualTokenRewardApr)
+    }
+
+    return total.toNumber()
+  }, [apr, dualTokenRewardApr, lpRewardsApr])
 
   const [onPresentApyModal] = useModal(
     <RoiCalculatorModal
@@ -86,7 +108,8 @@ const ApyButton: React.FC<React.PropsWithChildren<ApyButtonProps>> = ({
       stakingTokenPrice={lpTokenPrice.toNumber()}
       stakingTokenDecimals={FARM_DEFAULT_DECIMALS}
       earningTokenPrice={cakePrice.toNumber()}
-      apr={apr}
+      apr={combineApr}
+      lpRewardsApr={lpRewardsApr}
       multiplier={multiplier}
       displayApr={displayApr}
       linkHref={addLiquidityUrl}
@@ -94,6 +117,7 @@ const ApyButton: React.FC<React.PropsWithChildren<ApyButtonProps>> = ({
       rewardCakePerSecond
       farmCakePerSecond={farmCakePerSecond}
       totalMultipliers={totalMultipliers}
+      dualTokenRewardApr={dualTokenRewardApr}
     />,
     false,
     true,
@@ -106,7 +130,7 @@ const ApyButton: React.FC<React.PropsWithChildren<ApyButtonProps>> = ({
   }
 
   return (
-    <FarmUI.FarmApyButton variant={variant} hideButton={hideButton} handleClickButton={handleClickButton}>
+    <FarmWidget.FarmApyButton variant={variant} hideButton={hideButton} handleClickButton={handleClickButton}>
       {useTooltipText ? (
         <>
           <TooltipText ref={targetRef} decorationColor="secondary">
@@ -117,7 +141,7 @@ const ApyButton: React.FC<React.PropsWithChildren<ApyButtonProps>> = ({
       ) : (
         <>{displayApr}%</>
       )}
-    </FarmUI.FarmApyButton>
+    </FarmWidget.FarmApyButton>
   )
 }
 

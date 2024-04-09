@@ -1,12 +1,14 @@
-import { useContext, useState, MouseEvent } from 'react'
 import { useTranslation } from '@pancakeswap/localization'
-import { Text, TooltipText, useModal, useTooltip, Farm as FarmUI, RoiCalculatorModal } from '@pancakeswap/uikit'
+import { RoiCalculatorModal, Text, TooltipText, useModal, useTooltip } from '@pancakeswap/uikit'
+import { FarmWidget } from '@pancakeswap/widgets-internal'
 import BigNumber from 'bignumber.js'
 import _toNumber from 'lodash/toNumber'
+import { MouseEvent, useContext, useState } from 'react'
 
-import BCakeCalculator from 'views/Farms/components/YieldBooster/components/BCakeCalculator'
 import { useFarmFromPid, useFarmUser } from 'state/farms/hooks'
+import BCakeCalculator from 'views/Farms/components/YieldBooster/components/BCakeCalculator'
 
+import { BIG_ZERO } from '@pancakeswap/utils/bigNumber'
 import { useAccount } from 'wagmi'
 import { YieldBoosterStateContext } from '../YieldBooster/components/ProxyFarmContainer'
 import useBoostMultiplier from '../YieldBooster/hooks/useBoostMultiplier'
@@ -17,9 +19,9 @@ export interface ApyButtonProps {
   variant: 'text' | 'text-and-button'
   pid: number
   lpSymbol: string
-  lpTokenPrice: BigNumber
+  lpTokenPrice?: BigNumber
   lpLabel?: string
-  multiplier: string
+  multiplier?: string
   cakePrice?: BigNumber
   apr?: number
   displayApr?: string
@@ -39,13 +41,13 @@ const ApyButton: React.FC<React.PropsWithChildren<ApyButtonProps>> = ({
   variant,
   pid,
   lpLabel,
-  lpTokenPrice,
+  lpTokenPrice = BIG_ZERO,
   lpSymbol,
   cakePrice,
   apr = 0,
   multiplier,
   displayApr,
-  lpRewardsApr,
+  lpRewardsApr = 0,
   addLiquidityUrl,
   strikethrough,
   useTooltipText,
@@ -60,12 +62,14 @@ const ApyButton: React.FC<React.PropsWithChildren<ApyButtonProps>> = ({
   const { address: account } = useAccount()
   const [bCakeMultiplier, setBCakeMultiplier] = useState<number | null>(() => null)
   const { tokenBalance, stakedBalance, proxy } = useFarmUser(pid)
-  const { lpTokenStakedAmount } = useFarmFromPid(pid)
+  const lpTokenStakedAmount = useFarmFromPid(pid)?.lpTokenStakedAmount || BIG_ZERO
   const { boosterState, proxyAddress } = useContext(YieldBoosterStateContext)
 
   const userBalanceInFarm = stakedBalance.plus(tokenBalance).gt(0)
     ? stakedBalance.plus(tokenBalance)
-    : proxy.stakedBalance.plus(proxy.tokenBalance)
+    : proxy
+    ? proxy.stakedBalance.plus(proxy.tokenBalance)
+    : BIG_ZERO
   const boosterMultiplierFromFE = useGetBoostedMultiplier(userBalanceInFarm, lpTokenStakedAmount)
   const boostMultiplierFromSC = useBoostMultiplier({ pid, boosterState, proxyAddress })
   const boostMultiplier = userBalanceInFarm.eq(0)
@@ -83,17 +87,18 @@ const ApyButton: React.FC<React.PropsWithChildren<ApyButtonProps>> = ({
       stakingTokenDecimals={18}
       stakingTokenSymbol={lpSymbol}
       stakingTokenPrice={lpTokenPrice.toNumber()}
-      earningTokenPrice={cakePrice?.toNumber()}
+      earningTokenPrice={cakePrice?.toNumber() ?? 0}
       apr={bCakeMultiplier ? apr * bCakeMultiplier : apr}
       multiplier={multiplier}
       displayApr={bCakeMultiplier ? (_toNumber(displayApr) - apr + apr * bCakeMultiplier).toFixed(2) : displayApr}
       linkHref={addLiquidityUrl}
+      lpRewardsApr={lpRewardsApr}
       isFarm
       bCakeCalculatorSlot={(calculatorBalance) =>
         boosted ? (
           <BCakeCalculator
             targetInputBalance={calculatorBalance}
-            earningTokenPrice={cakePrice?.toNumber()}
+            earningTokenPrice={cakePrice?.toNumber() ?? 0}
             lpTokenStakedAmount={lpTokenStakedAmount}
             setBCakeMultiplier={setBCakeMultiplier}
           />
@@ -118,7 +123,7 @@ const ApyButton: React.FC<React.PropsWithChildren<ApyButtonProps>> = ({
     <>
       <Text>
         {t('Combined APR')}:{' '}
-        <Text style={{ display: 'inline-block' }} color={strikethrough && 'secondary'} bold>
+        <Text style={{ display: 'inline-block' }} color={strikethrough ? 'secondary' : 'text'} bold>
           {strikethrough ? `${(apr * boostMultiplier + lpRewardsApr).toFixed(2)}%` : `${displayApr}%`}
         </Text>
       </Text>
@@ -152,7 +157,7 @@ const ApyButton: React.FC<React.PropsWithChildren<ApyButtonProps>> = ({
   )
 
   return (
-    <FarmUI.FarmApyButton
+    <FarmWidget.FarmApyButton
       variant={variant}
       hideButton={hideButton}
       strikethrough={strikethrough}
@@ -168,7 +173,7 @@ const ApyButton: React.FC<React.PropsWithChildren<ApyButtonProps>> = ({
       ) : (
         <>{displayApr}%</>
       )}
-    </FarmUI.FarmApyButton>
+    </FarmWidget.FarmApyButton>
   )
 }
 

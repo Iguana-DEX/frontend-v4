@@ -5,10 +5,10 @@ import {
   EarnFillIcon,
   EarnIcon,
   MenuItemsType,
+  MoreIcon,
   SwapFillIcon,
   SwapIcon,
 } from '@pancakeswap/uikit'
-import { LinkStatus } from '@pancakeswap/uikit/src/widgets/Menu/types'
 import { ContextApi, useTranslation } from '@pancakeswap/localization'
 import { useMenuItemsStatus } from './useMenuItemsStatus'
 
@@ -31,31 +31,48 @@ const config: (t: ContextApi['t']) => ConfigMenuItemsType[] = (t) => [
         href: '/swap',
       },
       {
+        label: t('Liquidity'),
+        href: '/liquidity',
+      },
+      {
         label: t('Bridge'),
-        href: 'https://bridge.etherlink.com',
+        href: 'https://bridge.pancakeswap.finance/aptos',
         type: DropdownMenuItemType.EXTERNAL_LINK,
       },
     ],
   },
   {
     label: t('Earn'),
-    href: '/liquidity',
+    href: '/farms',
     icon: EarnIcon,
     fillIcon: EarnFillIcon,
     image: '/images/decorations/pe2.png',
     items: [
       {
-        label: t('Liquidity Pools'),
-        href: '/liquidity',
-      },
-      {
         label: t('Farms'),
         href: '/farms',
       },
-      // {
-      //   label: t('Pools'),
-      //   href: '/pools',
-      // },
+      {
+        label: t('Pools'),
+        href: '/pools',
+      },
+    ],
+  },
+  {
+    label: '',
+    href: '/ifo',
+    icon: MoreIcon,
+    hideSubNav: true,
+    items: [
+      {
+        label: t('IFO'),
+        href: '/ifo',
+      },
+      {
+        label: t('Blog'),
+        href: 'https://blog.pancakeswap.finance',
+        type: DropdownMenuItemType.EXTERNAL_LINK,
+      },
     ],
   },
 ]
@@ -74,13 +91,13 @@ export const useMenuItems = (): ConfigMenuItemsType[] => {
         const innerItems = item.items?.map((innerItem) => {
           const itemStatus = innerItem?.href ? menuItemsStatus[innerItem.href] : null
           if (itemStatus) {
-            let itemMenuStatus
+            let itemMenuStatus: DropdownMenuItems['status']
             if (itemStatus === 'soon') {
-              itemMenuStatus = <LinkStatus>{ text: t('Soon'), color: 'warning' }
+              itemMenuStatus = { text: t('Soon'), color: 'warning' }
             } else if (itemStatus === 'live') {
-              itemMenuStatus = <LinkStatus>{ text: t('Live'), color: 'failure' }
+              itemMenuStatus = { text: t('Live'), color: 'failure' }
             } else {
-              itemMenuStatus = <LinkStatus>{ text: t('New'), color: 'success' }
+              itemMenuStatus = { text: t('New'), color: 'success' }
             }
             return { ...innerItem, status: itemMenuStatus }
           }

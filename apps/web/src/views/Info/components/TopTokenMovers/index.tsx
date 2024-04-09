@@ -1,9 +1,11 @@
 import { useTranslation } from '@pancakeswap/localization'
-import { Box, Card, Flex, Text, NextLinkFromReactRouter } from '@pancakeswap/uikit'
+import { Box, Card, Flex, Text } from '@pancakeswap/uikit'
+import { NextLinkFromReactRouter } from '@pancakeswap/widgets-internal'
+
 import { useEffect, useMemo, useRef } from 'react'
-import { useAllTokenDataSWR, useChainNameByQuery, useMultiChainPath } from 'state/info/hooks'
+import { useAllTokenDataQuery, useChainNameByQuery, useMultiChainPath } from 'state/info/hooks'
 import { TokenData } from 'state/info/types'
-import styled from 'styled-components'
+import { styled } from 'styled-components'
 import { formatAmount } from 'utils/formatInfoNumbers'
 import { CurrencyLogo } from 'views/Info/components/CurrencyLogo'
 import Percent from 'views/Info/components/Percent'
@@ -12,7 +14,7 @@ const CardWrapper = styled(NextLinkFromReactRouter)`
   display: inline-block;
   min-width: 190px;
   margin-left: 16px;
-  :hover {
+  &:hover {
     cursor: pointer;
     opacity: 0.6;
   }
@@ -61,7 +63,7 @@ const DataCard = ({ tokenData }: { tokenData: TokenData }) => {
 }
 
 const TopTokenMovers: React.FC<React.PropsWithChildren> = () => {
-  const allTokens = useAllTokenDataSWR()
+  const allTokens = useAllTokenDataQuery()
   const { t } = useTranslation()
 
   const topPriceIncrease = useMemo(() => {

@@ -27,4 +27,10 @@ crons = ["0 0 * * *", "*/1 * * * *"]
 # - GOERLI_NODE
 # - BSC_NODE
 # - BSC_TESTNET_NODE
+# - POLYGON_ZKEVM_NODE
+# - ZKSYNC_NODE
+# - ARBITRUM_ONE_NODE
+# - LINEA_NODE
+# - BASE_NODE
+# - NODE_REAL_SUBGRAPH_API_KEY
 # Run `echo <VALUE> | wrangler secret put <NAME>` for each of these

@@ -1,5 +1,6 @@
 import { useTranslation } from '@pancakeswap/localization'
-import { Skeleton, useToast, useModal, Farm as FarmUI } from '@pancakeswap/uikit'
+import { Skeleton, useModal, useToast } from '@pancakeswap/uikit'
+import { FarmWidget } from '@pancakeswap/widgets-internal'
 import BigNumber from 'bignumber.js'
 import { ToastDescriptionWithTx } from 'components/Toast'
 import useCatchTxError from 'hooks/useCatchTxError'
@@ -7,18 +8,18 @@ import { useERC20 } from 'hooks/useContract'
 import { useAppDispatch } from 'state'
 import { fetchFarmUserDataAsync } from 'state/farms'
 
-import { useCallback } from 'react'
-import { usePriceCakeUSD } from 'state/farms/hooks'
-import { BIG_ZERO } from '@pancakeswap/utils/bigNumber'
-import { SendTransactionResult } from 'wagmi/actions'
-import { getBalanceAmount } from '@pancakeswap/utils/formatBalance'
-import MultiChainHarvestModal from 'views/Farms/components/MultiChainHarvestModal'
 import { FarmWithStakedValue } from '@pancakeswap/farms'
+import { BIG_ZERO } from '@pancakeswap/utils/bigNumber'
+import { getBalanceAmount } from '@pancakeswap/utils/formatBalance'
 import useAccountActiveChain from 'hooks/useAccountActiveChain'
+import { useCakePrice } from 'hooks/useCakePrice'
+import { useCallback } from 'react'
+import MultiChainHarvestModal from 'views/Farms/components/MultiChainHarvestModal'
+import { SendTransactionResult } from 'wagmi/actions'
 import useHarvestFarm from '../../../hooks/useHarvestFarm'
 import useProxyStakedActions from '../../YieldBooster/hooks/useProxyStakedActions'
 
-const { FarmTableHarvestAction } = FarmUI.FarmTable
+const { FarmTableHarvestAction } = FarmWidget.FarmTable
 
 interface HarvestActionProps extends FarmWithStakedValue {
   userDataReady: boolean
@@ -41,10 +42,11 @@ export const HarvestActionContainer = ({ children, ...props }) => {
   const { account, chainId } = useAccountActiveChain()
   const dispatch = useAppDispatch()
 
-  const onDone = useCallback(
-    () => dispatch(fetchFarmUserDataAsync({ account, pids: [props.pid], chainId })),
-    [account, dispatch, chainId, props.pid],
-  )
+  const onDone = useCallback(() => {
+    if (account && chainId) {
+      dispatch(fetchFarmUserDataAsync({ account, pids: [props.pid], chainId }))
+    }
+  }, [account, dispatch, chainId, props.pid])
 
   return children({ ...props, onDone, onReward })
 }
@@ -64,8 +66,8 @@ export const HarvestAction: React.FunctionComponent<React.PropsWithChildren<Harv
   const { t } = useTranslation()
   const { toastSuccess } = useToast()
   const { fetchWithCatchTxError, loading: pendingTx } = useCatchTxError()
-  const earningsBigNumber = new BigNumber(userData?.earnings)
-  const cakePrice = usePriceCakeUSD()
+  const earningsBigNumber = new BigNumber(userData?.earnings ?? 0)
+  const cakePrice = useCakePrice()
   let earnings = BIG_ZERO
   let earningsBusd = 0
   let displayBalance = userDataReady ? earnings.toFixed(5, BigNumber.ROUND_DOWN) : <Skeleton width={60} />
@@ -86,9 +88,7 @@ export const HarvestAction: React.FunctionComponent<React.PropsWithChildren<Harv
   }
 
   const handleHarvest = async () => {
-    const receipt = await fetchWithCatchTxError(() => {
-      return onReward()
-    })
+    const receipt = await fetchWithCatchTxError((): any => onReward?.())
     if (receipt?.status) {
       toastSuccess(
         `${t('Harvested')}!`,
@@ -119,6 +119,7 @@ export const HarvestAction: React.FunctionComponent<React.PropsWithChildren<Harv
       pendingTx={pendingTx}
       userDataReady={userDataReady}
       proxyCakeBalance={proxyCakeBalance}
+      disabled={earnings.eq(0) || pendingTx || !userDataReady}
       handleHarvest={onClickHarvestButton}
     />
   )

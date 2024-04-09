@@ -1,8 +1,10 @@
+import { ChainId } from '@pancakeswap/chains'
 import type { FarmConfigBaseProps, SerializedFarmConfig } from '@pancakeswap/farms'
-import { ChainId, Currency, CurrencyAmount, Percent, Price, Token, Trade, TradeType } from '@pancakeswap/sdk'
+import { Currency, CurrencyAmount, ERC20Token, Percent, Price, Token, Trade, TradeType } from '@pancakeswap/sdk'
 import { LegacyTradeWithStableSwap as TradeWithStableSwap } from '@pancakeswap/smart-router/legacy-router'
 import BigNumber from 'bignumber.js'
 import { Address } from 'wagmi'
+
 // a list of tokens by chain
 export type ChainMap<T> = {
   readonly [chainId in ChainId]: T
@@ -19,44 +21,8 @@ export type TranslatableText =
       }
     }
 export interface Addresses {
-  97?: Address
   56: Address
   [chainId: number]: Address
-}
-
-export enum PoolIds {
-  poolBasic = 'poolBasic',
-  poolUnlimited = 'poolUnlimited',
-}
-
-export type IfoStatus = 'idle' | 'coming_soon' | 'live' | 'finished'
-
-interface IfoPoolInfo {
-  saleAmount?: string
-  raiseAmount: string
-  cakeToBurn?: string
-  distributionRatio?: number // Range [0-1]
-}
-
-export interface Ifo {
-  id: string
-  isActive: boolean
-  address: Address
-  name: string
-  currency: Token
-  token: Token
-  articleUrl: string
-  campaignId: string
-  tokenOfferingPrice: number
-  description?: string
-  twitterUrl?: string
-  telegramUrl?: string
-  version: number
-  vestingTitle?: string
-  cIFO?: boolean
-  plannedStartTime?: number
-  [PoolIds.poolBasic]?: IfoPoolInfo
-  [PoolIds.poolUnlimited]: IfoPoolInfo
 }
 
 export enum PoolCategory {
@@ -66,7 +32,7 @@ export enum PoolCategory {
   'AUTO' = 'Auto',
 }
 
-export type { SerializedFarmConfig, FarmConfigBaseProps }
+export type { FarmConfigBaseProps, SerializedFarmConfig }
 
 export type Images = {
   lg: string
@@ -185,11 +151,20 @@ export interface ConnectedBidder {
 
 export const FetchStatus = {
   Idle: 'idle',
+  Fetching: 'pending',
+  Fetched: 'success',
+  Failed: 'error',
+} as const
+
+// Remove after wagmi v2
+export const FetchStatusV1 = {
+  Idle: 'idle',
   Fetching: 'loading',
   Fetched: 'success',
   Failed: 'error',
 } as const
 
+export type TFetchStatusV1 = (typeof FetchStatusV1)[keyof typeof FetchStatusV1]
 export type TFetchStatus = (typeof FetchStatus)[keyof typeof FetchStatus]
 
 export const isStableSwap = (trade: ITrade): trade is StableTrade => {
@@ -221,3 +196,5 @@ export enum Bound {
   LOWER = 'LOWER',
   UPPER = 'UPPER',
 }
+
+export type UnsafeCurrency = Currency | ERC20Token | null | undefined

@@ -1,10 +1,13 @@
 import { useTranslation } from '@pancakeswap/localization'
 import { Text, Flex, TooltipText, useTooltip } from '@pancakeswap/uikit'
-import { format } from 'date-fns'
+import dayjs from 'dayjs'
+import advancedFormat from 'dayjs/plugin/advancedFormat'
+
+dayjs.extend(advancedFormat)
 
 interface PropsType {
   title: React.ReactNode
-  value: Date
+  value?: Date
   color: string
 }
 
@@ -24,7 +27,7 @@ const DateRow: React.FC<React.PropsWithChildren<PropsType>> = ({ title, value, c
         </Text>
       </TooltipText>
       <Text bold color={color}>
-        {value ? format(value, 'MMM do, yyyy HH:mm') : '-'}
+        {value ? dayjs(value).format('MMM Do, YYYY HH:mm') : '-'}
       </Text>
     </Flex>
   )

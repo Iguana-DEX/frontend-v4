@@ -1,21 +1,20 @@
-import styled from 'styled-components'
-import { useMemo } from 'react'
-import BigNumber from 'bignumber.js'
-import { Flex, Box, Text, TooltipText, useTooltip, Balance } from '@pancakeswap/uikit'
 import { useTranslation } from '@pancakeswap/localization'
+import { Balance, Box, Flex, Text } from '@pancakeswap/uikit'
+import { BIG_ZERO } from '@pancakeswap/utils/bigNumber'
+import { getBalanceNumber } from '@pancakeswap/utils/formatBalance'
+import BigNumber from 'bignumber.js'
 import { GreyCard } from 'components/Card'
 import ConnectWalletButton from 'components/ConnectWalletButton'
 import { useVaultApy } from 'hooks/useVaultApy'
-import { usePotteryData, useLatestVaultAddress } from 'state/pottery/hook'
-import getTimePeriods from '@pancakeswap/utils/getTimePeriods'
-import { getBalanceNumber } from '@pancakeswap/utils/formatBalance'
-import { BIG_ZERO } from '@pancakeswap/utils/bigNumber'
+import { useMemo } from 'react'
+import { useLatestVaultAddress, usePotteryData } from 'state/pottery/hook'
 import { PotteryDepositStatus } from 'state/types'
-import { remainTimeToNextFriday, calculateCakeAmount } from 'views/Pottery/helpers'
+import { styled } from 'styled-components'
 import { weeksToSeconds } from 'views/Pools/components/utils/formatSecondsToWeeks'
+import { calculateCakeAmount } from 'views/Pottery/helpers'
 import { useAccount } from 'wagmi'
-import YourDeposit from '../YourDeposit'
 import WinRate from '../WinRate'
+import YourDeposit from '../YourDeposit'
 import DepositAction from './DepositAction'
 
 const Container = styled(Flex)`
@@ -37,25 +36,10 @@ const Deposit: React.FC<React.PropsWithChildren> = () => {
   const lastVaultAddress = useLatestVaultAddress()
   const { totalSupply, totalLockCake, getStatus, totalLockedValue, maxTotalDeposit } = publicData
 
-  const { targetRef, tooltip, tooltipVisible } = useTooltip(t('Pottery draws on each Friday at 12 PM UTC!'), {
-    placement: 'bottom-start',
-  })
-
   const apyDisplay = useMemo(() => {
     const apy = getLockedApy(weeksToSeconds(10))
     return !Number.isNaN(apy) ? `${Number(apy).toFixed(2)}%` : '0%'
   }, [getLockedApy])
-
-  const { days, hours, minutes } = useMemo(() => {
-    if (getStatus === PotteryDepositStatus.BEFORE_LOCK) {
-      return getTimePeriods(publicData.lockTime - Date.now() / 1000)
-    }
-    if (getStatus === PotteryDepositStatus.LOCK) {
-      const secondsRemaining = remainTimeToNextFriday()
-      return getTimePeriods(secondsRemaining)
-    }
-    return { minutes: 0, hours: 0, days: 0 }
-  }, [getStatus, publicData])
 
   const totalValueLocked = useMemo(() => {
     if (getStatus === PotteryDepositStatus.LOCK) {
@@ -65,7 +49,7 @@ const Deposit: React.FC<React.PropsWithChildren> = () => {
   }, [getStatus, totalLockCake, totalLockedValue])
 
   const currentDeposit = userData.withdrawAbleData.find(
-    (data) => data.potteryVaultAddress.toLowerCase() === lastVaultAddress.toLowerCase(),
+    (data) => data.potteryVaultAddress.toLowerCase() === lastVaultAddress?.toLowerCase(),
   )
 
   const depositBalance = useMemo(() => {
@@ -95,32 +79,6 @@ const Deposit: React.FC<React.PropsWithChildren> = () => {
           <Text color="textSubtle">{t('APR')}</Text>
           <Text bold>{apyDisplay}</Text>
         </Flex>
-        {getStatus === PotteryDepositStatus.BEFORE_LOCK ? (
-          <Flex justifyContent="space-between">
-            <Text color="textSubtle">{t('Locked date')}</Text>
-            <Flex>
-              <Text bold as="span">
-                {t('in')}
-              </Text>
-              {days ? <Text bold as="span" ml="2px">{`${days}${t('d')}`}</Text> : null}
-              {hours ? <Text bold as="span" ml="2px">{`${hours}${t('h')}`}</Text> : null}
-              {minutes ? <Text bold as="span" ml="2px">{`${minutes}${t('m')}`}</Text> : null}
-            </Flex>
-          </Flex>
-        ) : (
-          <Flex justifyContent="space-between">
-            <Text color="textSubtle">{t('Next draw date')}</Text>
-            {tooltipVisible && tooltip}
-            <TooltipText ref={targetRef}>
-              <Text bold as="span">
-                {t('in')}
-              </Text>
-              {days ? <Text bold as="span" ml="2px">{`${days}${t('d')}`}</Text> : null}
-              {hours ? <Text bold as="span" ml="2px">{`${hours}${t('h')}`}</Text> : null}
-              {minutes ? <Text bold as="span" ml="2px">{`${minutes}${t('m')}`}</Text> : null}
-            </TooltipText>
-          </Flex>
-        )}
         <Flex justifyContent="space-between">
           <Text color="textSubtle">{t('Total Value Locked')}</Text>
           <Balance bold decimals={2} value={totalValueLocked} unit=" CAKE" />

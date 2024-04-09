@@ -3,7 +3,7 @@ kv_namespaces = [
   {binding = "POOLS", id = "29d3e7e6c3c44fa7bf7174ee2b7b1295", preview_id = "c808d98df0444ae1a680bc84a029baaa"},
 ]
 r2_buckets = [
-  { binding = "SUBGRAPH_POOLS", bucket_name = "subgraph-pools", preview_bucket_name = "subgraph-pools-dev" }
+  { binding = "SUBGRAPH_POOLS", bucket_name = "subgraph-pools-dev" }
 ]
 main = "src/index.ts"
 name = "routing-dev"
@@ -20,12 +20,12 @@ r2_buckets = [
 ]
 name = "routing"
 [env.production.triggers]
-crons = ["0 0 * * *"]
+crons = ["*/30 * * * *"]
 
-# - AXIOM_TOKEN
 # The necessary secrets are:
 # - ETH_NODE
 # - GOERLI_NODE
 # - BSC_NODE
 # - BSC_TESTNET_NODE
+# - NODE_REAL_SUBGRAPH_API_KEY
 # Run `echo <VALUE> | wrangler secret put <NAME>` for each of these

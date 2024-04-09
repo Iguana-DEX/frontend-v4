@@ -9,13 +9,12 @@ import {
   TradeType,
 } from '@pancakeswap/aptos-swap-sdk'
 import { useAccount } from '@pancakeswap/awgmi'
-import { parseVmStatusError, SimulateTransactionError, UserRejectedRequestError } from '@pancakeswap/awgmi/core'
+import { SimulateTransactionError, UserRejectedRequestError, parseVmStatusError } from '@pancakeswap/awgmi/core'
 import { useTranslation } from '@pancakeswap/localization'
-import { AtomBox } from '@pancakeswap/ui'
 import {
+  AtomBox,
   AutoColumn,
   Card,
-  confirmPriceImpactWithoutFee,
   Flex,
   HistoryIcon,
   IconButton,
@@ -23,17 +22,22 @@ import {
   Modal,
   ModalV2,
   Skeleton,
-  Swap as SwapUI,
   Text,
   useModal,
 } from '@pancakeswap/uikit'
+import { Swap as SwapUI, confirmPriceImpactWithoutFee } from '@pancakeswap/widgets-internal'
+import { useQuery } from '@tanstack/react-query'
+
 import replaceBrowserHistory from '@pancakeswap/utils/replaceBrowserHistory'
 import tryParseAmount from '@pancakeswap/utils/tryParseAmount'
+import { useUserSlippage } from '@pancakeswap/utils/user'
+import { useIsExpertMode } from '@pancakeswap/utils/user/expertMode'
 import { CurrencyInputPanel } from 'components/CurrencyInputPanel'
 import { ExchangeLayout } from 'components/Layout/ExchangeLayout'
 import { PageMeta } from 'components/Layout/Page'
 import { SettingsButton } from 'components/Menu/Settings/SettingsButton'
 import { SettingsModal, withCustomOnDismiss } from 'components/Menu/Settings/SettingsModal'
+import WalletModal, { WalletView } from 'components/Menu/WalletModal'
 import ImportToken from 'components/SearchModal/ImportToken'
 import AdvancedSwapDetailsDropdown from 'components/Swap/AdvancedSwapDetailsDropdown'
 import ConfirmSwapModal from 'components/Swap/ConfirmSwapModal'
@@ -48,9 +52,6 @@ import useSimulationAndSendTransaction from 'hooks/useSimulationAndSendTransacti
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Field, selectCurrency, switchCurrencies, typeInput, useDefaultsFromURLSearch, useSwapState } from 'state/swap'
 import { useTransactionAdder } from 'state/transactions/hooks'
-import { useUserSlippage } from '@pancakeswap/utils/user'
-import { useIsExpertMode } from '@pancakeswap/utils/user/expertMode'
-import useSWRImmutable from 'swr/immutable'
 import currencyId from 'utils/currencyId'
 import {
   basisPointsToPercent,
@@ -58,7 +59,6 @@ import {
   computeTradePriceBreakdown,
   warningSeverity,
 } from 'utils/exchange'
-import WalletModal, { WalletView } from 'components/Menu/WalletModal'
 import formatAmountDisplay from 'utils/formatAmountDisplay'
 import { maxAmountSpend } from 'utils/maxAmountSpend'
 import { CommitButton } from '../components/CommitButton'
@@ -79,7 +79,13 @@ function useWarningImport(currencies: (Currency | undefined)[]) {
   const defaultTokens = useAllTokens()
   const { isWrongNetwork } = useActiveNetwork()
   const chainId = useActiveChainId()
-  const { data: loadedTokenList } = useSWRImmutable(['token-list'])
+  const { data: loadedTokenList } = useQuery({
+    queryKey: ['token-list'],
+    enabled: false,
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  })
   const urlLoadedTokens = useMemo(() => currencies.filter((c): c is Token => Boolean(c?.isToken)), [currencies])
   const isLoaded = !!loadedTokenList
   const importTokensNotInDefault = useMemo(() => {

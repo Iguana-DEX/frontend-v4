@@ -1,26 +1,27 @@
 import { useTranslation } from '@pancakeswap/localization'
 import {
-  FarmTableLiquidityProps,
-  FarmTableMultiplierProps,
-  Farm as FarmUI,
   Flex,
+  LinkExternal,
+  Message,
+  MessageText,
+  ScanLink,
   Skeleton,
   Text,
+  VerifiedIcon,
   useMatchBreakpoints,
   useModalV2,
-  ScanLink,
-  LinkExternal,
 } from '@pancakeswap/uikit'
+import { FarmWidget } from '@pancakeswap/widgets-internal'
 import ConnectWalletButton from 'components/ConnectWalletButton'
 import { CHAIN_QUERY_NAME } from 'config/chains'
 import { useActiveChainId } from 'hooks/useActiveChainId'
 import { FC, useContext, useMemo } from 'react'
-import { multiChainPaths } from 'state/info/constant'
-import styled, { css, keyframes } from 'styled-components'
+import { ChainLinkSupportChains, multiChainPaths } from 'state/info/constant'
+import { css, keyframes, styled } from 'styled-components'
 import { getBlockExploreLink } from 'utils'
 import { unwrappedToken } from 'utils/wrappedCurrency'
+import { isAddressEqual } from 'viem'
 import { AddLiquidityV3Modal } from 'views/AddLiquidityV3/Modal'
-
 import { SELECTOR_TYPE } from 'views/AddLiquidityV3/types'
 import { V2Farm, V3Farm } from 'views/Farms/FarmsV3'
 import { useAccount } from 'wagmi'
@@ -31,17 +32,19 @@ import Apr, { AprProps } from '../Apr'
 import { HarvestAction, HarvestActionContainer, ProxyHarvestActionContainer } from './HarvestAction'
 import StakedAction, { ProxyStakedContainer, StakedContainer } from './StakedAction'
 
-const { Multiplier, Liquidity, StakedLiquidity } = FarmUI.FarmTable
-const { NoPosition } = FarmUI.FarmV3Table
+const { Multiplier, Liquidity, StakedLiquidity } = FarmWidget.FarmTable
+const { NoPosition } = FarmWidget.FarmV3Table
+const { MerklNotice } = FarmWidget
 
 export interface ActionPanelProps {
   apr: AprProps
-  multiplier: FarmTableMultiplierProps
-  liquidity: FarmTableLiquidityProps
+  multiplier: FarmWidget.FarmTableMultiplierProps
+  liquidity: FarmWidget.FarmTableLiquidityProps
   details: V2Farm
   userDataReady: boolean
   expanded: boolean
   alignLinksToRight?: boolean
+  isLastFarm: boolean
 }
 
 export interface ActionPanelV3Props {
@@ -49,12 +52,14 @@ export interface ActionPanelV3Props {
     value: string
     pid: number
   }
-  multiplier: FarmTableMultiplierProps
-  stakedLiquidity: FarmTableLiquidityProps
+  multiplier: FarmWidget.FarmTableMultiplierProps
+  stakedLiquidity: FarmWidget.FarmTableLiquidityProps
   details: V3Farm
+  farm: FarmWidget.FarmTableFarmTokenInfoProps & { version: 3 }
   userDataReady: boolean
   expanded: boolean
   alignLinksToRight?: boolean
+  isLastFarm: boolean
 }
 
 const expandAnimation = keyframes`
@@ -75,7 +80,7 @@ const collapseAnimation = keyframes`
   }
 `
 
-const Container = styled.div<{ expanded }>`
+const Container = styled.div<{ expanded; isLastFarm }>`
   animation: ${({ expanded }) =>
     expanded
       ? css`
@@ -97,6 +102,7 @@ const Container = styled.div<{ expanded }>`
     align-items: center;
     padding: 16px 24px;
   }
+  ${({ isLastFarm }) => isLastFarm && `border-radius: 0 0 32px 32px;`}
 `
 
 const StyledLinkExternal = styled(LinkExternal)`
@@ -144,9 +150,9 @@ const StyledText = styled(Text)`
   }
 `
 
-const ActionPanelContainer = ({ expanded, values, infos, children }) => {
+const ActionPanelContainer = ({ expanded, values, infos, children, isLastFarm }) => {
   return (
-    <Container expanded={expanded}>
+    <Container expanded={expanded} isLastFarm={isLastFarm}>
       <InfoContainer>
         <ValueContainer>{values}</ValueContainer>
         {infos}
@@ -156,18 +162,52 @@ const ActionPanelContainer = ({ expanded, values, infos, children }) => {
   )
 }
 
+const StyleMerklWarning = styled.div`
+  margin-bottom: 24px;
+  width: 100%;
+
+  ${({ theme }) => theme.mediaQueries.sm} {
+    margin-left: 12px;
+    margin-right: 12px;
+    margin-bottom: 12px;
+  }
+
+  ${({ theme }) => theme.mediaQueries.xl} {
+    margin-right: 0;
+    margin-bottom: 0;
+  }
+`
+
+const MerklWarning: React.FC<{
+  merklLink: string
+  hasFarm?: boolean
+}> = ({ merklLink, hasFarm }) => {
+  return (
+    <StyleMerklWarning>
+      <Message variant="primary" icon={<VerifiedIcon color="#7645D9" />}>
+        <MessageText color="#7645D9">
+          <MerklNotice.Content hasFarm={hasFarm} merklLink={merklLink} linkColor="currentColor" />
+        </MessageText>
+      </Message>
+    </StyleMerklWarning>
+  )
+}
+
 export const ActionPanelV3: FC<ActionPanelV3Props> = ({
   expanded,
   details,
+  farm: farm_,
   multiplier,
   stakedLiquidity,
   alignLinksToRight,
   userDataReady,
+  isLastFarm,
 }) => {
   const { isDesktop } = useMatchBreakpoints()
   const { t } = useTranslation()
   const { chainId } = useActiveChainId()
   const { address: account } = useAccount()
+  const { merklLink } = farm_
   const farm = details
   const isActive = farm.multiplier !== '0X'
   const lpLabel = useMemo(() => farm.lpSymbol && farm.lpSymbol.replace(/pancake/gi, ''), [farm.lpSymbol])
@@ -187,6 +227,12 @@ export const ActionPanelV3: FC<ActionPanelV3Props> = ({
     [farm.stakedPositions.length, farm.unstakedPositions.length, userDataReady],
   )
 
+  const hasBothFarmAndMerkl = useMemo(
+    // for now, only rETH-ETH require both farm and merkl, so we hardcode it here
+    () => Boolean(merklLink) && isAddressEqual(farm.lpAddress, '0x2201d2400d30BFD8172104B4ad046d019CA4E7bd'),
+    [farm.lpAddress, merklLink],
+  )
+
   const addLiquidityModal = useModalV2()
 
   return (
@@ -199,6 +245,7 @@ export const ActionPanelV3: FC<ActionPanelV3Props> = ({
       />
       <ActionPanelContainer
         expanded={expanded}
+        isLastFarm={isLastFarm}
         values={
           <>
             {!isDesktop && (
@@ -232,13 +279,17 @@ export const ActionPanelV3: FC<ActionPanelV3Props> = ({
               <StyledLinkExternal href={infoUrl}>{t('See Pair Info')}</StyledLinkExternal>
             </Flex>
             <Flex mb="2px" justifyContent={alignLinksToRight ? 'flex-end' : 'flex-start'}>
-              <StyledScanLink chainId={chainId} href={bsc}>
+              <StyledScanLink
+                useBscCoinFallback={typeof chainId !== 'undefined' && ChainLinkSupportChains.includes(chainId)}
+                href={bsc}
+              >
                 {t('View Contract')}
               </StyledScanLink>
             </Flex>
           </>
         }
       >
+        {!isDesktop && merklLink ? <MerklWarning hasFarm={hasBothFarmAndMerkl} merklLink={merklLink} /> : null}
         {!userDataReady ? (
           <Skeleton height={200} width="100%" />
         ) : account && !hasNoPosition ? (
@@ -265,6 +316,7 @@ export const ActionPanelV2: React.FunctionComponent<React.PropsWithChildren<Acti
   liquidity,
   userDataReady,
   expanded,
+  isLastFarm,
   alignLinksToRight = true,
 }) => {
   const { chainId } = useActiveChainId()
@@ -286,6 +338,7 @@ export const ActionPanelV2: React.FunctionComponent<React.PropsWithChildren<Acti
   )
 
   const infoUrl = useMemo(() => {
+    if (!chainId) return ''
     if (farm.isStable) {
       return `/info${multiChainPaths[chainId]}/pairs/${farm.stableSwapAddress}?type=stableSwap&chain=${CHAIN_QUERY_NAME[chainId]}`
     }
@@ -304,6 +357,7 @@ export const ActionPanelV2: React.FunctionComponent<React.PropsWithChildren<Acti
       />
       <ActionPanelContainer
         expanded={expanded}
+        isLastFarm={isLastFarm}
         values={
           <>
             {farm.isCommunity && farm.auctionHostingEndDate && (
@@ -355,7 +409,10 @@ export const ActionPanelV2: React.FunctionComponent<React.PropsWithChildren<Acti
               <StyledLinkExternal href={infoUrl}>{t('See Pair Info')}</StyledLinkExternal>
             </Flex>
             <Flex mb="2px" justifyContent={alignLinksToRight ? 'flex-end' : 'flex-start'}>
-              <StyledScanLink chainId={chainId} href={bsc}>
+              <StyledScanLink
+                useBscCoinFallback={typeof chainId !== 'undefined' && ChainLinkSupportChains.includes(chainId)}
+                href={bsc}
+              >
                 {t('View Contract')}
               </StyledScanLink>
             </Flex>
@@ -371,30 +428,6 @@ export const ActionPanelV2: React.FunctionComponent<React.PropsWithChildren<Acti
             {(props) => <HarvestAction {...props} />}
           </HarvestActionContainer>
         )}
-        {/* {farm?.boosted && (
-          <ActionContainerSection style={{ minHeight: isMobile ? 'auto' : isMobile ? 'auto' : 124.5 }}>
-            <BoostedAction
-              title={(status) => (
-                <ActionTitles>
-                  <Text mr="3px" bold textTransform="uppercase" color="textSubtle" fontSize="12px">
-                    {t('Yield Booster')}
-                  </Text>
-                  <Text bold textTransform="uppercase" color="secondary" fontSize="12px">
-                    {status}
-                  </Text>
-                </ActionTitles>
-              )}
-              desc={(actionBtn) => <ActionContent>{actionBtn}</ActionContent>}
-              farmPid={farm?.pid}
-              lpTokenStakedAmount={farm?.lpTokenStakedAmount}
-              userBalanceInFarm={
-                stakedBalance.plus(tokenBalance).gt(0)
-                  ? stakedBalance.plus(tokenBalance)
-                  : proxy.stakedBalance.plus(proxy.tokenBalance)
-              }
-            />
-          </ActionContainerSection>
-        )} */}
         {shouldUseProxyFarm ? (
           <ProxyStakedContainer {...proxyFarm} userDataReady={userDataReady} lpLabel={lpLabel} displayApr={apr.value}>
             {(props) => <StakedAction {...props} />}

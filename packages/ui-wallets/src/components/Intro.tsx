@@ -1,6 +1,5 @@
 import { Trans } from '@pancakeswap/localization'
-import { AtomBox } from '@pancakeswap/ui/components/AtomBox'
-import { Button, Heading, Image, LinkExternal, Text } from '@pancakeswap/uikit'
+import { AtomBox, Button, Heading, Image, LinkExternal, Text } from '@pancakeswap/uikit'
 import { useState, useCallback } from 'react'
 import 'swiper/css'
 import 'swiper/css/autoplay'
@@ -72,18 +71,18 @@ const StepIntro = ({ docLink, docText }: { docLink: string; docText: string }) =
       alignItems="center"
     >
       <Swiper
+        loop
         initialSlide={0}
+        slidesPerView={1}
         modules={[Autoplay]}
-        slidesPerView="auto"
         onSwiper={setSwiper}
         autoplay={{
           delay: 5000,
+          pauseOnMouseEnter: true,
           disableOnInteraction: false,
         }}
         onRealIndexChange={handleRealIndexChange}
-        centeredSlides
-        loop
-        style={{ marginLeft: '0px', marginRight: '0px' }}
+        style={{ width: '100%', marginLeft: '0px', marginRight: '0px' }}
       >
         {IntroSteps.map((introStep) => (
           <SwiperSlide key={introStep.icon}>

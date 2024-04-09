@@ -1,15 +1,15 @@
+import { ChainId } from '@pancakeswap/chains'
+import { BOOST_WEIGHT, DURATION_FACTOR, MAX_LOCK_DURATION } from '@pancakeswap/pools'
+import { BIG_ZERO } from '@pancakeswap/utils/bigNumber'
 import BN from 'bignumber.js'
-import toString from 'lodash/toString'
 import { BLOCKS_PER_YEAR } from 'config'
+import { masterChefV2ABI } from 'config/abi/masterchefV2'
+import toString from 'lodash/toString'
 import { useCallback, useMemo } from 'react'
 import { useCakeVault } from 'state/pools/hooks'
-import useSWRImmutable from 'swr/immutable'
-import { masterChefV2ABI } from 'config/abi/masterchefV2'
 import { getMasterChefV2Address } from 'utils/addressHelpers'
-import { BIG_ZERO } from '@pancakeswap/utils/bigNumber'
-import { BOOST_WEIGHT, DURATION_FACTOR, MAX_LOCK_DURATION } from '@pancakeswap/pools'
 import { publicClient } from 'utils/wagmi'
-import { ChainId } from '@pancakeswap/sdk'
+import { useQuery } from '@tanstack/react-query'
 
 const masterChefAddress = getMasterChefV2Address()
 
@@ -43,36 +43,42 @@ export function useVaultApy({ duration = MAX_LOCK_DURATION }: { duration?: numbe
   const totalSharesAsEtherBN = useMemo(() => new BN(totalShares.toString()), [totalShares])
   const pricePerFullShareAsEtherBN = useMemo(() => new BN(pricePerFullShare.toString()), [pricePerFullShare])
 
-  const { data: totalCakePoolEmissionPerYear } = useSWRImmutable('masterChef-total-cake-pool-emission', async () => {
-    const bscClient = publicClient({ chainId: ChainId.BSC })
+  const { data: totalCakePoolEmissionPerYear } = useQuery({
+    queryKey: ['masterChef-total-cake-pool-emission'],
+    queryFn: async () => {
+      const bscClient = publicClient({ chainId: ChainId.BSC })
 
-    const [specialFarmsPerBlock, cakePoolInfo, totalSpecialAllocPoint] = await bscClient.multicall({
-      contracts: [
-        {
-          address: masterChefAddress,
-          abi: masterChefV2ABI,
-          functionName: 'cakePerBlock',
-          args: [false],
-        },
-        {
-          address: masterChefAddress,
-          abi: masterChefV2ABI,
-          functionName: 'poolInfo',
-          args: [BigInt(cakePoolPID)],
-        },
-        {
-          address: masterChefAddress,
-          abi: masterChefV2ABI,
-          functionName: 'totalSpecialAllocPoint',
-        },
-      ],
-      allowFailure: false,
-    })
+      const [specialFarmsPerBlock, cakePoolInfo, totalSpecialAllocPoint] = await bscClient.multicall({
+        contracts: [
+          {
+            address: masterChefAddress,
+            abi: masterChefV2ABI,
+            functionName: 'cakePerBlock',
+            args: [false],
+          },
+          {
+            address: masterChefAddress,
+            abi: masterChefV2ABI,
+            functionName: 'poolInfo',
+            args: [BigInt(cakePoolPID)],
+          },
+          {
+            address: masterChefAddress,
+            abi: masterChefV2ABI,
+            functionName: 'totalSpecialAllocPoint',
+          },
+        ],
+        allowFailure: false,
+      })
 
-    const allocPoint = cakePoolInfo[2]
+      const allocPoint = cakePoolInfo[2]
 
-    const cakePoolSharesInSpecialFarms = new BN(allocPoint.toString()).div(new BN(totalSpecialAllocPoint.toString()))
-    return new BN(specialFarmsPerBlock.toString()).times(BLOCKS_PER_YEAR).times(cakePoolSharesInSpecialFarms)
+      const cakePoolSharesInSpecialFarms = new BN(allocPoint.toString()).div(new BN(totalSpecialAllocPoint.toString()))
+      return new BN(specialFarmsPerBlock.toString()).times(BLOCKS_PER_YEAR).times(cakePoolSharesInSpecialFarms)
+    },
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
   })
 
   const flexibleApy = useMemo(
@@ -87,7 +93,7 @@ export function useVaultApy({ duration = MAX_LOCK_DURATION }: { duration?: numbe
   const boostFactor = useMemo(() => _getBoostFactor(BOOST_WEIGHT, duration, DURATION_FACTOR), [duration])
 
   const lockedApy = useMemo(() => {
-    return flexibleApy && getLockedApy(flexibleApy, boostFactor).toString()
+    return flexibleApy ? getLockedApy(flexibleApy, boostFactor).toString() : '0'
   }, [boostFactor, flexibleApy])
 
   const getBoostFactor = useCallback(

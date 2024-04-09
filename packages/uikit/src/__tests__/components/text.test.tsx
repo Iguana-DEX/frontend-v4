@@ -1,6 +1,6 @@
-import React from "react";
-import { renderWithProvider } from "../../testHelpers";
+import { expect, it } from "vitest";
 import Text from "../../components/Text/Text";
+import { renderWithProvider } from "../../testHelpers";
 
 it("renders correctly", () => {
   const { asFragment } = renderWithProvider(<Text>pancake</Text>);
@@ -15,8 +15,6 @@ it("renders correctly", () => {
 
     <div
         class="c0"
-        color="text"
-        font-size="16px"
       >
         pancake
       </div>

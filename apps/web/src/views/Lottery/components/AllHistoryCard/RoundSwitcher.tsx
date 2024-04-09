@@ -1,9 +1,10 @@
-import styled from 'styled-components'
-import { IconButton, ArrowForwardIcon, ArrowBackIcon, ArrowLastIcon, Flex, Heading, Input } from '@pancakeswap/uikit'
 import { useTranslation } from '@pancakeswap/localization'
+import { ArrowBackIcon, ArrowForwardIcon, ArrowLastIcon, Flex, Heading, IconButton, Input } from '@pancakeswap/uikit'
+import { useCallback } from 'react'
+import { styled } from 'styled-components'
 
 const StyledInput = styled(Input)`
-  width: 60px;
+  width: 70px;
   height: 100%;
   padding: 4px 16px;
 `
@@ -11,7 +12,7 @@ const StyledInput = styled(Input)`
 const StyledIconButton = styled(IconButton)`
   width: 32px;
 
-  :disabled {
+  &:disabled {
     background: none;
 
     svg {
@@ -25,9 +26,9 @@ const StyledIconButton = styled(IconButton)`
 `
 
 interface RoundSwitcherProps {
-  isLoading: boolean
-  selectedRoundId: string
-  mostRecentRound: number
+  isLoading?: boolean
+  selectedRoundId?: string
+  mostRecentRound: number | null
   handleInputChange: (event: any) => void
   handleArrowButtonPress: (targetRound: number) => void
 }
@@ -40,13 +41,16 @@ const RoundSwitcher: React.FC<React.PropsWithChildren<RoundSwitcherProps>> = ({
   handleArrowButtonPress,
 }) => {
   const { t } = useTranslation()
-  const selectedRoundIdAsInt = parseInt(selectedRoundId, 10)
+  const selectedRoundIdAsInt = parseInt(selectedRoundId ?? '0', 10)
 
-  const handleOnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.currentTarget.validity.valid) {
-      handleInputChange(e)
-    }
-  }
+  const handleOnChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.currentTarget.validity.valid) {
+        handleInputChange(e)
+      }
+    },
+    [handleInputChange],
+  )
 
   return (
     <Flex alignItems="center" justifyContent="space-between">
@@ -74,7 +78,7 @@ const RoundSwitcher: React.FC<React.PropsWithChildren<RoundSwitcherProps>> = ({
           <ArrowBackIcon />
         </StyledIconButton>
         <StyledIconButton
-          disabled={selectedRoundIdAsInt >= mostRecentRound}
+          disabled={mostRecentRound !== null && selectedRoundIdAsInt >= mostRecentRound}
           onClick={() => handleArrowButtonPress(selectedRoundIdAsInt + 1)}
           variant="text"
           scale="sm"
@@ -83,8 +87,8 @@ const RoundSwitcher: React.FC<React.PropsWithChildren<RoundSwitcherProps>> = ({
           <ArrowForwardIcon />
         </StyledIconButton>
         <StyledIconButton
-          disabled={selectedRoundIdAsInt >= mostRecentRound}
-          onClick={() => handleArrowButtonPress(mostRecentRound)}
+          disabled={mostRecentRound !== null && selectedRoundIdAsInt >= mostRecentRound}
+          onClick={() => mostRecentRound !== null && handleArrowButtonPress(mostRecentRound)}
           variant="text"
           scale="sm"
         >

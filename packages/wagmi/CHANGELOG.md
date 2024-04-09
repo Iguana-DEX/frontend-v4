@@ -1,5 +1,32 @@
 # @pancakeswap/wagmi
 
+## 3.0.0
+
+### Major Changes
+
+- acc454d: Remove binance extension wallet connector @pancakeswap/wagmi
+  release new pkg @pancakeswap/universal-router-sdk & @pancakeswap/permit2-sdk
+
+## 2.0.3
+
+### Patch Changes
+
+- 2ec03f1b2: chore: Bump up gauges
+
+## 2.0.2
+
+### Patch Changes
+
+- 2d7e1b3e2: Upgraded viem
+
+## 2.0.1
+
+### Patch Changes
+
+- 1fdd3cc57: Bump wagmi version
+- 628e055ce: Fix blocto keep connection after disconnect
+- 299cf46b7: Upgrade blocto sdk version
+
 ## 2.0.0
 
 ### Major Changes

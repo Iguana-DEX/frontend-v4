@@ -33,11 +33,11 @@ export function calculateSlippageAmount(value: CurrencyAmount<Currency>, slippag
 
 export function useRouterContract() {
   const { chainId } = useActiveChainId()
-  return useContract(V2_ROUTER_ADDRESS[chainId], pancakeRouter02ABI)
+  return useContract(chainId && V2_ROUTER_ADDRESS[chainId], pancakeRouter02ABI)
 }
 
 // computes price breakdown for the trade
-export function computeTradePriceBreakdown(trade: Trade<Currency, Currency, TradeType> | null): {
+export function computeTradePriceBreakdown(trade?: Trade<Currency, Currency, TradeType> | null): {
   priceImpactWithoutFee: Percent | undefined
   realizedLPFee: CurrencyAmount<Currency> | undefined | null
 } {
@@ -85,7 +85,7 @@ export function computeSlippageAdjustedAmounts(
   }
 }
 
-export function warningSeverity(priceImpact: Percent | undefined): 0 | 1 | 2 | 3 | 4 {
+export function warningSeverity(priceImpact: Percent | undefined | null): 0 | 1 | 2 | 3 | 4 {
   if (!priceImpact?.lessThan(BLOCKED_PRICE_IMPACT_NON_EXPERT)) return 4
   if (!priceImpact?.lessThan(ALLOWED_PRICE_IMPACT_HIGH)) return 3
   if (!priceImpact?.lessThan(ALLOWED_PRICE_IMPACT_MEDIUM)) return 2

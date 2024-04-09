@@ -1,7 +1,8 @@
-import { TradeType, Percent, Token, CurrencyAmount } from '@pancakeswap/swap-sdk-core'
-import { isTradeBetter } from '../src/trade'
+import { ChainId } from '@pancakeswap/chains'
+import { CurrencyAmount, Percent, Token, TradeType } from '@pancakeswap/swap-sdk-core'
+import { describe, expect, it } from 'vitest'
 import { Pair, Route, Trade } from '../src/entities'
-import { ChainId } from '../src/constants'
+import { isTradeBetter } from '../src/trade'
 
 const BETTER_TRADE_LESS_HOPS_THRESHOLD = new Percent(50n, 10000n)
 

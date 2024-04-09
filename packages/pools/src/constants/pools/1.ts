@@ -3,7 +3,48 @@ import { getAddress } from 'viem'
 
 import { PoolCategory, SerializedPool } from '../../types'
 
-export const livePools: SerializedPool[] = [
+export const livePools: SerializedPool[] = []
+// .map((p) => ({
+//   ...p,
+//   contractAddress: getAddress(p.contractAddress),
+//   stakingToken: p.stakingToken.serialize,
+//   earningToken: p.earningToken.serialize,
+// }))
+
+// known finished pools
+export const finishedPools: SerializedPool[] = [
+  {
+    sousId: 9,
+    stakingToken: ethereumTokens.cake,
+    earningToken: ethereumTokens.rpl,
+    contractAddress: '0x3B30A93D056e9A1156D0f17CBd05B711c4232C84',
+    poolCategory: PoolCategory.CORE,
+    tokenPerSecond: '0.0006045',
+  },
+  {
+    sousId: 8,
+    stakingToken: ethereumTokens.cake,
+    earningToken: ethereumTokens.wstETH,
+    contractAddress: '0x3C6452d5a217Cc65b98F0803c6D1BD7Fe588389A',
+    poolCategory: PoolCategory.CORE,
+    tokenPerSecond: '0.00000271',
+  },
+  {
+    sousId: 7,
+    stakingToken: ethereumTokens.cake,
+    earningToken: ethereumTokens.rpl,
+    contractAddress: '0x3df19692a70fc55Ec8BfE1C9593E584D8F69c510',
+    poolCategory: PoolCategory.CORE,
+    tokenPerSecond: '0.0005623',
+  },
+  {
+    sousId: 6,
+    stakingToken: ethereumTokens.cake,
+    earningToken: ethereumTokens.rpl,
+    contractAddress: '0x3f0bCCa8f5aA37e184B22e3A2ca8C292fe6B716B',
+    poolCategory: PoolCategory.CORE,
+    tokenPerSecond: '0.0005093',
+  },
   {
     sousId: 5,
     stakingToken: ethereumTokens.cake,
@@ -20,15 +61,6 @@ export const livePools: SerializedPool[] = [
     poolCategory: PoolCategory.CORE,
     tokenPerSecond: '0.04061',
   },
-].map((p) => ({
-  ...p,
-  contractAddress: getAddress(p.contractAddress),
-  stakingToken: p.stakingToken.serialize,
-  earningToken: p.earningToken.serialize,
-}))
-
-// known finished pools
-export const finishedPools: SerializedPool[] = [
   {
     sousId: 4,
     stakingToken: ethereumTokens.cake,
@@ -53,6 +85,12 @@ export const finishedPools: SerializedPool[] = [
     poolCategory: PoolCategory.CORE,
     tokenPerSecond: '0.04629',
   },
-]
+].map((p) => ({
+  ...p,
+  isFinished: true,
+  contractAddress: getAddress(p.contractAddress),
+  stakingToken: p.stakingToken.serialize,
+  earningToken: p.earningToken.serialize,
+}))
 
 export const pools: SerializedPool[] = [...livePools, ...finishedPools]

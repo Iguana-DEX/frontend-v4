@@ -1,15 +1,15 @@
 import { getVersionUpgrade, VersionUpgrade } from '@pancakeswap/token-lists'
 import { acceptListUpdate, updateListVersion, useFetchListCallback } from '@pancakeswap/token-lists/react'
+import { useQuery } from '@tanstack/react-query'
 import { EXCHANGE_PAGE_PATHS } from 'config/constants/exchange'
 import { UNSUPPORTED_LIST_URLS } from 'config/constants/lists'
-import { usePublicClient } from 'wagmi'
 import { useActiveChainId } from 'hooks/useActiveChainId'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo } from 'react'
 import { useAllLists } from 'state/lists/hooks'
-import useSWRImmutable from 'swr/immutable'
+import { usePublicClient } from 'wagmi'
 import { useActiveListUrls } from './hooks'
-import { useListState, useListStateReady, initialState } from './lists'
+import { initialState, useListState, useListStateReady } from './lists'
 
 export default function Updater(): null {
   const { chainId } = useActiveChainId()
@@ -38,29 +38,43 @@ export default function Updater(): null {
   const fetchList = useFetchListCallback(dispatch)
 
   // whenever a list is not loaded and not loading, try again to load it
-  useSWRImmutable(isReady && ['first-fetch-token-list', lists], () => {
-    Object.keys(lists).forEach((listUrl) => {
-      const list = lists[listUrl]
-      if (!list.current && !list.loadingRequestId && !list.error) {
-        fetchList(listUrl).catch((error) => console.debug('list added fetching error', error))
-      }
-    })
+  useQuery({
+    queryKey: ['first-fetch-token-list', lists],
+
+    queryFn: () => {
+      Object.keys(lists).forEach((listUrl) => {
+        const list = lists[listUrl]
+        if (!list.current && !list.loadingRequestId && !list.error) {
+          fetchList(listUrl).catch((error) => console.debug('list added fetching error', error))
+        }
+      })
+      return null
+    },
+
+    enabled: Boolean(isReady),
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
   })
 
-  useSWRImmutable(
-    includeListUpdater && isReady && listState !== initialState ? ['token-list'] : null,
-    async () => {
+  useQuery({
+    queryKey: ['token-list'],
+
+    queryFn: async () => {
       return Promise.all(
         Object.keys(lists).map((url) =>
           fetchList(url).catch((error) => console.debug('interval list fetching error', error)),
         ),
       )
     },
-    {
-      dedupingInterval: 1000 * 60 * 10,
-      refreshInterval: 1000 * 60 * 10,
-    },
-  )
+
+    enabled: Boolean(includeListUpdater && isReady && listState !== initialState),
+    refetchInterval: 1000 * 60 * 10,
+    staleTime: 1000 * 60 * 10,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
+  })
 
   // if any lists from unsupported lists are loaded, check them too (in case new updates since last visit)
   useEffect(() => {

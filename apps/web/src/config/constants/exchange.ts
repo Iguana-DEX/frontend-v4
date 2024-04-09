@@ -1,42 +1,58 @@
-import { ChainId, Percent, Token, WNATIVE } from '@pancakeswap/sdk'
+import { ChainId } from '@pancakeswap/chains'
+import { Percent, Token, WNATIVE } from '@pancakeswap/sdk'
 import {
-  bscTokens,
-  bscTestnetTokens,
+  BUSD,
   USDC,
   USDT,
-  BUSD,
   WBTC_ETH,
-  arbitrumTokens,
-  polygonZkEvmTokens,
-  polygonZkEvmTestnetTokens,
-  zksyncTokens,
-  zkSyncTestnetTokens,
-  lineaTestnetTokens,
+  arbSepoliaTokens,
   arbitrumGoerliTokens,
-  etherlinkTestnetTokens,
+  arbitrumTokens,
+  baseSepoliaTokens,
+  baseTestnetTokens,
+  baseTokens,
+  bscTestnetTokens,
+  bscTokens,
+  lineaTestnetTokens,
+  lineaTokens,
+  opBnbTestnetTokens,
+  opBnbTokens,
+  polygonZkEvmTestnetTokens,
+  polygonZkEvmTokens,
+  scrollSepoliaTokens,
+  zkSyncTestnetTokens,
+  zksyncTokens,
 } from '@pancakeswap/tokens'
 import { ChainTokenList } from './types'
 
 export {
   ADDITIONAL_BASES,
-  V2_ROUTER_ADDRESS,
   BASES_TO_CHECK_TRADES_AGAINST,
   CUSTOM_BASES,
-} from '@pancakeswap/smart-router/evm'
+  V2_ROUTER_ADDRESS,
+} from '@pancakeswap/smart-router'
 
 export const CHAIN_REFRESH_TIME = {
   [ChainId.ETHEREUM]: 12_000,
   [ChainId.GOERLI]: 12_000,
   [ChainId.BSC]: 6_000,
   [ChainId.BSC_TESTNET]: 6_000,
-  [ChainId.ARBITRUM_ONE]: 4_000,
-  [ChainId.ARBITRUM_GOERLI]: 4_000,
+  [ChainId.ARBITRUM_ONE]: 10_000,
+  [ChainId.ARBITRUM_GOERLI]: 10_000,
   [ChainId.POLYGON_ZKEVM]: 7_000,
   [ChainId.POLYGON_ZKEVM_TESTNET]: 7_000,
   [ChainId.ZKSYNC]: 3_000,
   [ChainId.ZKSYNC_TESTNET]: 3_000,
+  [ChainId.LINEA]: 12_000,
   [ChainId.LINEA_TESTNET]: 12_000,
-  [ChainId.ETHERLINK_TESTNET]: 12_000,
+  [ChainId.OPBNB]: 6_000,
+  [ChainId.OPBNB_TESTNET]: 6_000,
+  [ChainId.BASE]: 6_000,
+  [ChainId.BASE_TESTNET]: 6_000,
+  [ChainId.SCROLL_SEPOLIA]: 6_000,
+  [ChainId.SEPOLIA]: 12_000,
+  [ChainId.BASE_SEPOLIA]: 6_000,
+  [ChainId.ARBITRUM_SEPOLIA]: 6_000,
 } as const satisfies Record<ChainId, number>
 
 // used for display in the default list when adding liquidity
@@ -51,8 +67,21 @@ export const SUGGESTED_BASES: ChainTokenList = {
   [ChainId.POLYGON_ZKEVM_TESTNET]: [polygonZkEvmTestnetTokens.weth, polygonZkEvmTestnetTokens.usdt],
   [ChainId.ZKSYNC]: [zksyncTokens.usdc, zksyncTokens.weth],
   [ChainId.ZKSYNC_TESTNET]: [zkSyncTestnetTokens.usdc, zkSyncTestnetTokens.weth],
+  [ChainId.LINEA]: [lineaTokens.usdc, lineaTokens.weth],
   [ChainId.LINEA_TESTNET]: [lineaTestnetTokens.usdc, lineaTestnetTokens.weth],
-  [ChainId.ETHERLINK_TESTNET]: [etherlinkTestnetTokens.wxtz, etherlinkTestnetTokens.eusd],
+  [ChainId.OPBNB]: [opBnbTokens.wbnb, opBnbTokens.usdt],
+  [ChainId.OPBNB_TESTNET]: [
+    opBnbTestnetTokens.wbnb,
+    opBnbTestnetTokens.usdt,
+    opBnbTestnetTokens.usdc,
+    opBnbTestnetTokens.weth,
+  ],
+  [ChainId.BASE]: [baseTokens.usdc, baseTokens.weth],
+  [ChainId.BASE_TESTNET]: [baseTestnetTokens.usdc, baseTestnetTokens.weth],
+  [ChainId.SCROLL_SEPOLIA]: [scrollSepoliaTokens.usdc, scrollSepoliaTokens.weth],
+  [ChainId.SEPOLIA]: [scrollSepoliaTokens.usdc, scrollSepoliaTokens.weth],
+  [ChainId.ARBITRUM_SEPOLIA]: [arbSepoliaTokens.usdc, arbSepoliaTokens.weth],
+  [ChainId.BASE_SEPOLIA]: [baseSepoliaTokens.usdc, baseSepoliaTokens.weth],
 }
 
 // used to construct the list of all pairs we consider by default in the frontend
@@ -67,14 +96,16 @@ export const BASES_TO_TRACK_LIQUIDITY_FOR: ChainTokenList = {
   [ChainId.POLYGON_ZKEVM_TESTNET]: [polygonZkEvmTestnetTokens.weth, polygonZkEvmTestnetTokens.usdt],
   [ChainId.ZKSYNC]: [zksyncTokens.usdc, zksyncTokens.weth],
   [ChainId.ZKSYNC_TESTNET]: [zkSyncTestnetTokens.usdc, zkSyncTestnetTokens.weth],
+  [ChainId.LINEA]: [lineaTokens.usdc, lineaTokens.weth],
   [ChainId.LINEA_TESTNET]: [lineaTestnetTokens.usdc, lineaTestnetTokens.weth],
-  [ChainId.ETHERLINK_TESTNET]: [
-    etherlinkTestnetTokens.wxtz,
-    etherlinkTestnetTokens.eusd,
-    etherlinkTestnetTokens.usdc,
-    etherlinkTestnetTokens.usdt,
-    etherlinkTestnetTokens.ign,
-  ],
+  [ChainId.OPBNB_TESTNET]: [opBnbTestnetTokens.wbnb, opBnbTestnetTokens.usdt, opBnbTestnetTokens.usdc],
+  [ChainId.OPBNB]: [opBnbTokens.wbnb, opBnbTokens.usdt],
+  [ChainId.BASE]: [baseTokens.usdc, baseTokens.weth],
+  [ChainId.BASE_TESTNET]: [baseTestnetTokens.usdc, baseTestnetTokens.weth],
+  [ChainId.SCROLL_SEPOLIA]: [scrollSepoliaTokens.usdc, scrollSepoliaTokens.weth],
+  [ChainId.SEPOLIA]: [scrollSepoliaTokens.usdc, scrollSepoliaTokens.weth],
+  [ChainId.ARBITRUM_SEPOLIA]: [arbSepoliaTokens.usdc, arbSepoliaTokens.weth],
+  [ChainId.BASE_SEPOLIA]: [baseSepoliaTokens.usdc, baseSepoliaTokens.weth],
 }
 
 export const PINNED_PAIRS: { readonly [chainId in ChainId]?: [Token, Token][] } = {
@@ -96,12 +127,13 @@ export const PINNED_PAIRS: { readonly [chainId in ChainId]?: [Token, Token][] } 
   [ChainId.POLYGON_ZKEVM]: [[polygonZkEvmTokens.weth, polygonZkEvmTokens.usdt]],
   [ChainId.ZKSYNC]: [[zksyncTokens.usdc, zksyncTokens.weth]],
   [ChainId.ZKSYNC_TESTNET]: [[zkSyncTestnetTokens.usdc, zkSyncTestnetTokens.weth]],
+  [ChainId.LINEA]: [[lineaTokens.usdc, lineaTokens.weth]],
   [ChainId.LINEA_TESTNET]: [[lineaTestnetTokens.usdc, lineaTestnetTokens.weth]],
-  [ChainId.ETHERLINK_TESTNET]: [
-    [etherlinkTestnetTokens.ign, etherlinkTestnetTokens.wxtz],
-    [etherlinkTestnetTokens.wxtz, etherlinkTestnetTokens.eusd],
-    [etherlinkTestnetTokens.usdt, etherlinkTestnetTokens.eusd],
-  ],
+  [ChainId.OPBNB]: [[opBnbTokens.usdt, opBnbTokens.wbnb]],
+  [ChainId.OPBNB_TESTNET]: [[opBnbTestnetTokens.usdt, opBnbTestnetTokens.wbnb]],
+  [ChainId.BASE]: [[baseTokens.usdc, baseTokens.weth]],
+  [ChainId.BASE_TESTNET]: [[baseTestnetTokens.usdc, baseTestnetTokens.weth]],
+  [ChainId.SCROLL_SEPOLIA]: [[scrollSepoliaTokens.usdc, scrollSepoliaTokens.weth]],
 }
 
 export const BIG_INT_ZERO = 0n
@@ -140,4 +172,4 @@ export const GENERIC_GAS_LIMIT_ORDER_EXECUTION = 500000n
 
 export const LIMIT_ORDERS_DOCS_URL = 'https://docs.pancakeswap.finance/products/pancakeswap-exchange/limit-orders'
 
-export const EXCHANGE_PAGE_PATHS = ['/swap', '/limit-orders', 'liquidity', '/add', '/find', '/remove']
+export const EXCHANGE_PAGE_PATHS = ['/swap', '/limit-orders', 'liquidity', '/add', '/find', '/remove', '/stable', '/v2']

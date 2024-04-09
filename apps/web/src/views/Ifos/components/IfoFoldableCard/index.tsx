@@ -12,24 +12,25 @@ import {
 } from '@pancakeswap/uikit'
 import { useAccount } from 'wagmi'
 import { ToastDescriptionWithTx } from 'components/Toast'
-import { Ifo, PoolIds } from 'config/constants/types'
+import { Ifo, PoolIds } from '@pancakeswap/ifos'
 import useCatchTxError from 'hooks/useCatchTxError'
 import { useERC20 } from 'hooks/useContract'
 import { useIsWindowVisible } from '@pancakeswap/hooks'
-import useSWRImmutable from 'swr/immutable'
 import { FAST_INTERVAL } from 'config/constants'
 import { useRouter } from 'next/router'
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { useCurrentBlock } from 'state/block/hooks'
-import styled from 'styled-components'
+import { styled } from 'styled-components'
 import { requiresApproval } from 'utils/requiresApproval'
 import { PublicIfoData, WalletIfoData } from 'views/Ifos/types'
+import { useQuery } from '@tanstack/react-query'
 import useIfoApprove from '../../hooks/useIfoApprove'
 import { CardsWrapper } from '../IfoCardStyles'
 import IfoAchievement from './Achievement'
 import IfoPoolCard from './IfoPoolCard'
 import { IfoRibbon } from './IfoRibbon'
 import { EnableStatus } from './types'
+import { getBannerUrl } from '../../helpers'
 
 interface IfoFoldableCardProps {
   ifo: Ifo
@@ -80,7 +81,7 @@ const Header = styled(CardHeader)<{ ifoId: string; $isCurrent?: boolean }>`
   border-top-left-radius: 32px;
   border-top-right-radius: 32px;
   background-color: ${({ theme }) => theme.colors.dropdown};
-  background-image: ${({ ifoId }) => `url('/images/ifos/${ifoId}-bg.png')`};
+  background-image: ${({ ifoId }) => `url('${getBannerUrl(ifoId)}')`};
   ${({ theme }) => theme.mediaQueries.md} {
     height: 112px;
   }
@@ -99,49 +100,6 @@ const StyledCardFooter = styled(CardFooter)`
   text-align: center;
 `
 
-const StyledNoHatBunny = styled.div<{ $isLive: boolean; $isCurrent?: boolean }>`
-  position: absolute;
-  left: -24px;
-  z-index: 1;
-  top: 33px;
-  display: none;
-
-  > img {
-    width: 78px;
-  }
-
-  ${({ theme }) => theme.mediaQueries.xl} {
-    display: block;
-    left: auto;
-    top: ${({ $isLive }) => ($isLive ? '63px' : '48px')};
-    right: ${({ $isCurrent }) => ($isCurrent ? '17px' : '90px')};
-
-    > img {
-      width: 123px;
-    }
-  }
-
-  ${({ theme }) => theme.mediaQueries.xxl} {
-    right: 90px;
-  }
-`
-
-const NoHatBunny = ({ isLive, isCurrent }: { isLive?: boolean; isCurrent?: boolean }) => {
-  const { isXs, isSm, isMd } = useMatchBreakpoints()
-  const isSmallerThanTablet = isXs || isSm || isMd
-  if (isSmallerThanTablet && isLive) return null
-  return (
-    <StyledNoHatBunny $isLive={isLive} $isCurrent={isCurrent}>
-      <img
-        src={`/images/ifos/assets/bunnypop-${!isSmallerThanTablet ? 'right' : 'left'}.png`}
-        width={123}
-        height={162}
-        alt="bunny"
-      />
-    </StyledNoHatBunny>
-  )
-}
-
 // Active Ifo
 export const IfoCurrentCard = ({
   ifo,
@@ -156,8 +114,6 @@ export const IfoCurrentCard = ({
   const { t } = useTranslation()
   const { isMobile } = useMatchBreakpoints()
 
-  const shouldShowBunny = publicIfoData.status === 'live' || publicIfoData.status === 'coming_soon'
-
   return (
     <>
       {isMobile && (
@@ -170,17 +126,15 @@ export const IfoCurrentCard = ({
           maxWidth={['400px', '400px', '400px', '100%']}
         >
           <Header $isCurrent ifoId={ifo.id} />
-          <IfoRibbon publicIfoData={publicIfoData} />
-          {shouldShowBunny && <NoHatBunny isLive={publicIfoData.status === 'live'} />}
+          <IfoRibbon ifoId={ifo.id} publicIfoData={publicIfoData} ifoChainId={ifo.chainId} />
         </Box>
       )}
       <Box position="relative" width="100%" maxWidth={['400px', '400px', '400px', '400px', '400px', '100%']}>
-        {!isMobile && shouldShowBunny && <NoHatBunny isCurrent isLive={publicIfoData.status === 'live'} />}
         <StyledCard $isCurrent>
           {!isMobile && (
             <>
               <Header $isCurrent ifoId={ifo.id} />
-              <IfoRibbon publicIfoData={publicIfoData} />
+              <IfoRibbon ifoId={ifo.id} publicIfoData={publicIfoData} ifoChainId={ifo.chainId} />
             </>
           )}
           <IfoCard ifo={ifo} publicIfoData={publicIfoData} walletIfoData={walletIfoData} />
@@ -211,7 +165,6 @@ const IfoFoldableCard = ({
   walletIfoData: WalletIfoData
 }) => {
   const { asPath } = useRouter()
-  const { isDesktop } = useMatchBreakpoints()
   const [isExpanded, setIsExpanded] = useState(false)
   const wrapperEl = useRef<HTMLDivElement>(null)
 
@@ -225,7 +178,6 @@ const IfoFoldableCard = ({
 
   return (
     <Box id={ifo.id} ref={wrapperEl} position="relative">
-      {isExpanded && isDesktop && <NoHatBunny isLive={false} />}
       <Box as={StyledCard} borderRadius="32px">
         <Box position="relative">
           <Header ifoId={ifo.id}>
@@ -233,7 +185,7 @@ const IfoFoldableCard = ({
           </Header>
           {isExpanded && (
             <>
-              <IfoRibbon publicIfoData={publicIfoData} />
+              <IfoRibbon ifoId={ifo.id} publicIfoData={publicIfoData} ifoChainId={ifo.chainId} />
             </>
           )}
         </Box>
@@ -265,10 +217,10 @@ const IfoCard: React.FC<React.PropsWithChildren<IfoFoldableCardProps>> = ({ ifo,
       (publicIfoData.status === 'finished' && secondsUntilEnd >= -120) ||
       (publicIfoData.status === 'finished' &&
         ifo.version >= 3.2 &&
-        (publicIfoData[PoolIds.poolBasic].vestingInformation.percentage > 0 ||
-          publicIfoData[PoolIds.poolUnlimited].vestingInformation.percentage > 0))) &&
+        ((publicIfoData[PoolIds.poolBasic]?.vestingInformation?.percentage ?? 0) > 0 ||
+          (publicIfoData[PoolIds.poolUnlimited]?.vestingInformation?.percentage ?? 0) > 0))) &&
     ifo.isActive
-  const onApprove = useIfoApprove(ifo, contract.address)
+  const onApprove = useIfoApprove(ifo, contract?.address)
   const { toastSuccess } = useToast()
   const { fetchWithCatchTxError } = useCatchTxError()
   const isWindowVisible = useIsWindowVisible()
@@ -278,34 +230,34 @@ const IfoCard: React.FC<React.PropsWithChildren<IfoFoldableCardProps>> = ({ ifo,
       account &&
       ifo.version >= 3.2 &&
       publicIfoData.status === 'finished' &&
-      (publicIfoData[PoolIds.poolBasic].vestingInformation.percentage > 0 ||
-        publicIfoData[PoolIds.poolUnlimited].vestingInformation.percentage > 0) &&
-      (walletIfoData[PoolIds.poolBasic].amountTokenCommittedInLP.gt(0) ||
+      ((publicIfoData[PoolIds.poolBasic]?.vestingInformation?.percentage ?? 0) > 0 ||
+        (publicIfoData[PoolIds.poolUnlimited]?.vestingInformation?.percentage ?? 0) > 0) &&
+      (walletIfoData[PoolIds.poolBasic]?.amountTokenCommittedInLP.gt(0) ||
         walletIfoData[PoolIds.poolUnlimited].amountTokenCommittedInLP.gt(0))
     )
   }, [account, ifo, publicIfoData, walletIfoData])
 
-  useSWRImmutable(
-    currentBlock &&
-      (isRecentlyActive
-        ? ['fetchPublicIfoData', currentBlock, ifo.id]
-        : !isPublicIfoDataInitialized
-        ? ['fetchPublicIfoData', ifo.id]
-        : null),
-    async () => fetchPublicIfoData(currentBlock),
-  )
+  useQuery({
+    queryKey: ['fetchPublicIfoData', currentBlock, ifo.id],
+    queryFn: async () => fetchPublicIfoData(currentBlock),
+    enabled: Boolean(currentBlock && (isRecentlyActive || !isPublicIfoDataInitialized)),
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
+  })
 
-  useSWRImmutable(
-    isWindowVisible &&
-      (isRecentlyActive || !isWalletDataInitialized || hasVesting) &&
-      account && ['fetchWalletIfoData', account, ifo.id],
-    async () => fetchWalletIfoData(),
-    isRecentlyActive || hasVesting
-      ? {
-          refreshInterval: FAST_INTERVAL,
-        }
-      : {},
-  )
+  useQuery({
+    queryKey: ['fetchWalletIfoData', account, ifo.id],
+    queryFn: async () => fetchWalletIfoData(),
+    enabled: Boolean(isWindowVisible && (isRecentlyActive || !isWalletDataInitialized || hasVesting) && account),
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
+
+    ...((isRecentlyActive || hasVesting) && {
+      refetchInterval: FAST_INTERVAL,
+    }),
+  })
 
   useEffect(() => {
     if (!account && isWalletDataInitialized) {
@@ -316,7 +268,7 @@ const IfoCard: React.FC<React.PropsWithChildren<IfoFoldableCardProps>> = ({ ifo,
   const handleApprove = async () => {
     const receipt = await fetchWithCatchTxError(() => {
       setEnableStatus(EnableStatus.IS_ENABLING)
-      return onApprove()
+      return onApprove() as any
     })
     if (receipt?.status) {
       toastSuccess(
@@ -333,7 +285,7 @@ const IfoCard: React.FC<React.PropsWithChildren<IfoFoldableCardProps>> = ({ ifo,
 
   useEffect(() => {
     const checkAllowance = async () => {
-      const approvalRequired = await requiresApproval(raisingTokenContract, account, contract.address)
+      const approvalRequired = await requiresApproval(raisingTokenContract, account || '0x', contract?.address || '0x')
       setEnableStatus(approvalRequired ? EnableStatus.DISABLED : EnableStatus.ENABLED)
     }
 
@@ -346,8 +298,8 @@ const IfoCard: React.FC<React.PropsWithChildren<IfoFoldableCardProps>> = ({ ifo,
     <>
       <StyledCardBody>
         <CardsWrapper
-          shouldReverse={ifo.version >= 3.1}
-          singleCard={!publicIfoData.poolBasic || !walletIfoData.poolBasic}
+          $shouldReverse={ifo.version >= 3.1 && publicIfoData.poolBasic?.saleType !== 2}
+          $singleCard={!publicIfoData.poolBasic || !walletIfoData.poolBasic}
         >
           {publicIfoData.poolBasic && walletIfoData.poolBasic && (
             <IfoPoolCard

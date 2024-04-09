@@ -4,9 +4,9 @@ import { useAllTokens } from 'hooks/Tokens'
 import useNativeCurrency from 'hooks/useNativeCurrency'
 import orderBy from 'lodash/orderBy'
 import { useMemo } from 'react'
-import { isAddress } from 'utils'
+import { safeGetAddress } from 'utils'
 import { getMulticallAddress } from 'utils/addressHelpers'
-import { Address } from 'viem'
+import { Address, isAddress } from 'viem'
 import { erc20ABI, useAccount } from 'wagmi'
 import { useMultipleContractSingleData, useSingleContractMultipleData } from '../multicall/hooks'
 
@@ -20,15 +20,20 @@ export function useNativeBalances(uncheckedAddresses?: (string | undefined)[]): 
 
   const addresses: Address[] = useMemo(
     () =>
-      uncheckedAddresses ? orderBy(uncheckedAddresses.map(isAddress).filter((a): a is Address => a !== false)) : [],
+      uncheckedAddresses
+        ? orderBy(uncheckedAddresses.map(safeGetAddress).filter((a): a is Address => a !== undefined))
+        : [],
     [uncheckedAddresses],
   )
 
   const results = useSingleContractMultipleData({
-    contract: {
-      abi: multicallABI,
-      address: getMulticallAddress(native.chainId),
-    },
+    contract: useMemo(
+      () => ({
+        abi: multicallABI,
+        address: getMulticallAddress(native.chainId),
+      }),
+      [native],
+    ),
     functionName: 'getEthBalance',
     args: useMemo(() => addresses.map((address) => [address] as const), [addresses]),
   })
@@ -52,7 +57,7 @@ export function useTokenBalancesWithLoadingIndicator(
   tokens?: (Token | undefined)[],
 ): [{ [tokenAddress: string]: CurrencyAmount<Token> | undefined }, boolean] {
   const validatedTokens: Token[] = useMemo(
-    () => tokens?.filter((t?: Token): t is Token => isAddress(t?.address) !== false) ?? [],
+    () => tokens?.filter((t?: Token): t is Token => isAddress(t?.address || '')) ?? [],
     [tokens],
   )
 
@@ -108,19 +113,19 @@ export function useTokenBalance(account?: string, token?: Token): CurrencyAmount
 
 export function useCurrencyBalances(
   account?: string,
-  currencies?: (Currency | undefined)[],
+  currencies?: (Currency | undefined | null)[],
 ): (CurrencyAmount<Currency> | undefined)[] {
   const tokens = useMemo(
-    () => currencies?.filter((currency): currency is Token => currency?.isToken) ?? [],
+    () => currencies?.filter((currency): currency is Token => Boolean(currency?.isToken)) ?? [],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [...currencies],
+    [...(currencies ?? [])],
   )
 
   const tokenBalances = useTokenBalances(account, tokens)
   const containsNative: boolean = useMemo(
     () => currencies?.some((currency) => currency?.isNative) ?? false,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [...currencies],
+    [...(currencies ?? [])],
   )
   const uncheckedAddresses = useMemo(() => (containsNative ? [account] : []), [containsNative, account])
   const nativeBalance = useNativeBalances(uncheckedAddresses)
@@ -134,11 +139,11 @@ export function useCurrencyBalances(
         return undefined
       }) ?? [],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [account, ...currencies, nativeBalance, tokenBalances],
+    [account, ...(currencies ?? []), nativeBalance, tokenBalances],
   )
 }
 
-export function useCurrencyBalance(account?: string, currency?: Currency): CurrencyAmount<Currency> | undefined {
+export function useCurrencyBalance(account?: string, currency?: Currency | null): CurrencyAmount<Currency> | undefined {
   return useCurrencyBalances(
     account,
     useMemo(() => [currency], [currency]),

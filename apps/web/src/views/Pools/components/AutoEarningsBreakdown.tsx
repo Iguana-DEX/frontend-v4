@@ -1,14 +1,17 @@
-import { Text, Box, Pool } from '@pancakeswap/uikit'
+import { Text, Box } from '@pancakeswap/uikit'
+import { Pool } from '@pancakeswap/widgets-internal'
+import { BIG_ZERO } from '@pancakeswap/utils/bigNumber'
+
 import { useTranslation } from '@pancakeswap/localization'
-import { differenceInHours } from 'date-fns'
 import { useVaultPoolByKey } from 'state/pools/hooks'
 import { VaultKey, DeserializedLockedVaultUser } from 'state/types'
 import { Token } from '@pancakeswap/sdk'
+import dayjs from 'dayjs'
 import { getCakeVaultEarnings } from '../helpers'
 
 interface AutoEarningsBreakdownProps {
   pool: Pool.DeserializedPool<Token>
-  account: string
+  account?: string
 }
 
 const AutoEarningsBreakdown: React.FC<React.PropsWithChildren<AutoEarningsBreakdownProps>> = ({ pool, account }) => {
@@ -20,19 +23,19 @@ const AutoEarningsBreakdown: React.FC<React.PropsWithChildren<AutoEarningsBreakd
   const { pricePerFullShare, userData } = useVaultPoolByKey(pool.vaultKey)
   const { autoCakeToDisplay, autoUsdToDisplay } = getCakeVaultEarnings(
     account,
-    userData.cakeAtLastUserAction,
-    userData.userShares,
-    pricePerFullShare,
-    earningTokenPrice,
+    userData?.cakeAtLastUserAction || BIG_ZERO,
+    userData?.userShares || BIG_ZERO,
+    pricePerFullShare || BIG_ZERO,
+    earningTokenPrice || 0,
     pool.vaultKey === VaultKey.CakeVault
       ? (userData as DeserializedLockedVaultUser).currentPerformanceFee
           .plus((userData as DeserializedLockedVaultUser).currentOverdueFee)
           .plus((userData as DeserializedLockedVaultUser).userBoostedShare)
-      : null,
+      : undefined,
   )
 
-  const lastActionInMs = userData.lastUserActionTime ? parseInt(userData.lastUserActionTime) * 1000 : 0
-  const hourDiffSinceLastAction = differenceInHours(Date.now(), lastActionInMs)
+  const lastActionInMs = userData?.lastUserActionTime ? parseInt(userData.lastUserActionTime) * 1000 : 0
+  const hourDiffSinceLastAction = dayjs().diff(dayjs(lastActionInMs), 'hours')
   const earnedCakePerHour = hourDiffSinceLastAction ? autoCakeToDisplay / hourDiffSinceLastAction : 0
   const earnedUsdPerHour = hourDiffSinceLastAction ? autoUsdToDisplay / hourDiffSinceLastAction : 0
 

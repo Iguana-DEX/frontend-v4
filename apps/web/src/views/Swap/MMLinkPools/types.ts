@@ -1,7 +1,7 @@
-import { Currency, CurrencyAmount, Pair, TradeType } from '@pancakeswap/sdk'
-import { string as zString, object as zObject, nativeEnum as zNativeEnum, number as zNumber } from 'zod'
+import { Currency, CurrencyAmount } from '@pancakeswap/sdk'
 import { MutableRefObject } from 'react'
-import { Field } from '../../../state/swap/actions'
+import { Field } from 'state/swap/actions'
+import { nativeEnum as zNativeEnum, number as zNumber, object as zObject, string as zString } from 'zod'
 
 export enum MessageType {
   RFQ_REQUEST = 'RFQ_REQUEST',
@@ -35,7 +35,7 @@ export interface RFQResponse {
     // Amounts are in decimals.
     makerSideTokenAmount: string
     takerSideTokenAmount: string
-    // This should be the same rfqId that was sent by the server}
+    // This should be the same rfqId that was sent by the server
     rfqId: string
 
     // This will be set by server
@@ -85,44 +85,22 @@ export type RFQIdResponse = {
   }
 }
 
-interface BasePair {
-  token0: Currency
-  token1: Currency
-  reserve0: CurrencyAmount<Currency>
-  reserve1: CurrencyAmount<Currency>
-  involvesToken: (token: Currency) => boolean
-}
-
-interface BaseRoute<TInput extends Currency, TOutput extends Currency, TPair extends BasePair | Pair> {
-  pairs: TPair[]
-  input: TInput
-  output: TOutput
-  path: Currency[]
-}
-
-export interface TradeWithMM<TInput extends Currency, TOutput extends Currency, TTradeType extends TradeType> {
-  tradeType: TTradeType
-  route: BaseRoute<TInput, TOutput, Pair>
-  inputAmount: CurrencyAmount<TInput>
-  outputAmount: CurrencyAmount<TOutput>
-}
-
-export interface MMOrderBookTrade {
+export interface MMOrderBookTrade<T> {
   currencies: { [field in Field]?: Currency }
   currencyBalances: { [field in Field]?: CurrencyAmount<Currency> }
   parsedAmount: CurrencyAmount<Currency> | undefined
-  trade?: TradeWithMM<Currency, Currency, TradeType> | null
+  trade?: T | null
   inputError?: string
-  mmParam: OrderBookRequest
+  mmParam: OrderBookRequest | null
   rfqUserInputPath: MutableRefObject<string>
   isRFQLive: MutableRefObject<boolean>
   isLoading: boolean
 }
 
-export interface MMRfqTrade {
-  rfq: RFQResponse['message'] | null
-  trade: TradeWithMM<Currency, Currency, TradeType> | null
-  refreshRFQ: () => void | null
+export interface MMRfqTrade<T> {
+  rfq: RFQResponse['message'] | null | undefined
+  trade: T | null
+  refreshRFQ: (() => void) | null
   quoteExpiry: number | null
   isLoading: boolean
   error?: Error

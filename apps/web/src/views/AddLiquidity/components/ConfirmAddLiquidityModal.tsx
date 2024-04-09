@@ -1,28 +1,29 @@
-import React, { useCallback } from 'react'
-import { Currency, CurrencyAmount, Fraction, Percent, Token } from '@pancakeswap/sdk'
-import { InjectedModalProps, Button, TransactionErrorContent, ConfirmationModalContent } from '@pancakeswap/uikit'
 import { useTranslation } from '@pancakeswap/localization'
+import { Currency, CurrencyAmount, Fraction, Percent, Token } from '@pancakeswap/sdk'
+import { Button, InjectedModalProps } from '@pancakeswap/uikit'
+import { ConfirmationModalContent } from '@pancakeswap/widgets-internal'
 import TransactionConfirmationModal from 'components/TransactionConfirmationModal'
-import { Field } from 'state/burn/actions'
 import _toNumber from 'lodash/toNumber'
+import React, { useCallback } from 'react'
+import { Field } from 'state/burn/actions'
 import { AddLiquidityModalHeader, PairDistribution } from './common'
 
 interface ConfirmAddLiquidityModalProps {
   title: string
   customOnDismiss: () => void
   attemptingTxn: boolean
-  hash: string
+  hash?: string
   pendingText: string
   currencies: { [field in Field]?: Currency }
-  noLiquidity: boolean
+  noLiquidity?: boolean
   allowedSlippage: number
-  liquidityErrorMessage: string
-  price: Fraction
+  liquidityErrorMessage?: string
+  price?: Fraction | null
   parsedAmounts: { [field in Field]?: CurrencyAmount<Currency> }
   onAdd: () => void
-  poolTokenPercentage: Percent
-  liquidityMinted: CurrencyAmount<Token>
-  currencyToAdd: Token
+  poolTokenPercentage?: Percent
+  liquidityMinted?: CurrencyAmount<Token>
+  currencyToAdd?: Token | null
   isStable?: boolean
 }
 
@@ -57,7 +58,7 @@ const ConfirmAddLiquidityModal: React.FC<
       ? _toNumber(parsedAmounts[Field.CURRENCY_A]?.toSignificant(6))
       : 0
     // If there is no price fallback to compare only amounts
-    const currencyAToCurrencyB = parseFloat(price?.toSignificant(4)) || 1
+    const currencyAToCurrencyB = (price && parseFloat(price?.toSignificant(4))) || 1
     const normalizedAmountCurrencyA = currencyAToCurrencyB * amountCurrencyA
     const amountCurrencyB = parsedAmounts[Field.CURRENCY_B]
       ? _toNumber(parsedAmounts[Field.CURRENCY_B]?.toSignificant(6))
@@ -65,13 +66,6 @@ const ConfirmAddLiquidityModal: React.FC<
 
     percent = normalizedAmountCurrencyA / (normalizedAmountCurrencyA + amountCurrencyB)
   }
-
-  const handleDismiss = useCallback(() => {
-    if (customOnDismiss) {
-      customOnDismiss()
-    }
-    onDismiss?.()
-  }, [customOnDismiss, onDismiss])
 
   const modalHeader = useCallback(() => {
     return (
@@ -104,23 +98,19 @@ const ConfirmAddLiquidityModal: React.FC<
   }, [noLiquidity, onAdd, t])
 
   const confirmationContent = useCallback(
-    () =>
-      liquidityErrorMessage ? (
-        <TransactionErrorContent onDismiss={handleDismiss} message={liquidityErrorMessage} />
-      ) : (
-        <ConfirmationModalContent topContent={modalHeader} bottomContent={modalBottom} />
-      ),
-    [liquidityErrorMessage, handleDismiss, modalHeader, modalBottom],
+    () => <ConfirmationModalContent topContent={modalHeader} bottomContent={modalBottom} />,
+    [modalHeader, modalBottom],
   )
 
   return (
     <TransactionConfirmationModal
-      minWidth={['100%', , '420px']}
+      minWidth={['100%', '', '420px']}
       title={title}
       onDismiss={onDismiss}
       customOnDismiss={customOnDismiss}
       attemptingTxn={attemptingTxn}
       currencyToAdd={currencyToAdd}
+      errorMessage={liquidityErrorMessage}
       hash={hash}
       content={confirmationContent}
       pendingText={pendingText}

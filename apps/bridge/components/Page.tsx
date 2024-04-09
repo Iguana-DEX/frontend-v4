@@ -1,9 +1,9 @@
-import styled from 'styled-components'
 import { Box } from '@pancakeswap/uikit'
+import { ReactNode } from 'react'
+import { styled } from 'styled-components'
 
 const PageContainer = styled(Box)`
   display: flex;
-  height: 100%;
   height: calc(100vh - 56px);
   background: ${({ theme }) => theme.colors.backgroundAlt};
 
@@ -13,7 +13,7 @@ const PageContainer = styled(Box)`
   }
 `
 
-const Page = ({ children }) => {
+const Page = ({ children }: { children: ReactNode }) => {
   return <PageContainer>{children}</PageContainer>
 }
 

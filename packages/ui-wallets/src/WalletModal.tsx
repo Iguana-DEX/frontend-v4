@@ -1,7 +1,7 @@
 import { usePreloadImages } from '@pancakeswap/hooks'
 import { useTranslation } from '@pancakeswap/localization'
-import { AtomBox } from '@pancakeswap/ui/components/AtomBox'
 import {
+  AtomBox,
   Button,
   Heading,
   Image,
@@ -17,13 +17,13 @@ import {
   WarningIcon,
 } from '@pancakeswap/uikit'
 import { atom, useAtom } from 'jotai'
-import { lazy, PropsWithChildren, Suspense, useMemo, useState } from 'react'
+import { PropsWithChildren, Suspense, lazy, useMemo, useState } from 'react'
 import { isMobile } from 'react-device-detect'
 import {
   desktopWalletSelectionClass,
   modalWrapperClass,
-  walletIconClass,
   promotedGradientClass,
+  walletIconClass,
   walletSelectWrapperClass,
 } from './WalletModal.css'
 
@@ -51,6 +51,7 @@ export type WalletConfigV2<T = unknown> = {
   downloadLink?: LinkOfDevice
   mobileOnly?: boolean
   qrCode?: () => Promise<string>
+  isNotExtension?: boolean
 }
 
 interface WalletModalV2Props<T = unknown> extends ModalV2Props {
@@ -58,6 +59,7 @@ interface WalletModalV2Props<T = unknown> extends ModalV2Props {
   login: (connectorId: T) => Promise<any>
   docLink: string
   docText: string
+  onWalletConnectCallBack?: (walletTitle?: string) => void
 }
 
 export class WalletConnectorNotFoundError extends Error {}
@@ -228,6 +230,7 @@ function WalletSelect<T>({
                 alignItems="center"
                 className={walletIconClass}
                 style={{ borderRadius: '13px' }}
+                overflow="hidden"
               >
                 {isImage ? (
                   <Image src={Icon as string} width={50} height={50} />
@@ -386,7 +389,7 @@ function DesktopModal<T>({
 }
 
 export function WalletModalV2<T = unknown>(props: WalletModalV2Props<T>) {
-  const { wallets: _wallets, login, docLink, docText, ...rest } = props
+  const { wallets: _wallets, login, docLink, docText, onWalletConnectCallBack, ...rest } = props
 
   const [lastUsedWalletName] = useAtom(lastUsedWalletNameAtom)
 
@@ -414,6 +417,11 @@ export function WalletModalV2<T = unknown>(props: WalletModalV2Props<T>) {
         .then((v) => {
           if (v) {
             localStorage.setItem(walletLocalStorageKey, wallet.title)
+            try {
+              onWalletConnectCallBack?.(wallet.title)
+            } catch (e) {
+              console.error(wallet.title, e)
+            }
           }
         })
         .catch((err) => {
@@ -474,7 +482,7 @@ const NotInstalled = ({ wallet, qrCode }: { wallet: WalletConfigV2; qrCode?: str
           </AtomBox>
         </Suspense>
       )}
-      {!qrCode && (
+      {!qrCode && !wallet.isNotExtension && (
         <Text maxWidth="246px" m="auto">
           {t('Please install the %wallet% browser extension to connect the %wallet% wallet.', {
             wallet: wallet.title,

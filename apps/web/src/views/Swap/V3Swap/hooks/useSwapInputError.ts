@@ -1,13 +1,13 @@
-import { Currency, CurrencyAmount, TradeType } from '@pancakeswap/sdk'
-import { SmartRouterTrade } from '@pancakeswap/smart-router/evm'
 import { useTranslation } from '@pancakeswap/localization'
+import { Currency, CurrencyAmount, TradeType } from '@pancakeswap/sdk'
+import { SmartRouterTrade } from '@pancakeswap/smart-router'
 import tryParseAmount from '@pancakeswap/utils/tryParseAmount'
-import { useWeb3React } from '@pancakeswap/wagmi'
 
-import { isAddress } from 'utils'
 import { Field } from 'state/swap/actions'
 import { useSwapState } from 'state/swap/hooks'
+import { safeGetAddress } from 'utils'
 
+import { useAccount } from 'wagmi'
 import { useSlippageAdjustedAmounts } from './useSlippageAdjustedAmounts'
 
 interface Balances {
@@ -35,13 +35,13 @@ const BAD_RECIPIENT_ADDRESSES: string[] = [
 export function useSwapInputError(
   trade: SmartRouterTrade<TradeType> | null | undefined,
   currencyBalances: Balances,
-): string {
+): string | undefined {
   const { t } = useTranslation()
-  const { account } = useWeb3React()
+  const { address: account } = useAccount()
   const { independentField, typedValue } = useSwapState()
   const inputCurrency = currencyBalances[Field.INPUT]?.currency
   const outputCurrency = currencyBalances[Field.OUTPUT]?.currency
-  const slippageAdjustedAmounts = useSlippageAdjustedAmounts(trade)
+  const slippageAdjustedAmounts = useSlippageAdjustedAmounts(trade ?? undefined)
 
   const to: string | null = account || null
 
@@ -62,7 +62,7 @@ export function useSwapInputError(
     inputError = inputError ?? t('Select a token')
   }
 
-  const formattedTo = isAddress(to)
+  const formattedTo = safeGetAddress(to)
   if (!to || !formattedTo) {
     inputError = inputError ?? t('Enter a recipient')
   } else if (BAD_RECIPIENT_ADDRESSES.indexOf(formattedTo) !== -1 || (trade && involvesAddress(trade, formattedTo))) {
@@ -79,5 +79,5 @@ export function useSwapInputError(
     inputError = t('Insufficient %symbol% balance', { symbol: amountIn.currency.symbol })
   }
 
-  return inputError
+  return inputError || ''
 }

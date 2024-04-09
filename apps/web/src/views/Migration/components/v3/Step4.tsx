@@ -1,12 +1,23 @@
+import { ChainId } from '@pancakeswap/chains'
 import { useTranslation } from '@pancakeswap/localization'
-import { ChainId, Token } from '@pancakeswap/sdk'
-import { AtomBox } from '@pancakeswap/ui'
-import { AutoRow, Button, Dots, Flex, Modal, ModalV2, PreTitle, Tag, Text, useModalV2 } from '@pancakeswap/uikit'
+import { Token } from '@pancakeswap/sdk'
+import {
+  AtomBox,
+  AutoRow,
+  Button,
+  Dots,
+  Flex,
+  Modal,
+  ModalV2,
+  PreTitle,
+  Tag,
+  Text,
+  useModalV2,
+} from '@pancakeswap/uikit'
 import { AppBody, AppHeader } from 'components/App'
 import { LightGreyCard } from 'components/Card'
 import { CommitButton } from 'components/CommitButton'
 import ConnectWalletButton from 'components/ConnectWalletButton'
-import { LiquidityCardRow } from 'components/LiquidityCardRow'
 import { DoubleCurrencyLogo } from 'components/Logo'
 import { RangeTag } from 'components/RangeTag'
 import { useToken } from 'hooks/Tokens'
@@ -17,8 +28,9 @@ import { useAtom } from 'jotai'
 import Image from 'next/image'
 import { useState } from 'react'
 import { unwrappedToken } from 'utils/wrappedCurrency'
-import PositionListItem from 'views/AddLiquidityV3/formViews/V3FormView/components/PoolListItem'
+import { LiquidityCardRow } from 'views/AddLiquidity/components/LiquidityCardRow'
 import { AddLiquidityV3Modal } from 'views/AddLiquidityV3/Modal'
+import PositionListItem from 'views/AddLiquidityV3/formViews/V3FormView/components/PoolListItem'
 import { useAccount } from 'wagmi'
 import { removedPairsAtom } from './Step2'
 
@@ -33,9 +45,11 @@ export function Step4() {
 
   const [removedPairs] = useAtom(removedPairsAtom)
 
-  const removedPairsCurrentChainAndAccount = removedPairs[chainId as ChainId]?.[account]
+  const removedPairsCurrentChainAndAccount = chainId && account ? removedPairs[chainId as ChainId][account] : undefined
 
-  const removedPairsCurrentChainAsArray = Object.keys(removedPairsCurrentChainAndAccount || {})
+  const removedPairsCurrentChainAsArray = removedPairsCurrentChainAndAccount
+    ? Object.keys(removedPairsCurrentChainAndAccount)
+    : []
 
   const addLiquidityModal = useModalV2()
 
@@ -80,7 +94,7 @@ export function Step4() {
                     <>
                       {p.isStaked && (
                         <Tag outline variant="warning" mr="8px">
-                          Farming
+                          {t('Farming')}
                         </Tag>
                       )}
                       <RangeTag removed={removed} outOfRange={outOfRange} />

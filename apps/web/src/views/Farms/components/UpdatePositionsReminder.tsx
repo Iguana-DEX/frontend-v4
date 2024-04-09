@@ -1,16 +1,15 @@
 import { useIsMounted } from '@pancakeswap/hooks'
-import { Trans } from '@pancakeswap/localization'
-import { AtomBox } from '@pancakeswap/ui'
-import { Button, LinkExternal, Modal, ModalV2, Text, useModalV2, useToast } from '@pancakeswap/uikit'
+import { Trans, useTranslation } from '@pancakeswap/localization'
+import { AtomBox, Button, LinkExternal, Modal, ModalV2, Text, useModalV2, useToast } from '@pancakeswap/uikit'
 import { MasterChefV3, Multicall } from '@pancakeswap/v3-sdk'
 import { useActiveChainId } from 'hooks/useActiveChainId'
 import useCatchTxError from 'hooks/useCatchTxError'
 import { useMasterchefV3 } from 'hooks/useContract'
-import useTransactionDeadline from 'hooks/useTransactionDeadline'
+import { useTransactionDeadline } from 'hooks/useTransactionDeadline'
 import { useV3TokenIdsByAccount } from 'hooks/v3/useV3Positions'
 import { useMemo, useState } from 'react'
 import { useFarmsV3Public } from 'state/farmsV3/hooks'
-import { encodeFunctionData } from 'viem'
+import { Hex, encodeFunctionData } from 'viem'
 import { useAccount, useContractReads, useSendTransaction } from 'wagmi'
 
 const lmPoolABI = [
@@ -62,6 +61,7 @@ export function UpdatePositionsReminder() {
 }
 
 export function UpdatePositionsReminder_() {
+  const { t } = useTranslation()
   const { data: farmsV3 } = useFarmsV3Public()
   const { address: account } = useAccount()
   const { chainId } = useActiveChainId()
@@ -119,7 +119,7 @@ export function UpdatePositionsReminder_() {
       }
     }),
     cacheTime: 0,
-    enabled: isOverRewardGrowthGlobalUserInfos?.length > 0,
+    enabled: (isOverRewardGrowthGlobalUserInfos?.length ?? 0) > 0,
   })
 
   const needRetrigger = isOverRewardGrowthGlobalUserInfos
@@ -143,14 +143,14 @@ export function UpdatePositionsReminder_() {
   const { loading: txLoading, fetchWithCatchTxError } = useCatchTxError()
 
   const masterChefV3Address = useMasterchefV3()?.address
-  const deadline = useTransactionDeadline() // custom from users settings
+  const [deadline] = useTransactionDeadline() // custom from users settings
 
   const [triggerOnce, setTriggerOnce] = useState(false)
 
   // eslint-disable-next-line consistent-return
   const handleUpdateAll = async () => {
     if (!needRetrigger || !sendTransactionAsync) return null
-    const calldata = []
+    const calldata: (Hex | Hex[])[] = []
     needRetrigger.forEach((userInfo) => {
       if (userInfo.needReduce) {
         calldata.push(
@@ -163,7 +163,7 @@ export function UpdatePositionsReminder_() {
                 liquidity: 1n,
                 amount0Min: 0n,
                 amount1Min: 0n,
-                deadline,
+                deadline: deadline ?? 0n,
               },
             ],
           }),
@@ -171,7 +171,7 @@ export function UpdatePositionsReminder_() {
       }
       calldata.push(
         MasterChefV3.encodeHarvest({
-          to: account,
+          to: account || '0x',
           tokenId: userInfo.tokenId.toString(),
         }),
       )
@@ -179,7 +179,7 @@ export function UpdatePositionsReminder_() {
 
     const resp = await fetchWithCatchTxError(() =>
       sendTransactionAsync({
-        to: masterChefV3Address,
+        to: masterChefV3Address!,
         data: Multicall.encodeMulticall(calldata.flat()),
         value: 0n,
         account,
@@ -209,7 +209,7 @@ export function UpdatePositionsReminder_() {
 
   return (
     <ModalV2 {...modal} closeOnOverlayClick>
-      <Modal title="Update Positions">
+      <Modal title={t('Update Positions')}>
         <AtomBox textAlign="center">
           <Text>
             <Trans>The followings farming positions require updates to continue earning</Trans>:

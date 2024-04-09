@@ -1,11 +1,11 @@
+import { ArticleDataType } from '@pancakeswap/blog'
 import { useTranslation } from '@pancakeswap/localization'
-import { Box, Flex, Text, Card } from '@pancakeswap/uikit'
+import { Box, Card, Flex, Text } from '@pancakeswap/uikit'
+import { useQuery } from '@tanstack/react-query'
+import { StyledLineClamp } from 'components/StyledLineClamp'
 import NextLink from 'next/link'
 import { useMemo } from 'react'
-import styled from 'styled-components'
-import useSWR from 'swr'
-import { ArticleDataType } from 'utils/transformArticle'
-import { StyledLineClamp } from 'components/StyledLineClamp'
+import { styled } from 'styled-components'
 
 const StyledBackground = styled(Box)`
   position: relative;
@@ -63,7 +63,10 @@ const StyledTagGroup = styled(Flex)`
 
 const NewBlog = () => {
   const { t } = useTranslation()
-  const { data: articlesData } = useSWR<ArticleDataType[]>('/latestArticles')
+  const { data: articlesData } = useQuery<ArticleDataType[]>({
+    queryKey: ['/latestArticles'],
+    enabled: false,
+  })
   const article = useMemo(() => articlesData?.[0], [articlesData])
 
   return (

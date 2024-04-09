@@ -1,26 +1,27 @@
-import { useState } from 'react'
-import { Token, Currency } from '@pancakeswap/aptos-swap-sdk'
+import { Currency, Token } from '@pancakeswap/aptos-swap-sdk'
 import {
+  AptosIcon,
+  AutoColumn,
   Button,
-  Text,
+  Checkbox,
   ErrorIcon,
   Flex,
+  Grid,
   Message,
-  Checkbox,
   ScanLink,
   Tag,
-  Grid,
-  AutoColumn,
-  ListLogo,
-  AptosIcon,
+  Text,
 } from '@pancakeswap/uikit'
-import { getBlockExploreLink } from 'utils'
-import truncateHash from '@pancakeswap/utils/truncateHash'
-import { useCombinedInactiveList } from 'state/lists/hooks'
+import { ListLogo } from '@pancakeswap/widgets-internal'
+import { useState } from 'react'
+
 import { useTranslation } from '@pancakeswap/localization'
-import { useAddUserToken } from 'state/user'
 import { WrappedTokenInfo } from '@pancakeswap/token-lists'
+import truncateHash from '@pancakeswap/utils/truncateHash'
 import { useActiveChainId } from 'hooks/useNetwork'
+import { useCombinedInactiveList } from 'state/lists/hooks'
+import { useAddUserToken } from 'state/user'
+import { getBlockExploreLink } from 'utils'
 
 interface ImportProps {
   tokens: Token[]

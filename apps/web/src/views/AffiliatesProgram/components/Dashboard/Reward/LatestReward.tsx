@@ -1,25 +1,25 @@
-import { useMemo, useState } from 'react'
-import { useSignMessage } from '@pancakeswap/wagmi'
-import { useToast, Box } from '@pancakeswap/uikit'
+import { ChainId } from '@pancakeswap/chains'
 import { useTranslation } from '@pancakeswap/localization'
+import { Box, useToast } from '@pancakeswap/uikit'
+import { useSignMessage } from '@pancakeswap/wagmi'
 import BigNumber from 'bignumber.js'
-import { useAccount } from 'wagmi'
 import { useActiveChainId } from 'hooks/useActiveChainId'
-import { encodePacked, keccak256 } from 'viem'
-import { ChainId } from '@pancakeswap/sdk'
-import { usePriceCakeUSD } from 'state/farms/hooks'
-import SingleLatestReward from 'views/AffiliatesProgram/components/Dashboard/Reward/SingleLatestReward'
-import { UserClaimListResponse } from 'views/AffiliatesProgram/hooks/useUserClaimList'
+import { useCakePrice } from 'hooks/useCakePrice'
 import { useAffiliateProgramContract } from 'hooks/useContract'
-import useUserExist from 'views/AffiliatesProgram/hooks/useUserExist'
+import { useMemo, useState } from 'react'
+import { encodePacked, keccak256 } from 'viem'
+import SingleLatestReward from 'views/AffiliatesProgram/components/Dashboard/Reward/SingleLatestReward'
 import WrongNetworkWarning from 'views/AffiliatesProgram/components/Dashboard/Reward/WrongNetworkWarning'
+import { UserClaimListResponse } from 'views/AffiliatesProgram/hooks/useUserClaimList'
+import useUserExist from 'views/AffiliatesProgram/hooks/useUserExist'
+import { useAccount } from 'wagmi'
 
 interface LatestRewardProps {
   isAffiliate: boolean
   userRewardFeeUSD: string
   affiliateRewardFeeUSD: string
-  userClaimData: UserClaimListResponse
-  affiliateClaimData: UserClaimListResponse
+  userClaimData?: UserClaimListResponse
+  affiliateClaimData?: UserClaimListResponse
   refreshAffiliateClaimData: () => void
   refreshUserClaimData: () => void
   refreshAuthAffiliate: () => void
@@ -43,7 +43,7 @@ const LatestReward: React.FC<React.PropsWithChildren<LatestRewardProps>> = ({
   const { isUserExist } = useUserExist()
   const { toastSuccess, toastError } = useToast()
   const { signMessageAsync } = useSignMessage()
-  const cakePriceBusd = usePriceCakeUSD()
+  const cakePriceBusd = useCakePrice()
 
   const [isAffiliateClaimLoading, setIsAffiliateClaimLoading] = useState(false)
   const [isUserClaimLoading, setIsUserClaimLoading] = useState(false)
@@ -65,6 +65,8 @@ const LatestReward: React.FC<React.PropsWithChildren<LatestRewardProps>> = ({
       } else {
         setIsUserClaimLoading(true)
       }
+
+      if (!address) return
 
       const method = isAffiliateClaim ? contract.read.getAffiliateInfo([address]) : contract.read.getUserInfo([address])
       const userInfo = await method
@@ -109,9 +111,10 @@ const LatestReward: React.FC<React.PropsWithChildren<LatestRewardProps>> = ({
   }
 
   const isAffiliateClaimDisabled = useMemo(() => {
-    const hasPendingOrUnClaimed = affiliateClaimData?.claimRequests?.filter(
-      (i) => i.approveStatus === 'PENDING' || (i.approveStatus === 'APPROVED' && !i.process),
-    )
+    const hasPendingOrUnClaimed =
+      affiliateClaimData?.claimRequests?.filter(
+        (i) => i.approveStatus === 'PENDING' || (i.approveStatus === 'APPROVED' && !i.process),
+      ) ?? []
     return (
       new BigNumber(affiliateRewardFeeUSD).lt(MIN_CLAIM_AMOUNT) ||
       hasPendingOrUnClaimed?.length > 0 ||
@@ -120,9 +123,10 @@ const LatestReward: React.FC<React.PropsWithChildren<LatestRewardProps>> = ({
   }, [affiliateClaimData, affiliateRewardFeeUSD, isAffiliateClaimLoading])
 
   const isUserClaimDisabled = useMemo(() => {
-    const hasPendingOrUnClaimed = userClaimData?.claimRequests?.filter(
-      (i) => i.approveStatus === 'PENDING' || (i.approveStatus === 'APPROVED' && !i.process),
-    )
+    const hasPendingOrUnClaimed =
+      userClaimData?.claimRequests?.filter(
+        (i) => i.approveStatus === 'PENDING' || (i.approveStatus === 'APPROVED' && !i.process),
+      ) ?? []
     return (
       new BigNumber(userRewardFeeUSD).lt(MIN_CLAIM_AMOUNT) ||
       hasPendingOrUnClaimed?.length > 0 ||

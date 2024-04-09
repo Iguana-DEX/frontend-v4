@@ -1,18 +1,18 @@
 import { useEffect, useState, useMemo } from 'react'
-import styled from 'styled-components'
+import { styled } from 'styled-components'
 import BigNumber from 'bignumber.js'
 import { Box, Flex, Text, ChevronDownIcon, BalanceWithLoading } from '@pancakeswap/uikit'
 import { TokenImage } from 'components/TokenImage'
 import { VestingData } from 'views/Ifos/hooks/vesting/fetchUserWalletIfoData'
-import { PoolIds } from 'config/constants/types'
+import { PoolIds } from '@pancakeswap/ifos'
 import { getBalanceNumber } from '@pancakeswap/utils/formatBalance'
-import useBUSDPrice from 'hooks/useBUSDPrice'
+import { useStablecoinPrice } from 'hooks/useStablecoinPrice'
 import { multiplyPriceByAmount } from 'utils/prices'
 import { useDelayedUnmount } from '@pancakeswap/hooks'
 import Expand from './Expand'
 
-const ArrowIcon = styled(ChevronDownIcon)<{ toggled: boolean }>`
-  transform: ${({ toggled }) => (toggled ? 'rotate(180deg)' : 'rotate(0)')};
+const ArrowIcon = styled(ChevronDownIcon)<{ $toggled: boolean }>`
+  transform: ${({ $toggled }) => ($toggled ? 'rotate(180deg)' : 'rotate(0)')};
   height: 24px;
 `
 
@@ -20,9 +20,15 @@ interface TokenInfoProps {
   index: number
   data: VestingData
   fetchUserVestingData: () => void
+  ifoBasicSaleType?: number
 }
 
-const TokenInfo: React.FC<React.PropsWithChildren<TokenInfoProps>> = ({ index, data, fetchUserVestingData }) => {
+const TokenInfo: React.FC<React.PropsWithChildren<TokenInfoProps>> = ({
+  index,
+  data,
+  fetchUserVestingData,
+  ifoBasicSaleType,
+}) => {
   const { vestingTitle, token } = data.ifo
   const { vestingComputeReleasableAmount } = data.userVestingData[PoolIds.poolUnlimited]
   const { vestingComputeReleasableAmount: basicReleaseAmount } = data.userVestingData[PoolIds.poolBasic]
@@ -44,7 +50,7 @@ const TokenInfo: React.FC<React.PropsWithChildren<TokenInfoProps>> = ({ index, d
     return getBalanceNumber(totalReleaseAmount, token.decimals)
   }, [token, vestingComputeReleasableAmount, basicReleaseAmount])
 
-  const price = useBUSDPrice(token)
+  const price = useStablecoinPrice(token)
   const dollarValueOfToken = multiplyPriceByAmount(price, amountAvailable, token.decimals)
 
   return (
@@ -62,9 +68,16 @@ const TokenInfo: React.FC<React.PropsWithChildren<TokenInfoProps>> = ({ index, d
             </Text>
           </Flex>
         </Flex>
-        <ArrowIcon toggled={expanded} color="primary" ml="auto" />
+        <ArrowIcon $toggled={expanded} color="primary" ml="auto" />
       </Flex>
-      {shouldRenderExpand && <Expand expanded={expanded} data={data} fetchUserVestingData={fetchUserVestingData} />}
+      {shouldRenderExpand && (
+        <Expand
+          expanded={expanded}
+          data={data}
+          fetchUserVestingData={fetchUserVestingData}
+          ifoBasicSaleType={ifoBasicSaleType}
+        />
+      )}
     </Box>
   )
 }

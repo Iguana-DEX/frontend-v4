@@ -14,7 +14,7 @@ const ComingSoon = () => {
         {t('Currently there is no active trading reward campaign. Check back later or follow our social channels.')}
       </Text>
       <Flex pt="20px" justifyContent="center">
-        <Link href="https://twitter.com/iguanadex" external>
+        <Link href="https://twitter.com/pancakeswap" external>
           <TwitterIcon color="primary" mr="5px" />
           <Text bold color="primary" textAlign="center">
             {t('+Follow For New Updates')}

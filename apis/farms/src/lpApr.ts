@@ -1,11 +1,10 @@
 /* eslint-disable no-restricted-syntax */
-import { ChainId } from '@pancakeswap/sdk'
-import chunk from 'lodash/chunk'
+import { ChainId, getBlocksSubgraphs, getV2Subgraphs } from '@pancakeswap/chains'
+import { AprMap, FarmSupportedChainId } from '@pancakeswap/farms'
 import BigNumber from 'bignumber.js'
-import { gql, GraphQLClient } from 'graphql-request'
-import getUnixTime from 'date-fns/getUnixTime'
-import sub from 'date-fns/sub'
-import { AprMap } from '@pancakeswap/farms'
+import dayjs from 'dayjs'
+import { GraphQLClient, gql } from 'graphql-request'
+import chunk from 'lodash/chunk'
 import _toLower from 'lodash/toLower'
 
 interface BlockResponse {
@@ -19,28 +18,16 @@ const STABLESWAP_SUBGRAPH_ENDPOINT = 'https://api.thegraph.com/subgraphs/name/pa
 const LP_HOLDERS_FEE = 0.0017
 const WEEKS_IN_A_YEAR = 52.1429
 
-const BLOCKS_CLIENT_WITH_CHAIN = {
-  [ChainId.BSC]: 'https://api.thegraph.com/subgraphs/name/pancakeswap/blocks',
-  [ChainId.ETHEREUM]: 'https://api.thegraph.com/subgraphs/name/blocklytics/ethereum-blocks',
-  [ChainId.BSC_TESTNET]: '',
-  [ChainId.GOERLI]: '',
-}
-
-const INFO_CLIENT_WITH_CHAIN = {
-  [ChainId.BSC]: 'https://proxy-worker-api.pancakeswap.com/bsc-exchange',
-  [ChainId.ETHEREUM]: 'https://api.thegraph.com/subgraphs/name/pancakeswap/exhange-eth',
-  [ChainId.BSC_TESTNET]: '',
-  [ChainId.GOERLI]: '',
-}
-
-const blockClientWithChain = (chainId: ChainId) => {
-  return new GraphQLClient(BLOCKS_CLIENT_WITH_CHAIN[chainId], {
+const blockClientWithChain = (chainId: FarmSupportedChainId) => {
+  // @ts-ignore
+  return new GraphQLClient(getBlocksSubgraphs({ noderealApiKey: NODE_REAL_SUBGRAPH_API_KEY })[chainId], {
     fetch,
   })
 }
 
-const infoClientWithChain = (chainId: ChainId) => {
-  return new GraphQLClient(INFO_CLIENT_WITH_CHAIN[chainId], {
+const infoClientWithChain = (chainId: FarmSupportedChainId) => {
+  // @ts-ignore
+  return new GraphQLClient(getV2Subgraphs({ noderealApiKey: NODE_REAL_SUBGRAPH_API_KEY })[chainId], {
     fetch,
   })
 }
@@ -50,13 +37,12 @@ const stableSwapClient = new GraphQLClient(STABLESWAP_SUBGRAPH_ENDPOINT, {
 })
 
 const getWeekAgoTimestamp = () => {
-  const weekAgo = sub(new Date(), { weeks: 1 })
-  return getUnixTime(weekAgo)
+  return dayjs().subtract(1, 'weeks').unix()
 }
 
 const getBlockAtTimestamp = async (timestamp: number, chainId = ChainId.BSC) => {
   try {
-    const { blocks } = await blockClientWithChain(chainId).request<BlockResponse>(
+    const { blocks } = await blockClientWithChain(chainId as FarmSupportedChainId).request<BlockResponse>(
       `query getBlock($timestampGreater: Int!, $timestampLess: Int!) {
         blocks(first: 1, where: { timestamp_gt: $timestampGreater, timestamp_lt: $timestampLess }) {
           number
@@ -153,9 +139,9 @@ const getAprsForStableFarm = async (stableFarm: any): Promise<BigNumber> => {
   const stableSwapAddress = stableFarm?.stableSwapAddress
 
   try {
-    const day7Ago = sub(new Date(), { days: 7 })
+    const day7Ago = dayjs().subtract(7, 'days')
 
-    const day7AgoTimestamp = getUnixTime(day7Ago)
+    const day7AgoTimestamp = day7Ago.unix()
 
     const blockDay7Ago = await getBlockAtTimestamp(day7AgoTimestamp)
 

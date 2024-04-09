@@ -1,16 +1,13 @@
-import { Farm as FarmUI, FarmTableFarmTokenInfoProps, Flex } from '@pancakeswap/uikit'
+import { Flex } from '@pancakeswap/uikit'
+import { FarmWidget } from '@pancakeswap/widgets-internal'
 import { TokenPairImage } from 'components/TokenImage'
+import { Address } from 'viem'
 
-const { FarmTokenInfo } = FarmUI.FarmTable
+const { FarmTokenInfo } = FarmWidget.FarmTable
 
-export const FarmCell: React.FunctionComponent<React.PropsWithChildren<FarmTableFarmTokenInfoProps>> = ({
-  token,
-  quoteToken,
-  label,
-  pid,
-  isReady,
-  isStaking,
-}) => {
+export const FarmCell: React.FunctionComponent<
+  React.PropsWithChildren<FarmWidget.FarmTableFarmTokenInfoProps & { chainId?: number; lpAddress?: Address }>
+> = ({ token, quoteToken, label, pid, isReady, isStaking, merklLink, hasBothFarmAndMerkl, merklApr }) => {
   return (
     <Flex alignItems="center">
       <FarmTokenInfo
@@ -20,6 +17,9 @@ export const FarmCell: React.FunctionComponent<React.PropsWithChildren<FarmTable
         quoteToken={quoteToken}
         isReady={isReady}
         isStaking={isStaking}
+        merklLink={merklLink}
+        hasBothFarmAndMerkl={hasBothFarmAndMerkl}
+        merklApr={merklApr}
       >
         <TokenPairImage width={40} height={40} variant="inverted" primaryToken={token} secondaryToken={quoteToken} />
       </FarmTokenInfo>

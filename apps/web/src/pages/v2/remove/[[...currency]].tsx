@@ -3,8 +3,7 @@ import { GetStaticPaths, GetStaticProps } from 'next'
 import { useRouter } from 'next/router'
 import { CHAIN_IDS } from 'utils/wagmi'
 import RemoveLiquidity, { RemoveLiquidityV2Layout } from 'views/RemoveLiquidity'
-import RemoveStableLiquidity, { RemoveLiquidityStableLayout } from 'views/RemoveLiquidity/RemoveStableLiquidity'
-import useStableConfig, { StableConfigContext } from 'views/Swap/hooks/useStableConfig'
+import RemoveLiquidityV2FormProvider from 'views/RemoveLiquidity/RemoveLiquidityV2FormProvider'
 
 const RemoveLiquidityPage = () => {
   const router = useRouter()
@@ -13,11 +12,6 @@ const RemoveLiquidityPage = () => {
 
   const [currencyA, currencyB] = [useCurrency(currencyIdA) ?? undefined, useCurrency(currencyIdB) ?? undefined]
 
-  const stableConfig = useStableConfig({
-    tokenA: currencyA,
-    tokenB: currencyB,
-  })
-
   const props = {
     currencyIdA,
     currencyIdB,
@@ -25,20 +19,17 @@ const RemoveLiquidityPage = () => {
     currencyB,
   }
 
-  return stableConfig.stableSwapConfig && Boolean(router.query.stable) ? (
-    <StableConfigContext.Provider value={stableConfig}>
-      <RemoveLiquidityStableLayout {...props}>
-        <RemoveStableLiquidity {...props} />
-      </RemoveLiquidityStableLayout>
-    </StableConfigContext.Provider>
-  ) : (
-    <RemoveLiquidityV2Layout {...props}>
-      <RemoveLiquidity {...props} />
-    </RemoveLiquidityV2Layout>
+  return (
+    <RemoveLiquidityV2FormProvider>
+      <RemoveLiquidityV2Layout {...props}>
+        <RemoveLiquidity {...props} />
+      </RemoveLiquidityV2Layout>
+    </RemoveLiquidityV2FormProvider>
   )
 }
 
 RemoveLiquidityPage.chains = CHAIN_IDS
+RemoveLiquidityPage.screen = true
 
 export default RemoveLiquidityPage
 
@@ -52,7 +43,7 @@ export const getStaticPaths: GetStaticPaths = () => {
 }
 
 export const getStaticProps: GetStaticProps = async ({ params }) => {
-  const currency = (params.currency as string[]) || []
+  const currency = (params?.currency as string[]) || []
 
   if (currency.length === 0) {
     return {

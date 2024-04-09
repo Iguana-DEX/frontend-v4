@@ -1,14 +1,12 @@
-import { ifosConfig } from 'config/constants'
+import { useActiveIfoConfig } from 'hooks/useIfoConfig'
+
 import CurrentIfo from './CurrentIfo'
+import { IfoPlaceholder } from './IfoPlaceholder'
 import SoonIfo from './SoonIfo'
 
-/**
- * Note: currently there should be only 1 active IFO at a time
- */
-const activeIfo = ifosConfig.find((ifo) => ifo.isActive)
-
 const Ifo = () => {
-  return activeIfo ? <CurrentIfo activeIfo={activeIfo} /> : <SoonIfo />
+  const { activeIfo, isPending } = useActiveIfoConfig()
+  return activeIfo ? <CurrentIfo activeIfo={activeIfo} /> : isPending ? <IfoPlaceholder /> : <SoonIfo />
 }
 
 export default Ifo

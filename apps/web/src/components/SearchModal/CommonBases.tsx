@@ -1,6 +1,8 @@
-import { ChainId, Currency, Token } from '@pancakeswap/sdk'
-import { Text, QuestionHelper, AutoColumn, CurrencyLogo } from '@pancakeswap/uikit'
-import styled from 'styled-components'
+import { Currency, Token } from '@pancakeswap/sdk'
+import { ChainId } from '@pancakeswap/chains'
+import { Text, QuestionHelper, AutoColumn } from '@pancakeswap/uikit'
+import { CurrencyLogo } from '@pancakeswap/widgets-internal'
+import { styled } from 'styled-components'
 import useNativeCurrency from 'hooks/useNativeCurrency'
 import { useTranslation } from '@pancakeswap/localization'
 
@@ -20,7 +22,7 @@ const BaseWrapper = styled.div<{ disable?: boolean }>`
   display: flex;
   padding: 6px;
   align-items: center;
-  :hover {
+  &:hover {
     cursor: ${({ disable }) => !disable && 'pointer'};
     background-color: ${({ theme, disable }) => !disable && theme.colors.background};
   }

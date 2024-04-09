@@ -14,8 +14,8 @@ import { useAtom, useAtomValue } from 'jotai'
 import { useRouter } from 'next/router'
 import { ParsedUrlQuery } from 'querystring'
 import { useEffect, useMemo, useState } from 'react'
-import useSWRImmutable from 'swr/immutable'
-import { isAddress } from 'utils'
+import { useQuery } from '@tanstack/react-query'
+import { safeGetAddress } from 'utils'
 import { computeSlippageAdjustedAmounts } from 'utils/exchange'
 import { getTokenAddress } from 'views/Swap/components/Chart/utils'
 import { useAccount } from 'wagmi'
@@ -52,12 +52,14 @@ function involvesAddress(trade: Trade<Currency, Currency, TradeType>, checksumme
 // Get swap price for single token disregarding slippage and price impact
 export function useSingleTokenSwapInfo(
   inputCurrencyId: string | undefined,
-  inputCurrency: Currency | undefined,
+  inputCurrency: Currency | undefined | null,
   outputCurrencyId: string | undefined,
-  outputCurrency: Currency | undefined,
+  outputCurrency: Currency | undefined | null,
+  enabled = true,
 ): { [key: string]: number } {
-  const token0Address = useMemo(() => getTokenAddress(inputCurrencyId), [inputCurrencyId])
-  const token1Address = useMemo(() => getTokenAddress(outputCurrencyId), [outputCurrencyId])
+  const { chainId } = useActiveChainId()
+  const token0Address = useMemo(() => getTokenAddress(chainId, inputCurrencyId), [chainId, inputCurrencyId])
+  const token1Address = useMemo(() => getTokenAddress(chainId, outputCurrencyId), [chainId, outputCurrencyId])
 
   const amount = useMemo(() => tryParseAmount('1', inputCurrency ?? undefined), [inputCurrency])
 
@@ -70,11 +72,12 @@ export function useSingleTokenSwapInfo(
     v2Swap: true,
     v3Swap: true,
     stableSwap: true,
-    type: 'api',
+    type: 'quoter',
     autoRevalidate: false,
+    enabled,
   })
   if (!inputCurrency || !outputCurrency || !bestTradeExactIn) {
-    return null
+    return {}
   }
 
   let inputTokenPrice = 0
@@ -89,7 +92,7 @@ export function useSingleTokenSwapInfo(
     //
   }
   if (!inputTokenPrice) {
-    return null
+    return {}
   }
   const outputTokenPrice = 1 / inputTokenPrice
 
@@ -118,7 +121,7 @@ export function useDerivedSwapInfo(
   const recipientENSAddress = useGetENSAddressByName(recipient)
 
   const to: string | null =
-    (recipient === null ? account : isAddress(recipient) || isAddress(recipientENSAddress) || null) ?? null
+    (recipient === null ? account : safeGetAddress(recipient) || safeGetAddress(recipientENSAddress) || null) ?? null
 
   const relevantTokenBalances = useCurrencyBalances(
     account ?? undefined,
@@ -156,7 +159,7 @@ export function useDerivedSwapInfo(
     inputError = inputError ?? t('Select a token')
   }
 
-  const formattedTo = isAddress(to)
+  const formattedTo = safeGetAddress(to)
   if (!to || !formattedTo) {
     inputError = inputError ?? t('Enter a recipient')
   } else if (
@@ -203,7 +206,7 @@ const ENS_NAME_REGEX = /^[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-
 const ADDRESS_REGEX = /^0x[a-fA-F0-9]{40}$/
 function validatedRecipient(recipient: any): string | null {
   if (typeof recipient !== 'string') return null
-  const address = isAddress(recipient)
+  const address = safeGetAddress(recipient)
   if (address) return address
   if (ENS_NAME_REGEX.test(recipient)) return recipient
   if (ADDRESS_REGEX.test(recipient)) return recipient
@@ -215,10 +218,10 @@ export function queryParametersToSwapState(
   nativeSymbol?: string,
   defaultOutputCurrency?: string,
 ): SwapState {
-  let inputCurrency = isAddress(parsedQs.inputCurrency) || (nativeSymbol ?? DEFAULT_INPUT_CURRENCY)
+  let inputCurrency = safeGetAddress(parsedQs.inputCurrency) || (nativeSymbol ?? DEFAULT_INPUT_CURRENCY)
   let outputCurrency =
     typeof parsedQs.outputCurrency === 'string'
-      ? isAddress(parsedQs.outputCurrency) || nativeSymbol
+      ? safeGetAddress(parsedQs.outputCurrency) || nativeSymbol
       : defaultOutputCurrency
   if (inputCurrency === outputCurrency) {
     if (typeof parsedQs.outputCurrency === 'string') {
@@ -296,30 +299,42 @@ export const useFetchPairPricesV3 = ({
   currentSwapPrice,
 }: useFetchPairPricesParams) => {
   const { chainId } = useActiveChainId()
-  const { data: protocol0 } = useSWRImmutable(
-    token0Address && chainId && ['protocol', token0Address, chainId],
-    async () => {
+  const { data: protocol0 } = useQuery({
+    queryKey: ['protocol', token0Address, chainId],
+
+    queryFn: async () => {
+      if (!chainId) return undefined
       return getTokenBestTvlProtocol(token0Address, chainId)
     },
-  )
-  const { data: protocol1 } = useSWRImmutable(
-    token1Address && chainId && ['protocol', token1Address, chainId],
-    async () => {
-      return getTokenBestTvlProtocol(token0Address, chainId)
+
+    enabled: Boolean(token0Address && chainId),
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+  })
+  const { data: protocol1 } = useQuery({
+    queryKey: ['protocol', token1Address, chainId],
+
+    queryFn: async () => {
+      if (!chainId) return undefined
+      return getTokenBestTvlProtocol(token1Address, chainId)
     },
-  )
+
+    enabled: Boolean(token1Address && chainId),
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+  })
 
   const {
     data: normalizedDerivedPairData,
     error,
-    isLoading,
-  } = useSWRImmutable(
-    protocol0 &&
-      protocol1 &&
-      token0Address &&
-      chainId &&
-      token1Address && ['derivedPrice', { token0Address, token1Address, chainId, protocol0, protocol1, timeWindow }],
-    async () => {
+    isPending,
+  } = useQuery({
+    queryKey: ['derivedPrice', { token0Address, token1Address, chainId, protocol0, protocol1, timeWindow }],
+
+    queryFn: async () => {
+      if (!chainId) return undefined
       const data = await fetchDerivedPriceData(
         token0Address,
         token1Address,
@@ -333,16 +348,19 @@ export const useFetchPairPricesV3 = ({
         pairData: normalizeDerivedChartData(data),
       })
     },
-    {
-      dedupingInterval: SLOW_INTERVAL,
-      refreshInterval: SLOW_INTERVAL,
-    },
-  )
+
+    enabled: Boolean(protocol0 && protocol1 && token0Address && chainId && token1Address),
+    refetchInterval: SLOW_INTERVAL,
+    staleTime: SLOW_INTERVAL,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+  })
 
   const hasSwapPrice = currentSwapPrice && currentSwapPrice[token0Address] > 0
   const normalizedDerivedPairDataWithCurrentSwapPrice = useMemo(
     () =>
-      normalizedDerivedPairData?.length > 0 && hasSwapPrice
+      normalizedDerivedPairData && normalizedDerivedPairData?.length > 0 && hasSwapPrice
         ? [...normalizedDerivedPairData, { time: new Date(), value: currentSwapPrice[token0Address] }]
         : normalizedDerivedPairData,
     [currentSwapPrice, hasSwapPrice, normalizedDerivedPairData, token0Address],
@@ -351,6 +369,6 @@ export const useFetchPairPricesV3 = ({
   return {
     data: normalizedDerivedPairDataWithCurrentSwapPrice,
     error,
-    isLoading,
+    isPending,
   }
 }

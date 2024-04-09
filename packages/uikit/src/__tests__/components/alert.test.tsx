@@ -1,5 +1,6 @@
-import { renderWithProvider } from "../../testHelpers";
+import { expect, it } from "vitest";
 import { Alert } from "../../components/Alert";
+import { renderWithProvider } from "../../testHelpers";
 
 it("renders correctly", () => {
   const { asFragment } = renderWithProvider(<Alert title="Alert title">Description</Alert>);
@@ -7,13 +8,9 @@ it("renders correctly", () => {
   expect(asFragment()).toMatchInlineSnapshot(`
     <DocumentFragment>
       .c3 {
-      -webkit-align-self: center;
-      -ms-flex-item-align: center;
       align-self: center;
       fill: currentColor;
       color: currentColor;
-      -webkit-flex-shrink: 0;
-      -ms-flex-negative: 0;
       flex-shrink: 0;
     }
 
@@ -32,9 +29,6 @@ it("renders correctly", () => {
     }
 
     .c0 {
-      display: -webkit-box;
-      display: -webkit-flex;
-      display: -ms-flexbox;
       display: flex;
     }
 
@@ -46,8 +40,6 @@ it("renders correctly", () => {
     }
 
     .c4 {
-      -webkit-flex: 1;
-      -ms-flex: 1;
       flex: 1;
       padding-bottom: 12px;
       padding-left: 12px;
@@ -59,13 +51,12 @@ it("renders correctly", () => {
       position: relative;
       background-color: var(--colors-backgroundAlt);
       border-radius: 16px;
-      box-shadow: 0px 20px 36px -8px rgba(14,14,44,0.1),0px 1px 1px rgba(0,0,0,0.05);
+      box-shadow: 0px 20px 36px -8px rgba(14, 14, 44, 0.1),0px 1px 1px rgba(0, 0, 0, 0.05);
     }
 
-    @supports (-webkit-text-size-adjust:none) and (not (-ms-accelerator:true)) and (not (-moz-appearance:none)) {
+    @supports (-webkit-text-size-adjust: none) and (not (-ms-accelerator: true)) and (not (-moz-appearance: none)) {
       .c3 {
-        -webkit-filter: none !important;
-        filter: none !important;
+        filter: none!important;
       }
     }
 
@@ -92,15 +83,11 @@ it("renders correctly", () => {
         >
           <div
             class="c5"
-            color="text"
-            font-size="16px"
           >
             Alert title
           </div>
           <p
             class="c6"
-            color="text"
-            font-size="16px"
             style="word-break: break-word;"
           >
             Description

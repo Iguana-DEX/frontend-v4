@@ -1,20 +1,25 @@
+import { useTranslation } from '@pancakeswap/localization'
 import {
+  Box,
+  CheckmarkCircleIcon,
+  FlexGap,
+  FlexGapProps,
+  HotIcon,
+  LockIcon,
+  PauseCircleIcon,
+  SplitIcon,
   Tag,
   TagProps,
   Text,
-  SplitIcon,
-  LockIcon,
   UnlockIcon,
-  HotIcon,
-  Box,
-  FlexGap,
-  FlexGapProps,
+  WarningIcon,
 } from '@pancakeswap/uikit'
 import Trans from 'components/Trans'
-import { useTranslation } from '@pancakeswap/localization'
 import { ReactNode, useMemo } from 'react'
 import { DeserializedLockedVaultUser } from 'state/types'
 import { VaultPosition, getVaultPosition } from 'utils/cakePool'
+import { useIsMigratedToVeCake } from 'views/CakeStaking/hooks/useIsMigratedToVeCake'
+import { useIsUserDelegated } from 'views/CakeStaking/hooks/useIsUserDelegated'
 
 const tagConfig: Record<VaultPosition, TagProps> = {
   [VaultPosition.None]: {},
@@ -45,8 +50,8 @@ const iconColorConfig: Record<VaultPosition, any> = {
   [VaultPosition.None]: null,
   [VaultPosition.Flexible]: 'white',
   [VaultPosition.Locked]: 'white',
-  [VaultPosition.LockedEnd]: null,
-  [VaultPosition.AfterBurning]: null,
+  [VaultPosition.LockedEnd]: 'secondary',
+  [VaultPosition.AfterBurning]: 'failure',
 }
 
 const positionLabel: Record<VaultPosition, ReactNode> = {
@@ -66,10 +71,32 @@ const VaultPositionTag: React.FC<React.PropsWithChildren<{ position: VaultPositi
   )
 }
 
+const VeCakeVaultPositionTag: React.FC = () => {
+  const isMigratedToVeCake = useIsMigratedToVeCake()
+  const { t } = useTranslation()
+  return (
+    <Tag variant={isMigratedToVeCake ? 'success' : 'failure'}>
+      <Box as={isMigratedToVeCake ? CheckmarkCircleIcon : PauseCircleIcon} mr="4px" color="white" />
+      {isMigratedToVeCake ? t('Migrated') : t('Reward pause')}
+    </Tag>
+  )
+}
+
+const VeCakeDelegatedTag: React.FC = () => {
+  const { t } = useTranslation()
+  return (
+    <Tag variant="warning">
+      <Box as={WarningIcon} mr="4px" color="white" />
+      {t('Converted')}
+    </Tag>
+  )
+}
+
 export const VaultPositionTagWithLabel: React.FC<
-  React.PropsWithChildren<{ userData: DeserializedLockedVaultUser } & FlexGapProps>
+  React.PropsWithChildren<{ userData?: DeserializedLockedVaultUser } & FlexGapProps>
 > = ({ userData, ...props }) => {
   const { t } = useTranslation()
+  const isUserDelegated = useIsUserDelegated()
 
   const position = useMemo(() => getVaultPosition(userData), [userData])
 
@@ -79,7 +106,13 @@ export const VaultPositionTagWithLabel: React.FC<
         <Text fontSize="12px" color="secondary" textTransform="uppercase" bold>
           {t('My Position')}
         </Text>
-        <VaultPositionTag position={position} />
+        {isUserDelegated ? (
+          <VeCakeDelegatedTag />
+        ) : position < VaultPosition.LockedEnd ? (
+          <VeCakeVaultPositionTag />
+        ) : (
+          <VaultPositionTag position={position} />
+        )}
       </FlexGap>
     )
   }

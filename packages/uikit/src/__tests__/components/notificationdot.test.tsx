@@ -1,6 +1,6 @@
-import React from "react";
-import { renderWithProvider } from "../../testHelpers";
+import { expect, it } from "vitest";
 import NotificationDot from "../../components/NotificationDot/NotificationDot";
+import { renderWithProvider } from "../../testHelpers";
 
 it("renders correctly", () => {
   const { asFragment } = renderWithProvider(
@@ -11,12 +11,7 @@ it("renders correctly", () => {
   expect(asFragment()).toMatchInlineSnapshot(`
     <DocumentFragment>
       .c0 {
-      display: -webkit-inline-box;
-      display: -webkit-inline-flex;
-      display: -ms-inline-flexbox;
       display: inline-flex;
-      width: -webkit-fit-content;
-      width: -moz-fit-content;
       width: fit-content;
       position: relative;
     }

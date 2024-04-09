@@ -1,36 +1,27 @@
-import { useTranslation } from '@pancakeswap/localization'
 import { FarmWithStakedValue } from '@pancakeswap/farms'
-import {
-  Box,
-  Farm as FarmUI,
-  FarmTableEarnedProps,
-  FarmTableFarmTokenInfoProps,
-  FarmTableLiquidityProps,
-  FarmTableMultiplierProps,
-  Flex,
-  Skeleton,
-  useMatchBreakpoints,
-  MobileColumnSchema,
-  DesktopColumnSchema,
-} from '@pancakeswap/uikit'
-import { createElement, useEffect, useRef, useState } from 'react'
-import styled from 'styled-components'
-import { BIG_ZERO } from '@pancakeswap/utils/bigNumber'
 import { useDelayedUnmount } from '@pancakeswap/hooks'
+import { useTranslation } from '@pancakeswap/localization'
+import { Box, Flex, Skeleton, useMatchBreakpoints } from '@pancakeswap/uikit'
+import { BIG_ZERO } from '@pancakeswap/utils/bigNumber'
+import { FarmWidget } from '@pancakeswap/widgets-internal'
+import { createElement, useEffect, useRef, useState } from 'react'
+import { styled } from 'styled-components'
 
+import { EarnedUsdPrice } from '../FarmCard/EarnedUsdPrice'
 import ActionPanel from './Actions/ActionPanel'
 import Apr, { AprProps } from './Apr'
 import Farm from './Farm'
 
-const { FarmAuctionTag, CoreTag } = FarmUI.Tags
-const { CellLayout, Details, Multiplier, Liquidity, Earned } = FarmUI.FarmTable
+const { MobileColumnSchema, DesktopColumnSchema } = FarmWidget
+const { FarmAuctionTag, CoreTag } = FarmWidget.Tags
+const { CellLayout, Details, Multiplier, Liquidity } = FarmWidget.FarmTable
 
 export interface RowProps {
   apr: AprProps
-  farm: FarmTableFarmTokenInfoProps
-  earned: FarmTableEarnedProps
-  multiplier: FarmTableMultiplierProps
-  liquidity: FarmTableLiquidityProps
+  farm: FarmWidget.FarmTableFarmTokenInfoProps
+  earned: FarmWithStakedValue
+  multiplier: FarmWidget.FarmTableMultiplierProps
+  liquidity: FarmWidget.FarmTableLiquidityProps
   details: FarmWithStakedValue
   type: 'core' | 'community'
   initialActivity?: boolean
@@ -38,12 +29,13 @@ export interface RowProps {
 
 interface RowPropsWithLoading extends RowProps {
   userDataReady: boolean
+  isLastFarm: boolean
 }
 
 const cells = {
   apr: Apr,
   farm: Farm,
-  earned: Earned,
+  earned: EarnedUsdPrice,
   details: Details,
   multiplier: Multiplier,
   liquidity: Liquidity,
@@ -193,14 +185,14 @@ const Row: React.FunctionComponent<React.PropsWithChildren<RowPropsWithLoading>>
           </FarmMobileCell>
         </tr>
         <StyledTr onClick={toggleActionPanel}>
-          <td width="33%">
+          <td width="50%">
             <EarnedMobileCell>
               <CellLayout label={t('Earned')}>
-                <Earned {...props.earned} userDataReady={!!userDataReady} />
+                <EarnedUsdPrice {...props.earned} />
               </CellLayout>
             </EarnedMobileCell>
           </td>
-          <td width="33%">
+          <td>
             <AprMobileCell>
               <CellLayout label={t('APR')}>
                 <Apr
@@ -212,7 +204,7 @@ const Row: React.FunctionComponent<React.PropsWithChildren<RowPropsWithLoading>>
               </CellLayout>
             </AprMobileCell>
           </td>
-          <td width="33%">
+          <td width="10%">
             <CellInner style={{ justifyContent: 'flex-end' }}>
               <Details actionPanelToggled={actionPanelExpanded} />
             </CellInner>
@@ -228,7 +220,12 @@ const Row: React.FunctionComponent<React.PropsWithChildren<RowPropsWithLoading>>
       {shouldRenderChild && (
         <tr>
           <td colSpan={7}>
-            <ActionPanel {...props} expanded={actionPanelExpanded} alignLinksToRight={isMobile} />
+            <ActionPanel
+              {...props}
+              expanded={actionPanelExpanded}
+              alignLinksToRight={isMobile}
+              isLastFarm={props.isLastFarm}
+            />
           </td>
         </tr>
       )}

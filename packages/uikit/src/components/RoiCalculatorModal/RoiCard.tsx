@@ -1,12 +1,12 @@
-import { useRef, useEffect, useState } from "react";
-import styled from "styled-components";
 import { useTranslation } from "@pancakeswap/localization";
-import { CalculatorMode, RoiCalculatorReducerState } from "./useRoiCalculatorReducer";
+import { useEffect, useRef, useState } from "react";
+import { styled } from "styled-components";
 import { Box, Flex } from "../Box";
-import { Text } from "../Text";
-import { Input } from "../Input";
 import { IconButton } from "../Button";
+import { Input } from "../Input";
 import { CheckmarkIcon, PencilIcon } from "../Svg";
+import { Text } from "../Text";
+import { CalculatorMode, RoiCalculatorDataState } from "./useRoiCalculatorReducer";
 
 export const MILLION = 1000000;
 export const TRILLION = 1000000000000;
@@ -72,22 +72,28 @@ export const RoiDollarAmount = styled(Text)<{ fadeOut: boolean }>`
   `}
 `;
 
+export interface RoiCalculatorCardState {
+  controls: {
+    mode: CalculatorMode;
+  };
+  data: Omit<RoiCalculatorDataState, "principalAsToken" | "principalAsUSD">;
+}
+
 interface RoiCardProps {
   earningTokenSymbol: string;
-  calculatorState: RoiCalculatorReducerState;
-  setTargetRoi: (amount: string) => void;
-  setCalculatorMode: (mode: CalculatorMode) => void;
+  calculatorState: RoiCalculatorCardState;
+  setTargetRoi?: (amount: string) => void;
+  setCalculatorMode?: (mode: CalculatorMode) => void;
 }
 
 const RoiCard: React.FC<React.PropsWithChildren<RoiCardProps>> = ({
-  earningTokenSymbol,
   calculatorState,
   setTargetRoi,
   setCalculatorMode,
 }) => {
   const [expectedRoi, setExpectedRoi] = useState("");
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const { roiUSD, roiTokens, roiPercentage } = calculatorState.data;
+  const { roiUSD, roiPercentage } = calculatorState.data;
   const { mode } = calculatorState.controls;
 
   const { t } = useTranslation();
@@ -99,7 +105,7 @@ const RoiCard: React.FC<React.PropsWithChildren<RoiCardProps>> = ({
   }, [mode]);
 
   const onEnterEditing = () => {
-    setCalculatorMode(CalculatorMode.PRINCIPAL_BASED_ON_ROI);
+    if (setCalculatorMode) setCalculatorMode(CalculatorMode.PRINCIPAL_BASED_ON_ROI);
     setExpectedRoi(
       roiUSD.toLocaleString("en", {
         minimumFractionDigits: roiUSD > MILLION ? 0 : 2,
@@ -109,12 +115,12 @@ const RoiCard: React.FC<React.PropsWithChildren<RoiCardProps>> = ({
   };
 
   const onExitRoiEditing = () => {
-    setCalculatorMode(CalculatorMode.ROI_BASED_ON_PRINCIPAL);
+    if (setCalculatorMode) setCalculatorMode(CalculatorMode.ROI_BASED_ON_PRINCIPAL);
   };
   const handleExpectedRoiChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.currentTarget.validity.valid) {
       const roiAsString = event.target.value.replace(/,/g, ".");
-      setTargetRoi(roiAsString);
+      if (setTargetRoi) setTargetRoi(roiAsString);
       setExpectedRoi(roiAsString);
     }
   };
@@ -157,14 +163,15 @@ const RoiCard: React.FC<React.PropsWithChildren<RoiCardProps>> = ({
                   })}
                 </RoiDollarAmount>
               </RoiDisplayContainer>
-              <IconButton scale="sm" variant="text" onClick={onEnterEditing}>
-                <PencilIcon color="primary" />
-              </IconButton>
+              {setTargetRoi && setCalculatorMode ? (
+                <IconButton scale="sm" variant="text" onClick={onEnterEditing}>
+                  <PencilIcon color="primary" />
+                </IconButton>
+              ) : null}
             </>
           )}
         </Flex>
         <Text fontSize="12px" color="textSubtle">
-          ~ {roiTokens} {earningTokenSymbol}
           <Text
             fontSize="12px"
             color="textSubtle"
@@ -173,8 +180,7 @@ const RoiCard: React.FC<React.PropsWithChildren<RoiCardProps>> = ({
             maxWidth="100%"
             style={{ lineBreak: "anywhere" }}
           >
-            ({roiPercentage.toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            %)
+            {`${roiPercentage.toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`}
           </Text>
         </Text>
       </RoiCardInner>

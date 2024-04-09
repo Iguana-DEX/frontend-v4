@@ -1,19 +1,19 @@
-import { useEffect, useState } from 'react'
-import { useAccount } from 'wagmi'
-import { isAddress } from 'utils'
-import { useAppDispatch } from 'state'
-import { getUserActivity } from 'state/nftMarket/helpers'
-import { PaginationButton, Card, Flex, Table, Text, Th, useMatchBreakpoints } from '@pancakeswap/uikit'
-import { Activity, NftToken } from 'state/nftMarket/types'
 import { useTranslation } from '@pancakeswap/localization'
+import { Card, Flex, PaginationButton, Table, Text, Th, useMatchBreakpoints } from '@pancakeswap/uikit'
 import TableLoader from 'components/TableLoader'
-import { useBNBBusdPrice } from 'hooks/useBUSDPrice'
+import { useBNBPrice } from 'hooks/useBNBPrice'
 import useTheme from 'hooks/useTheme'
 import { useRouter } from 'next/router'
-import { sortUserActivity } from '../../utils/sortUserActivity'
-import NoNftsImage from '../../../Nft/market/components/Activity/NoNftsImage'
+import { useEffect, useState } from 'react'
+import { useAppDispatch } from 'state'
+import { getUserActivity } from 'state/nftMarket/helpers'
+import { Activity, NftToken } from 'state/nftMarket/types'
+import { isAddress } from 'viem'
+import { fetchActivityNftMetadata } from 'views/Nft/market/ActivityHistory/utils/fetchActivityNftMetadata'
+import { useAccount } from 'wagmi'
 import ActivityRow from '../../../Nft/market/components/Activity/ActivityRow'
-import { fetchActivityNftMetadata } from '../../../Nft/market/ActivityHistory/utils/fetchActivityNftMetadata'
+import NoNftsImage from '../../../Nft/market/components/Activity/NoNftsImage'
+import { sortUserActivity } from '../../utils/sortUserActivity'
 
 const MAX_PER_PAGE = 8
 
@@ -29,7 +29,7 @@ const ActivityHistory = () => {
   const [nftMetadata, setNftMetadata] = useState<NftToken[]>([])
   const [sortedUserActivities, setSortedUserActivities] = useState<Activity[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const bnbBusdPrice = useBNBBusdPrice()
+  const bnbBusdPrice = useBNBPrice()
   const { isXs, isSm } = useMatchBreakpoints()
 
   useEffect(() => {
@@ -116,12 +116,12 @@ const ActivityHistory = () => {
                 activitiesSlice.map((activity) => {
                   const nftMeta = nftMetadata.find(
                     (metaNft) =>
-                      metaNft.tokenId === activity.nft.tokenId &&
+                      metaNft.tokenId === activity.nft?.tokenId &&
                       metaNft.collectionAddress.toLowerCase() === activity.nft?.collection.id.toLowerCase(),
                   )
                   return (
                     <ActivityRow
-                      key={`${activity.nft.tokenId}${activity.timestamp}`}
+                      key={`${activity.nft?.tokenId}${activity.timestamp}`}
                       activity={activity}
                       nft={nftMeta}
                       bnbBusdPrice={bnbBusdPrice}

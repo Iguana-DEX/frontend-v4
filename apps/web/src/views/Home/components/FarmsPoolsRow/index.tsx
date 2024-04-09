@@ -1,15 +1,18 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import styled from 'styled-components'
 import { Token } from '@pancakeswap/sdk'
-import { Flex, Box, SwapVertIcon, IconButton, Pool } from '@pancakeswap/uikit'
-import { useTranslation } from '@pancakeswap/localization'
+import { Box, Flex, IconButton, SwapVertIcon } from '@pancakeswap/uikit'
+import { Pool } from '@pancakeswap/widgets-internal'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { styled } from 'styled-components'
+
 import { useIntersectionObserver } from '@pancakeswap/hooks'
-import useGetTopFarmsByApr from 'views/Home/hooks/useGetTopFarmsByApr'
-import useGetTopPoolsByApr from 'views/Home/hooks/useGetTopPoolsByApr'
+import { useTranslation } from '@pancakeswap/localization'
 import { vaultPoolConfig } from 'config/constants/pools'
 import { useVaultApy } from 'hooks/useVaultApy'
-import TopFarmPool from './TopFarmPool'
+import toNumber from 'lodash/toNumber'
+import useGetTopFarmsByApr from 'views/Home/hooks/useGetTopFarmsByApr'
+import useGetTopPoolsByApr from 'views/Home/hooks/useGetTopPoolsByApr'
 import RowHeading from './RowHeading'
+import TopFarmPool from './TopFarmPool'
 
 const Grid = styled.div`
   display: grid;
@@ -33,7 +36,7 @@ const FarmsPoolsRow = () => {
   const { topPools } = useGetTopPoolsByApr(fetched && isIntersecting, chainId)
   const { lockedApy } = useVaultApy()
 
-  const timer = useRef<ReturnType<typeof setTimeout>>(null)
+  const timer = useRef<NodeJS.Timeout | null>(null)
   const isLoaded = topFarms[0] && topPools[0]
 
   const startTimer = useCallback(() => {
@@ -48,7 +51,9 @@ const FarmsPoolsRow = () => {
     }
 
     return () => {
-      clearInterval(timer.current)
+      if (timer.current) {
+        clearInterval(timer.current)
+      }
     }
   }, [timer, isLoaded, startTimer])
 
@@ -77,7 +82,7 @@ const FarmsPoolsRow = () => {
             width="auto"
             onClick={() => {
               setShowFarms((prev) => !prev)
-              clearInterval(timer.current)
+              if (timer.current) clearInterval(timer.current)
               startTimer()
             }}
           >
@@ -96,7 +101,7 @@ const FarmsPoolsRow = () => {
                   `${topFarm?.lpSymbol}` + `${topFarm?.version === 3 ? ` v${topFarm.version}` : ''}`
                 }
                 version={topFarm?.version}
-                percentage={topFarm?.apr + topFarm?.lpRewardsApr}
+                percentage={toNumber(topFarm?.apr) + toNumber(topFarm?.lpRewardsApr)}
                 index={index}
                 visible={showFarms}
               />

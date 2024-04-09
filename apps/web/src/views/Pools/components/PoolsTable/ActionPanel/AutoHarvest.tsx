@@ -1,29 +1,37 @@
-import styled from 'styled-components'
 import {
-  Text,
-  Flex,
-  Skeleton,
-  Heading,
-  Box,
-  useMatchBreakpoints,
   BalanceWithLoading,
-  Pool,
-  useTooltip,
+  Box,
+  Button,
+  Flex,
+  Heading,
   HelpIcon,
+  Skeleton,
+  Text,
+  useMatchBreakpoints,
+  useModal,
+  useTooltip,
 } from '@pancakeswap/uikit'
-import { useAccount } from 'wagmi'
-import { getCakeVaultEarnings } from 'views/Pools/helpers'
-import { useTranslation } from '@pancakeswap/localization'
-import { useVaultPoolByKey } from 'state/pools/hooks'
-import { VaultKey, DeserializedLockedCakeVault } from 'state/types'
-import { getVaultPosition, VaultPosition } from 'utils/cakePool'
-import { useVaultApy } from 'hooks/useVaultApy'
-import { Token } from '@pancakeswap/sdk'
+import { Pool } from '@pancakeswap/widgets-internal'
+import { styled } from 'styled-components'
+import BN from 'bignumber.js'
 
-import { ActionContainer, ActionTitles, ActionContent, RowActionContainer } from './styles'
+import { useTranslation } from '@pancakeswap/localization'
+import { Token } from '@pancakeswap/sdk'
+import { useVaultApy } from 'hooks/useVaultApy'
+import { useVaultPoolByKey } from 'state/pools/hooks'
+import { DeserializedLockedCakeVault, VaultKey } from 'state/types'
+import { VaultPosition, getVaultPosition } from 'utils/cakePool'
+import BenefitsModal from 'views/Pools/components/RevenueSharing/BenefitsModal'
+import { getCakeVaultEarnings } from 'views/Pools/helpers'
+import useVCake from 'views/Pools/hooks/useVCake'
+import { useAccount } from 'wagmi'
+
+import AutoEarningsBreakdown from '../../AutoEarningsBreakdown'
 import UnstakingFeeCountdownRow from '../../CakeVaultCard/UnstakingFeeCountdownRow'
 import useUserDataInVaultPresenter from '../../LockedPool/hooks/useUserDataInVaultPresenter'
-import AutoEarningsBreakdown from '../../AutoEarningsBreakdown'
+import { ActionContainer, ActionContent, ActionTitles, RowActionContainer } from './styles'
+
+const ZERO = new BN(0)
 
 const HelpIconWrapper = styled.div`
   align-self: center;
@@ -36,25 +44,25 @@ interface AutoHarvestActionProps {
 const AutoHarvestAction: React.FunctionComponent<React.PropsWithChildren<AutoHarvestActionProps>> = ({ pool }) => {
   const { t } = useTranslation()
   const { address: account } = useAccount()
+  const { isInitialization } = useVCake()
   const { isMobile } = useMatchBreakpoints()
 
   const { earningTokenPrice, vaultKey, userDataLoaded } = pool
   const vaultData = useVaultPoolByKey(pool.vaultKey)
-  const {
-    userData: { userShares, cakeAtLastUserAction },
-    pricePerFullShare,
-  } = vaultData
+  const { userData, pricePerFullShare } = vaultData
+  const userShares = userData?.userShares
+  const cakeAtLastUserAction = userData?.cakeAtLastUserAction
   const { hasAutoEarnings, autoCakeToDisplay, autoUsdToDisplay } = getCakeVaultEarnings(
     account,
-    cakeAtLastUserAction,
-    userShares,
-    pricePerFullShare,
-    earningTokenPrice,
+    cakeAtLastUserAction || ZERO,
+    userShares || ZERO,
+    pricePerFullShare || ZERO,
+    earningTokenPrice || 0,
     vaultKey === VaultKey.CakeVault
-      ? (vaultData as DeserializedLockedCakeVault).userData.currentPerformanceFee
-          .plus((vaultData as DeserializedLockedCakeVault).userData.currentOverdueFee)
-          .plus((vaultData as DeserializedLockedCakeVault).userData.userBoostedShare)
-      : null,
+      ? (vaultData as DeserializedLockedCakeVault).userData?.currentPerformanceFee
+          .plus((vaultData as DeserializedLockedCakeVault).userData?.currentOverdueFee || ZERO)
+          .plus((vaultData as DeserializedLockedCakeVault).userData?.userBoostedShare || ZERO)
+      : undefined,
   )
 
   const { secondDuration, weekDuration } = useUserDataInVaultPresenter({
@@ -75,6 +83,13 @@ const AutoHarvestAction: React.FunctionComponent<React.PropsWithChildren<AutoHar
   } = useTooltip(<AutoEarningsBreakdown pool={pool} account={account} />, {
     placement: 'bottom',
   })
+
+  const [onPresentViewBenefitsModal] = useModal(
+    <BenefitsModal pool={pool} userData={(vaultData as DeserializedLockedCakeVault)?.userData} />,
+    true,
+    false,
+    'revenueModal',
+  )
 
   const actionTitle = (
     <Text fontSize="12px" bold color="secondary" as="span" textTransform="uppercase">
@@ -105,76 +120,87 @@ const AutoHarvestAction: React.FunctionComponent<React.PropsWithChildren<AutoHar
   }
 
   return (
-    <RowActionContainer justifyContent="space-between">
-      <Box width="100%">
-        <ActionTitles>{actionTitle}</ActionTitles>
-        <ActionContent>
-          <Flex flex="1" flexDirection="column" alignSelf="flex-start">
-            <>
-              {hasAutoEarnings ? (
-                <>
-                  <Flex>
-                    <BalanceWithLoading lineHeight="1" bold fontSize="20px" decimals={5} value={autoCakeToDisplay} />
-                    {tagTooltipVisibleOfRecentProfit && tagTooltipOfRecentProfit}
-                    <HelpIconWrapper ref={tagTargetRefOfRecentProfit}>
-                      <HelpIcon ml="4px" color="textSubtle" />
-                    </HelpIconWrapper>
-                  </Flex>
-                  {Number.isFinite(earningTokenPrice) && earningTokenPrice > 0 && (
-                    <BalanceWithLoading
-                      display="inline"
-                      fontSize="12px"
-                      color="textSubtle"
-                      decimals={2}
-                      prefix="~"
-                      value={autoUsdToDisplay}
-                      unit=" USD"
-                    />
-                  )}
-                </>
-              ) : (
-                <>
-                  <Heading color="textDisabled">0</Heading>
-                  <Text fontSize="12px" color="textDisabled">
-                    0 USD
-                  </Text>
-                </>
-              )}
-            </>
-          </Flex>
-          <Flex flex="1.3" flexDirection="column" alignSelf="flex-start" alignItems="flex-start">
-            {[VaultPosition.Flexible, VaultPosition.None].includes(vaultPosition) && (
-              <UnstakingFeeCountdownRow vaultKey={vaultKey} isTableVariant />
-            )}
-            {/* IFO credit here */}
-          </Flex>
-        </ActionContent>
-      </Box>
-      {!isMobile && vaultKey === VaultKey.CakeVault && (vaultData as DeserializedLockedCakeVault).userData.locked && (
-        <Box minWidth="123px">
-          <ActionTitles>
-            <Text fontSize="12px" bold color="secondary" as="span" textTransform="uppercase">
-              {t('Yield boost')}
-            </Text>
-          </ActionTitles>
+    <RowActionContainer style={{ flexDirection: 'column', flex: 1 }}>
+      <Flex justifyContent="space-between">
+        <Box width="100%">
+          <ActionTitles>{actionTitle}</ActionTitles>
           <ActionContent>
             <Flex flex="1" flexDirection="column" alignSelf="flex-start">
-              <BalanceWithLoading
-                color="text"
-                lineHeight="1"
-                bold
-                fontSize="20px"
-                value={boostFactor ? boostFactor?.toString() : '0'}
-                decimals={2}
-                unit="x"
-              />
-              <Text fontSize="12px" color="textSubtle">
-                {t('Lock for %duration%', { duration: weekDuration })}
-              </Text>
+              <>
+                {hasAutoEarnings ? (
+                  <>
+                    <Flex>
+                      <BalanceWithLoading lineHeight="1" bold fontSize="20px" decimals={5} value={autoCakeToDisplay} />
+                      {tagTooltipVisibleOfRecentProfit && tagTooltipOfRecentProfit}
+                      <HelpIconWrapper ref={tagTargetRefOfRecentProfit}>
+                        <HelpIcon ml="4px" color="textSubtle" />
+                      </HelpIconWrapper>
+                    </Flex>
+                    {Number.isFinite(earningTokenPrice) && earningTokenPrice !== undefined && earningTokenPrice > 0 && (
+                      <BalanceWithLoading
+                        display="inline"
+                        fontSize="12px"
+                        color="textSubtle"
+                        decimals={2}
+                        prefix="~"
+                        value={autoUsdToDisplay}
+                        unit=" USD"
+                      />
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <Heading color="textDisabled">0</Heading>
+                    <Text fontSize="12px" color="textDisabled">
+                      0 USD
+                    </Text>
+                  </>
+                )}
+              </>
+            </Flex>
+            <Flex flex="1.3" flexDirection="column" alignSelf="flex-start" alignItems="flex-start">
+              {[VaultPosition.Flexible, VaultPosition.None].includes(vaultPosition) && (
+                <UnstakingFeeCountdownRow vaultKey={vaultKey} isTableVariant />
+              )}
             </Flex>
           </ActionContent>
         </Box>
-      )}
+        {!isMobile &&
+          vaultKey === VaultKey.CakeVault &&
+          (vaultData as DeserializedLockedCakeVault).userData?.locked && (
+            <Box minWidth="123px">
+              <ActionTitles>
+                <Text fontSize="12px" bold color="secondary" as="span" textTransform="uppercase">
+                  {t('Yield boost')}
+                </Text>
+              </ActionTitles>
+              <ActionContent>
+                <Flex flex="1" flexDirection="column" alignSelf="flex-start">
+                  <BalanceWithLoading
+                    color="text"
+                    lineHeight="1"
+                    bold
+                    fontSize="20px"
+                    value={boostFactor ? boostFactor?.toString() : '0'}
+                    decimals={2}
+                    unit="x"
+                  />
+                  <Text fontSize="12px" color="textSubtle">
+                    {t('Lock for %duration%', { duration: weekDuration })}
+                  </Text>
+                </Flex>
+              </ActionContent>
+            </Box>
+          )}
+      </Flex>
+      {vaultKey === VaultKey.CakeVault &&
+        (vaultData as DeserializedLockedCakeVault).userData?.locked &&
+        vaultPosition === VaultPosition.Locked &&
+        isInitialization && (
+          <Button mt="16px" width="100%" variant="secondary" onClick={onPresentViewBenefitsModal}>
+            {t('View Benefits')}
+          </Button>
+        )}
     </RowActionContainer>
   )
 }

@@ -3,19 +3,20 @@ import { Card, Heading, Text } from '@pancakeswap/uikit'
 import Page from 'components/Layout/Page'
 import useInfoUserSavedTokensAndPools from 'hooks/useInfoUserSavedTokensAndPoolsList'
 import { useMemo } from 'react'
-import { useChainIdByQuery, usePoolDatasSWR } from 'state/info/hooks'
+import { useChainIdByQuery, usePoolDatasQuery } from 'state/info/hooks'
 import PoolTable from 'views/Info/components/InfoTables/PoolsTable'
-import { usePoolsData } from '../hooks/usePoolsData'
+import { useNonSpamPoolsData } from '../hooks/usePoolsData'
 
 const PoolsOverview: React.FC<React.PropsWithChildren> = () => {
   const { t } = useTranslation()
-  const { poolsData, stableSwapsAprs } = usePoolsData()
+  const { poolsData, stableSwapsAprs } = useNonSpamPoolsData()
   const chainId = useChainIdByQuery()
   const { savedPools } = useInfoUserSavedTokensAndPools(chainId)
-  const watchlistPools = usePoolDatasSWR(savedPools)
+  const watchlistPools = usePoolDatasQuery(savedPools)
   const watchlistPoolsData = useMemo(
     () =>
       watchlistPools.map((pool) => {
+        if (!pool) return pool
         return { ...pool, ...(stableSwapsAprs && { lpApr7d: stableSwapsAprs[pool.address] }) }
       }),
     [watchlistPools, stableSwapsAprs],
