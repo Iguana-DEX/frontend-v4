@@ -3,25 +3,24 @@ import { useTranslation } from '@pancakeswap/localization'
 import {
   AutoRow,
   CalculateIcon,
-  Farm as FarmUI,
   Flex,
   IconButton,
   RocketIcon,
-  RoiCalculatorModalV2,
   Skeleton,
   Text,
   TooltipText,
   useMatchBreakpoints,
   useModalV2,
-  useRoi,
   useTooltip,
 } from '@pancakeswap/uikit'
 import { BIG_ZERO } from '@pancakeswap/utils/bigNumber'
-import { useCakePriceAsBN } from 'hooks/useCakePriceAsBN'
 import { Position, encodeSqrtRatioX96 } from '@pancakeswap/v3-sdk'
+import { FarmWidget } from '@pancakeswap/widgets-internal'
+import { RoiCalculatorModalV2, useRoi } from '@pancakeswap/widgets-internal/roi'
 import BigNumber from 'bignumber.js'
+import { useCakePrice } from 'hooks/useCakePrice'
 import { useMemo, useState } from 'react'
-import styled from 'styled-components'
+import { styled } from 'styled-components'
 
 import { Bound } from 'config/constants/types'
 import { usePoolAvgInfo } from 'hooks/usePoolAvgInfo'
@@ -65,7 +64,7 @@ function FarmV3ApyButton_({ farm, existingPosition, isPositionStaked, tokenId }:
   const roiModal = useModalV2()
 
   const [priceTimeWindow, setPriceTimeWindow] = useState(0)
-  const prices = usePairTokensPrice(lpAddress, priceTimeWindow, baseCurrency?.chainId)
+  const prices = usePairTokensPrice(lpAddress, priceTimeWindow, baseCurrency?.chainId, roiModal.isOpen)
 
   const { ticks: data } = useAllV3Ticks(baseCurrency, quoteCurrency, feeAmount)
 
@@ -80,7 +79,7 @@ function FarmV3ApyButton_({ farm, existingPosition, isPositionStaked, tokenId }:
     formState,
   )
 
-  const cakePrice = useCakePriceAsBN()
+  const cakePrice = useCakePrice()
 
   const sqrtRatioX96 = price && encodeSqrtRatioX96(price.numerator, price.denominator)
   const { [Bound.LOWER]: tickLower, [Bound.UPPER]: tickUpper } = ticks
@@ -150,7 +149,10 @@ function FarmV3ApyButton_({ farm, existingPosition, isPositionStaked, tokenId }:
       existingPosition
         ? outOfRange
           ? 0
-          : new BigNumber(existingPosition.liquidity.toString()).times(cakeAprFactor).div(depositUsdAsBN).toNumber()
+          : new BigNumber(existingPosition.liquidity.toString())
+              .times(cakeAprFactor)
+              .div(depositUsdAsBN ?? 0)
+              .toNumber()
         : 0,
     [cakeAprFactor, depositUsdAsBN, existingPosition, outOfRange],
   )
@@ -170,7 +172,7 @@ function FarmV3ApyButton_({ farm, existingPosition, isPositionStaked, tokenId }:
   })
 
   const lpApr = existingPosition ? +apr.toFixed(2) : globalLpApr
-  const cakeApr = +farm.cakeApr
+  const cakeApr = +(farm.cakeApr ?? 0)
 
   const displayApr = getDisplayApr(cakeApr, lpApr)
   const cakeAprDisplay = cakeApr.toFixed(2)
@@ -186,11 +188,6 @@ function FarmV3ApyButton_({ farm, existingPosition, isPositionStaked, tokenId }:
       maximumFractionDigits: 2,
     })
   }, [cakeAprDisplay, lpAprDisplay])
-  const boostedAPR = useMemo(() => {
-    return (parseFloat(positionCakeAprDisplay) * boostMultiplier + parseFloat(lpAprDisplay)).toLocaleString('en-US', {
-      maximumFractionDigits: 2,
-    })
-  }, [positionCakeAprDisplay, lpAprDisplay, boostMultiplier])
   const canBoosted = useMemo(() => boostedStatus !== BoostStatus.CanNotBoost, [boostedStatus])
   const isBoosted = useMemo(() => boostedStatus === BoostStatus.Boosted, [boostedStatus])
   const positionDisplayApr = getDisplayApr(+positionCakeApr, lpApr)
@@ -239,7 +236,7 @@ function FarmV3ApyButton_({ farm, existingPosition, isPositionStaked, tokenId }:
         <li>
           {t('Farm APR')}:{' '}
           <b>
-            {isBoosted && <>{(parseFloat(positionCakeAprDisplay) * boostMultiplier).toFixed(2)}% </>}
+            {isBoosted && <>{(positionCakeApr * boostMultiplier).toFixed(2)}% </>}
             <Text
               display="inline-block"
               bold={!isBoosted}
@@ -281,7 +278,7 @@ function FarmV3ApyButton_({ farm, existingPosition, isPositionStaked, tokenId }:
                       <>
                         {isDesktop && <RocketIcon color="success" />}
                         <Text fontSize="14px" color="success">
-                          {boostedAPR}%
+                          {positionBoostedDisplayApr}%
                         </Text>
                       </>
                     )}
@@ -300,7 +297,7 @@ function FarmV3ApyButton_({ farm, existingPosition, isPositionStaked, tokenId }:
         </AutoRow>
       ) : (
         <>
-          <FarmUI.FarmApyButton
+          <FarmWidget.FarmApyButton
             variant="text-and-button"
             handleClickButton={(e) => {
               e.stopPropagation()
@@ -326,7 +323,7 @@ function FarmV3ApyButton_({ farm, existingPosition, isPositionStaked, tokenId }:
                 <Text style={{ textDecoration: canBoosted ? 'line-through' : 'none' }}>{displayApr}%</Text>
               </Flex>
             </TooltipText>
-          </FarmUI.FarmApyButton>
+          </FarmWidget.FarmApyButton>
           {aprTooltip.tooltipVisible && aprTooltip.tooltip}
         </>
       )}

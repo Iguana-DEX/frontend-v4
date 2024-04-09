@@ -1,9 +1,9 @@
-import { BetPosition } from 'state/types'
-import BN from 'bignumber.js'
+import { BetPosition } from '@pancakeswap/prediction'
+import { BIG_ZERO } from '@pancakeswap/utils/bigNumber'
 import { formatBigIntToFixed } from '@pancakeswap/utils/formatBalance'
 import getTimePeriods from '@pancakeswap/utils/getTimePeriods'
+import BN from 'bignumber.js'
 import memoize from 'lodash/memoize'
-import { BIG_ZERO } from '@pancakeswap/utils/bigNumber'
 
 const abs = (n: bigint) => (n === -0n || n < 0n ? -n : n)
 
@@ -86,7 +86,7 @@ export const getMultiplierV2 = (total: bigint, amount: bigint) => {
   return rewardAmountFixed.div(multiplierAmountFixed)
 }
 
-export const getPriceDifference = (price: bigint, lockPrice: bigint) => {
+export const getPriceDifference = (price: bigint | null, lockPrice: bigint | null) => {
   if (!price || !lockPrice) {
     return 0n
   }
@@ -94,8 +94,8 @@ export const getPriceDifference = (price: bigint, lockPrice: bigint) => {
   return price - lockPrice
 }
 
-export const getRoundPosition = (lockPrice: bigint, closePrice: bigint) => {
-  if (!closePrice) {
+export const getRoundPosition = (lockPrice?: bigint | null, closePrice?: bigint | null) => {
+  if (!closePrice || !lockPrice) {
     return null
   }
 

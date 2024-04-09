@@ -1,33 +1,30 @@
-import { ChainId } from '@pancakeswap/sdk'
+import { ChainId, chainNames } from '@pancakeswap/chains'
 import memoize from 'lodash/memoize'
 import {
-  bsc as bsc_,
-  bscTestnet,
-  goerli,
-  mainnet,
-  // zkSync,
-  zkSyncTestnet,
-  polygonZkEvmTestnet as polygonZkEvmTestnet_,
-  polygonZkEvm as polygonZkEvm_,
-  lineaTestnet as lineaTestnet_,
-  // arbitrumGoerli,
   Chain,
+  arbitrum,
+  arbitrumGoerli,
+  arbitrumSepolia,
+  base,
+  baseGoerli,
+  baseSepolia,
+  bscTestnet,
+  bsc as bsc_,
+  goerli,
+  linea,
+  lineaTestnet,
+  mainnet,
+  opBNB,
+  opBNBTestnet,
+  polygonZkEvm,
+  polygonZkEvmTestnet,
+  scrollSepolia,
+  sepolia,
+  zkSync,
+  zkSyncTestnet,
 } from 'wagmi/chains'
 
-export const CHAIN_QUERY_NAME = {
-  [ChainId.ETHEREUM]: 'eth',
-  [ChainId.GOERLI]: 'goerli',
-  [ChainId.BSC]: 'bsc',
-  [ChainId.BSC_TESTNET]: 'bscTestnet',
-  [ChainId.ARBITRUM_ONE]: 'arb',
-  [ChainId.ARBITRUM_GOERLI]: 'arbGoerli',
-  [ChainId.POLYGON_ZKEVM]: 'polygonZkEVM',
-  [ChainId.POLYGON_ZKEVM_TESTNET]: 'polygonZkEVMTestnet',
-  [ChainId.ZKSYNC]: 'zkSync',
-  [ChainId.ZKSYNC_TESTNET]: 'zkSyncTestnet',
-  [ChainId.LINEA_TESTNET]: 'lineaTestnet',
-  [ChainId.ETHERLINK_TESTNET]: 'etherlinkTestnet',
-} as const satisfies Record<ChainId, string>
+export const CHAIN_QUERY_NAME = chainNames
 
 const CHAIN_QUERY_NAME_TO_ID = Object.entries(CHAIN_QUERY_NAME).reduce((acc, [chainId, chainName]) => {
   return {
@@ -56,65 +53,6 @@ const bsc = {
   },
 } satisfies Chain
 
-const polygonZkEvm = {
-  ...polygonZkEvm_,
-  contracts: {
-    multicall3: {
-      address: '0xcA11bde05977b3631167028862bE2a173976CA11',
-      blockCreated: 57746,
-    },
-  },
-} as const satisfies Chain
-
-const polygonZkEvmTestnet = {
-  ...polygonZkEvmTestnet_,
-  contracts: {
-    multicall3: {
-      address: '0xcA11bde05977b3631167028862bE2a173976CA11',
-      blockCreated: 525686,
-    },
-  },
-} as const satisfies Chain
-
-const lineaTestnet = {
-  ...lineaTestnet_,
-  blockExplorers: {
-    etherscan: {
-      name: 'LineaScan',
-      url: 'https://goerli.lineascan.build',
-    },
-    default: {
-      name: 'LineaScan',
-      url: 'https://goerli.lineascan.build',
-    },
-  },
-} as const satisfies Chain
-
-const etherlinkTestnet = {
-  id: 128_123,
-  name: 'Etherlink Testnet',
-  network: 'Etherlink Testnet',
-  nativeCurrency: {
-    decimals: 18,
-    name: 'tez',
-    symbol: 'XTZ',
-  },
-  rpcUrls: {
-    public: { http: ['https://node.ghostnet.etherlink.com'] },
-    default: { http: ['https://node.ghostnet.etherlink.com'] },
-  },
-  blockExplorers: {
-    etherscan: { name: 'Testnet Explorer', url: 'https://testnet-explorer.etherlink.com/' },
-    default: { name: 'Testnet Explorer', url: 'https://testnet-explorer.etherlink.com/' },
-  },
-  contracts: {
-    multicall3: {
-      address: '0xcA11bde05977b3631167028862bE2a173976CA11',
-      blockCreated: 500,
-    },
-  },
-} as const satisfies Chain
-
 /**
  * Controls some L2 specific behavior, e.g. slippage tolerance, special UI behavior.
  * The expectation is that all of these networks have immediate transaction confirmation.
@@ -127,20 +65,34 @@ export const L2_CHAIN_IDS: ChainId[] = [
   ChainId.ZKSYNC,
   ChainId.ZKSYNC_TESTNET,
   ChainId.LINEA_TESTNET,
-  ChainId.ETHERLINK_TESTNET,
+  ChainId.LINEA,
+  ChainId.BASE,
+  ChainId.BASE_TESTNET,
+  ChainId.OPBNB,
+  ChainId.OPBNB_TESTNET,
+  ChainId.ARBITRUM_SEPOLIA,
+  ChainId.BASE_SEPOLIA,
 ]
 
 export const CHAINS = [
   bsc,
-  mainnet,
   bscTestnet,
+  mainnet,
   goerli,
-  // zkSync,
-  zkSyncTestnet,
+  sepolia,
   polygonZkEvm,
   polygonZkEvmTestnet,
+  zkSync,
+  zkSyncTestnet,
+  arbitrum,
+  arbitrumGoerli,
+  arbitrumSepolia,
+  linea,
   lineaTestnet,
-  etherlinkTestnet,
-  // arbitrumGoerli,
-  // arbitrum,
+  base,
+  baseGoerli,
+  baseSepolia,
+  opBNB,
+  opBNBTestnet,
+  scrollSepolia,
 ]

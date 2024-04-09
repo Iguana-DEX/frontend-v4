@@ -1,12 +1,12 @@
-/* eslint-disable no-console */
 import { BigintIsh, Currency, CurrencyAmount, TradeType } from '@pancakeswap/sdk'
 import chunk from 'lodash/chunk.js'
+import { AbortControl } from '@pancakeswap/utils/abortControl'
 
-import { BaseRoute, GasModel, QuoteProvider, RouteWithoutQuote, RouteWithQuote } from './types'
 import { getAmountDistribution } from './functions'
-import { metric } from './utils/metric'
+import { BaseRoute, GasModel, QuoteProvider, RouteWithoutQuote, RouteWithQuote } from './types'
+import { logger } from './utils/logger'
 
-interface Params {
+type Params = {
   blockNumber?: BigintIsh
   amount: CurrencyAmount<Currency>
   baseRoutes: BaseRoute[]
@@ -15,7 +15,7 @@ interface Params {
   tradeType: TradeType
   gasModel: GasModel
   quoterOptimization?: boolean
-}
+} & AbortControl
 
 export async function getRoutesWithValidQuote({
   amount,
@@ -26,6 +26,7 @@ export async function getRoutesWithValidQuote({
   blockNumber,
   gasModel,
   quoterOptimization = true,
+  signal,
 }: Params): Promise<RouteWithQuote[]> {
   const [percents, amounts] = getAmountDistribution(amount, distributionPercent)
   const routesWithoutQuote = amounts.reduce<RouteWithoutQuote[]>(
@@ -45,17 +46,17 @@ export async function getRoutesWithValidQuote({
       : quoteProvider.getRouteWithQuotesExactOut
 
   if (!quoterOptimization) {
-    return getRoutesWithQuote(routesWithoutQuote, { blockNumber, gasModel })
+    return getRoutesWithQuote(routesWithoutQuote, { blockNumber, gasModel, signal })
   }
 
   const requestCallback = typeof window === 'undefined' ? setTimeout : window.requestIdleCallback || window.setTimeout
-  metric('Get quotes', 'from', routesWithoutQuote.length, 'routes', routesWithoutQuote)
+  logger.metric('Get quotes', 'from', routesWithoutQuote.length, 'routes', routesWithoutQuote)
   // Split into chunks so the calculation won't block the main thread
   const getQuotes = (routes: RouteWithoutQuote[]): Promise<RouteWithQuote[]> =>
     new Promise((resolve, reject) => {
       requestCallback(async () => {
         try {
-          const result = await getRoutesWithQuote(routes, { blockNumber, gasModel })
+          const result = await getRoutesWithQuote(routes, { blockNumber, gasModel, signal })
           resolve(result)
         } catch (e) {
           reject(e)
@@ -65,6 +66,6 @@ export async function getRoutesWithValidQuote({
   const chunks = chunk(routesWithoutQuote, 10)
   const result = await Promise.all(chunks.map(getQuotes))
   const quotes = result.reduce<RouteWithQuote[]>((acc, cur) => [...acc, ...cur], [])
-  metric('Get quotes', 'success, got', quotes.length, 'quoted routes', quotes)
+  logger.metric('Get quotes', 'success, got', quotes.length, 'quoted routes', quotes)
   return quotes
 }

@@ -1,8 +1,8 @@
-import { Box, Flex, Logo, ThemeSwitcher, DropdownMenuItemType, DropdownMenu } from '@pancakeswap/uikit'
-import { useRouter } from 'next/router'
+import { Box, DropdownMenu, DropdownMenuItemType, Flex, Logo, ThemeSwitcher } from '@pancakeswap/uikit'
 import { useTheme as useNextTheme } from 'next-themes'
 import NextLink from 'next/link'
-import styled, { useTheme } from 'styled-components'
+import { useRouter } from 'next/router'
+import { styled, useTheme } from 'styled-components'
 
 const StyledMenuItem = styled('div')<{ $isActive?: boolean }>`
   position: relative;
@@ -39,6 +39,10 @@ const MenuConfig = [
       {
         label: 'Stargate',
         href: '/stargate',
+      },
+      {
+        label: 'Wormhole',
+        href: '/wormhole',
       },
     ],
   },

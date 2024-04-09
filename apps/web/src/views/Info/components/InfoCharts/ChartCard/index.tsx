@@ -6,8 +6,8 @@ import { TabToggleGroup, TabToggle } from 'components/TabToggle'
 import { useTranslation } from '@pancakeswap/localization'
 import { formatAmount } from 'utils/formatInfoNumbers'
 import { ChartEntry, TokenData, PriceChartEntry } from 'state/info/types'
-import { fromUnixTime } from 'date-fns'
 import dynamic from 'next/dynamic'
+import dayjs from 'dayjs'
 
 const CandleChart = dynamic(() => import('../CandleChart'), {
   ssr: false,
@@ -21,7 +21,7 @@ enum ChartView {
 
 interface ChartCardProps {
   variant: 'pool' | 'token'
-  chartData: ChartEntry[]
+  chartData: ChartEntry[] | undefined
   tokenData?: TokenData
   tokenPriceData?: PriceChartEntry[]
 }
@@ -46,7 +46,7 @@ const ChartCard: React.FC<React.PropsWithChildren<ChartCardProps>> = ({
     if (chartData) {
       return chartData.map((day) => {
         return {
-          time: fromUnixTime(day.date),
+          time: dayjs.unix(day.date).toDate(),
           value: day.liquidityUSD,
         }
       })
@@ -57,7 +57,7 @@ const ChartCard: React.FC<React.PropsWithChildren<ChartCardProps>> = ({
     if (chartData) {
       return chartData.map((day) => {
         return {
-          time: fromUnixTime(day.date),
+          time: dayjs.unix(day.date).toDate(),
           value: day.volumeUSD,
         }
       })
@@ -66,7 +66,7 @@ const ChartCard: React.FC<React.PropsWithChildren<ChartCardProps>> = ({
   }, [chartData])
 
   const getLatestValueDisplay = () => {
-    let valueToDisplay = null
+    let valueToDisplay: string | undefined = ''
     if (hoverValue) {
       valueToDisplay = formatAmount(hoverValue)
     } else if (view === ChartView.VOLUME && formattedVolumeData.length > 0) {
@@ -95,10 +95,12 @@ const ChartCard: React.FC<React.PropsWithChildren<ChartCardProps>> = ({
         <TabToggle isActive={view === ChartView.LIQUIDITY} onClick={() => setView(ChartView.LIQUIDITY)}>
           <Text>{t('Liquidity')}</Text>
         </TabToggle>
-        {variant === 'token' && (
+        {variant === 'token' ? (
           <TabToggle isActive={view === ChartView.PRICE} onClick={() => setView(ChartView.PRICE)}>
             <Text>{t('Price')}</Text>
           </TabToggle>
+        ) : (
+          <></>
         )}
       </TabToggleGroup>
 

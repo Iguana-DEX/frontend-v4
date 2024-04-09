@@ -1,6 +1,6 @@
-import React from "react";
-import { renderWithProvider, setupMockIntersectionObserver } from "../../testHelpers";
+import { expect, it } from "vitest";
 import TokenImage from "../../components/Image/TokenImage";
+import { renderWithProvider, setupMockIntersectionObserver } from "../../testHelpers";
 
 it("renders correctly", () => {
   setupMockIntersectionObserver();
@@ -34,13 +34,13 @@ it("renders correctly", () => {
       width: 100%;
     }
 
-    .c1 > img {
+    .c1 >img {
       border-radius: 50%;
     }
 
     .c1:before {
       border-radius: 50%;
-      border: 1px solid rgba(0,0,0,0.25);
+      border: 1px solid rgba(0, 0, 0, 0.25);
       content: "";
       height: 100%;
       left: 0;

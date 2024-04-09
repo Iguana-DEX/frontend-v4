@@ -1,4 +1,5 @@
 import { useTranslation } from '@pancakeswap/localization'
+import { BetPosition, ROUND_BUFFER } from '@pancakeswap/prediction'
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -9,16 +10,16 @@ import {
   useToast,
   useTooltip,
 } from '@pancakeswap/uikit'
-import { useAccount } from 'wagmi'
 import { ToastDescriptionWithTx } from 'components/Toast'
 import useLocalDispatch from 'contexts/LocalRedux/useLocalDispatch'
+import { useActiveChainId } from 'hooks/useActiveChainId'
 import useTheme from 'hooks/useTheme'
 import { useEffect, useMemo, useState } from 'react'
 import { fetchLedgerData } from 'state/predictions'
-import { ROUND_BUFFER } from 'state/predictions/config'
-import { BetPosition, NodeLedger, NodeRound } from 'state/types'
-import { getNow } from 'utils/getNow'
+import { NodeLedger, NodeRound } from 'state/types'
+import { getNowInSeconds } from 'utils/getNowInSeconds'
 import { useConfig } from 'views/Predictions/context/ConfigProvider'
+import { useAccount } from 'wagmi'
 import { formatTokenv2 } from '../../helpers'
 import CardFlip from '../CardFlip'
 import { PrizePoolRow, RoundResultBox } from '../RoundResult'
@@ -56,8 +57,9 @@ const OpenRoundCard: React.FC<React.PropsWithChildren<OpenRoundCardProps>> = ({
   const { theme } = useTheme()
   const { toastSuccess } = useToast()
   const { address: account } = useAccount()
+  const { chainId } = useActiveChainId()
   const dispatch = useLocalDispatch()
-  const { token, displayedDecimals } = useConfig()
+  const config = useConfig()
   const { lockTimestamp } = round ?? { lockTimestamp: null }
   const { isSettingPosition, position } = state
   const [isBufferPhase, setIsBufferPhase] = useState(false)
@@ -79,14 +81,16 @@ const OpenRoundCard: React.FC<React.PropsWithChildren<OpenRoundCardProps>> = ({
     [hasEnteredUp, hasEnteredDown],
   )
   const { targetRef, tooltipVisible, tooltip } = useTooltip(
-    <div style={{ whiteSpace: 'nowrap' }}>{`${formatTokenv2(betAmount, token.decimals, displayedDecimals)} ${
-      token.symbol
-    }`}</div>,
+    <div style={{ whiteSpace: 'nowrap' }}>{`${formatTokenv2(
+      betAmount ?? 0n,
+      config?.token?.decimals ?? 0,
+      config?.displayedDecimals ?? 4,
+    )} ${config?.token?.symbol}`}</div>,
     { placement: 'top' },
   )
 
   useEffect(() => {
-    const secondsToLock = lockTimestamp ? lockTimestamp - getNow() : 0
+    const secondsToLock = lockTimestamp ? lockTimestamp - getNowInSeconds() : 0
     if (secondsToLock > 0) {
       const setIsBufferPhaseTimeout = setTimeout(() => {
         setIsBufferPhase(true)
@@ -135,18 +139,20 @@ const OpenRoundCard: React.FC<React.PropsWithChildren<OpenRoundCardProps>> = ({
   }
 
   const handleSuccess = async (hash: string) => {
-    await dispatch(fetchLedgerData({ account, epochs: [round.epoch] }))
+    if (account && chainId) {
+      await dispatch(fetchLedgerData({ account, chainId, epochs: [round.epoch] }))
 
-    handleBack()
+      handleBack()
 
-    toastSuccess(
-      t('Success!'),
-      <ToastDescriptionWithTx txHash={hash}>
-        {t('%position% position entered', {
-          position: positionDisplay,
-        })}
-      </ToastDescriptionWithTx>,
-    )
+      toastSuccess(
+        t('Success!'),
+        <ToastDescriptionWithTx txHash={hash}>
+          {t('%position% position entered', {
+            position: positionDisplay,
+          })}
+        </ToastDescriptionWithTx>,
+      )
+    }
   }
 
   return (

@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { useTradingCompetitionContractMoD } from 'hooks/useContract'
 import useTheme from 'hooks/useTheme'
 import { TC_MOD_SUBGRAPH, API_PROFILE } from 'config/constants/endpoints'
-import { ChainId } from '@pancakeswap/sdk'
+import { ChainId } from '@pancakeswap/chains'
 import { publicClient } from 'utils/wagmi'
 import { tradingCompetitionMoDABI } from 'config/abi/tradingCompetitionMoD'
 import {
@@ -92,13 +92,13 @@ const MoDCompetition = () => {
               address: tradingCompetitionContract.address,
               abi: tradingCompetitionMoDABI,
               functionName: 'claimInformation',
-              args: [account],
+              args: [account || '0x'],
             },
             {
               address: tradingCompetitionContract.address,
               abi: tradingCompetitionMoDABI,
               functionName: 'userTradingStats',
-              args: [account],
+              args: [account || '0x'],
             },
           ],
           allowFailure: false,
@@ -234,10 +234,10 @@ const MoDCompetition = () => {
             <Box my="64px">
               <TeamRanksWithParticipants
                 image={MoDCakerBunny}
-                team1LeaderboardInformation={team1LeaderboardInformation}
-                team2LeaderboardInformation={team2LeaderboardInformation}
-                team3LeaderboardInformation={team3LeaderboardInformation}
-                globalLeaderboardInformation={globalLeaderboardInformation}
+                team1LeaderboardInformation={team1LeaderboardInformation as any}
+                team2LeaderboardInformation={team2LeaderboardInformation as any}
+                team3LeaderboardInformation={team3LeaderboardInformation as any}
+                globalLeaderboardInformation={globalLeaderboardInformation as any}
                 participantSubgraphAddress={TC_MOD_SUBGRAPH}
                 subgraphName="pancakeswap/trading-competition-v4"
               />

@@ -1,8 +1,9 @@
 import { Trans } from '@pancakeswap/localization'
+import { ReactNode } from 'react'
 
 interface CommissionType {
   id: string
-  title: JSX.Element
+  title: ReactNode
   percentage: string
   image: {
     width: number
@@ -24,7 +25,7 @@ const commissionList: CommissionType[] = [
   },
   {
     id: 'perpetual',
-    title: <Trans>Perpetual</Trans>,
+    title: <Trans>V1 Perpetual</Trans>,
     percentage: '20%',
     image: {
       width: 100,

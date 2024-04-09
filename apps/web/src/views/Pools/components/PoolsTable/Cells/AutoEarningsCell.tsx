@@ -1,10 +1,13 @@
-import styled from 'styled-components'
-import { Skeleton, Text, useTooltip, HelpIcon, Flex, Box, useMatchBreakpoints, Balance, Pool } from '@pancakeswap/uikit'
-import { VaultKey } from 'state/types'
-import { useVaultPoolByKey } from 'state/pools/hooks'
+import { Balance, Box, Flex, HelpIcon, Skeleton, Text, useMatchBreakpoints, useTooltip } from '@pancakeswap/uikit'
+import { Pool } from '@pancakeswap/widgets-internal'
+import { styled } from 'styled-components'
+
 import { useTranslation } from '@pancakeswap/localization'
-import { getCakeVaultEarnings } from 'views/Pools/helpers'
 import { Token } from '@pancakeswap/sdk'
+import BigNumber from 'bignumber.js'
+import { useVaultPoolByKey } from 'state/pools/hooks'
+import { VaultKey } from 'state/types'
+import { getCakeVaultEarnings } from 'views/Pools/helpers'
 import AutoEarningsBreakdown from '../../AutoEarningsBreakdown'
 
 interface AutoEarningsCellProps {
@@ -26,13 +29,18 @@ const HelpIconWrapper = styled.div`
 const AutoEarningsCell: React.FC<React.PropsWithChildren<AutoEarningsCellProps>> = ({ pool, account }) => {
   const { t } = useTranslation()
   const { isMobile } = useMatchBreakpoints()
-  const { earningTokenPrice, vaultKey } = pool
+  const { earningTokenPrice = 0, vaultKey } = pool
 
-  const vaultData = useVaultPoolByKey(vaultKey)
+  const vaultData = useVaultPoolByKey(vaultKey as Pool.VaultKey) as Pool.DeserializedPoolLockedVault<Token>
+  const { userData = {} as Pool.DeserializedLockedVaultUser, pricePerFullShare } = vaultData
   const {
-    userData: { userShares, cakeAtLastUserAction, isLoading },
-    pricePerFullShare,
-  } = vaultData
+    userShares,
+    cakeAtLastUserAction,
+    isLoading,
+    currentOverdueFee = new BigNumber(0),
+    userBoostedShare = new BigNumber(0),
+    currentPerformanceFee = new BigNumber(0),
+  } = userData
   const { hasAutoEarnings, autoCakeToDisplay, autoUsdToDisplay } = getCakeVaultEarnings(
     account,
     cakeAtLastUserAction,
@@ -40,10 +48,8 @@ const AutoEarningsCell: React.FC<React.PropsWithChildren<AutoEarningsCellProps>>
     pricePerFullShare,
     earningTokenPrice,
     vaultKey === VaultKey.CakeVault
-      ? (vaultData as Pool.DeserializedPoolLockedVault<Token>).userData.currentPerformanceFee
-          .plus((vaultData as Pool.DeserializedPoolLockedVault<Token>).userData.currentOverdueFee)
-          .plus((vaultData as Pool.DeserializedPoolLockedVault<Token>).userData.userBoostedShare)
-      : null,
+      ? currentPerformanceFee.plus(currentOverdueFee).plus(userBoostedShare)
+      : new BigNumber(0),
   )
 
   const labelText = t('Recent CAKE profit')

@@ -1,13 +1,12 @@
-import memoize from 'lodash/memoize'
 import { ContextApi } from '@pancakeswap/localization'
-import { PageMeta } from './types'
+import memoize from 'lodash/memoize'
 import { ASSET_CDN } from './endpoints'
+import { PageMeta } from './types'
 
 export const DEFAULT_META: PageMeta = {
-  title: 'IguanaDEX',
-  description:
-    'Trade and earn crypto on the all-in-one Crypto Hub. Earn IGN tokens from regular events and yield farms. The platform allows to trade both coins and perpetuals.',
-  image: `https://raw.githubusercontent.com/Iguana-DEX/assets/main/iguana_brand_assets/hero.webp`,
+  title: 'PancakeSwap',
+  description: 'Trade, earn, and own crypto on the all-in-one multichain DEX',
+  image: `${ASSET_CDN}/web/og/hero.jpg`,
 }
 
 interface PathList {
@@ -39,17 +38,17 @@ const getPathList = (t: ContextApi['t']): PathList => {
       '/voting/proposal/create': { title: t('Make a Proposal'), image: `${ASSET_CDN}/web/og/voting.jpg` },
       '/info': {
         title: `${t('Overview')} - ${t('Info')}`,
-        description: 'View statistics for IguanaDEX exchanges.',
+        description: 'View statistics for Pancakeswap exchanges.',
         image: `${ASSET_CDN}/web/og/info.jpg`,
       },
       '/info/pairs': {
         title: `${t('Pairs')} - ${t('Info')}`,
-        description: 'View statistics for IguanaDEX exchanges.',
+        description: 'View statistics for Pancakeswap exchanges.',
         image: `${ASSET_CDN}/web/og/info.jpg`,
       },
       '/info/tokens': {
         title: `${t('Tokens')} - ${t('Info')}`,
-        description: 'View statistics for IguanaDEX exchanges.',
+        description: 'View statistics for Pancakeswap exchanges.',
         image: `${ASSET_CDN}/web/og/info.jpg`,
       },
       '/nfts': { title: t('NFT Marketplace'), image: `${ASSET_CDN}/web/og/nft.jpg` },
@@ -64,11 +63,10 @@ const getPathList = (t: ContextApi['t']): PathList => {
 }
 
 export const getCustomMeta = memoize(
-  (path: string, t: ContextApi['t'], _: string): PageMeta => {
+  (path: string, t: ContextApi['t'], _: string): PageMeta | null => {
     const pathList = getPathList(t)
-    const pathMetadata =
-      pathList.paths[path] ??
-      pathList.paths[Object.entries(pathList.paths).find(([url, data]) => data.basePath && path.startsWith(url))?.[0]]
+    const basePath = Object.entries(pathList.paths).find(([url, data]) => data.basePath && path.startsWith(url))?.[0]
+    const pathMetadata = pathList.paths[path] ?? (basePath && pathList.paths[basePath])
 
     if (pathMetadata) {
       return {

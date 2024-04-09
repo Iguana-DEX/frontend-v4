@@ -1,18 +1,26 @@
-import styled from 'styled-components'
-import useSWR from 'swr'
-import { useState, useEffect } from 'react'
-import { Box, Text, Flex, PaginationButton, SearchInput, InputGroup, SearchIcon } from '@pancakeswap/uikit'
-import CardArticle from 'components/Article/CardArticle'
+import { Categories } from '@pancakeswap/blog'
 import { useTranslation } from '@pancakeswap/localization'
-import { useRouter } from 'next/router'
+import {
+  Box,
+  Flex,
+  InputGroup,
+  PaginationButton,
+  SearchIcon,
+  SearchInput,
+  Text,
+  useMatchBreakpoints,
+} from '@pancakeswap/uikit'
+import { useQuery } from '@tanstack/react-query'
 import ArticleSortSelect from 'components/Article/ArticleSortSelect'
-import { Categories } from 'types'
+import CardArticle from 'components/Article/CardArticle'
 import CategoriesSelector from 'components/Article/CategoriesSelector'
+import SkeletonArticle from 'components/SkeletonArticle'
 import useAllArticle from 'hooks/useAllArticle'
 import useLanguage from 'hooks/useLanguage'
-import SkeletonArticle from 'components/SkeletonArticle'
-import { storageLangMap } from 'utils/getLocalStorageLanguageCode'
-import { getLanguageCodeFromLS } from 'utils/getLanguageCodeFromLS'
+import { useRouter } from 'next/router'
+import { useEffect, useRef, useState } from 'react'
+import { styled } from 'styled-components'
+import { LS_KEY, getLanguageCodeFromLS } from 'utils/getLanguageCodeFromLS'
 
 const StyledArticleContainer = styled(Box)`
   width: 100%;
@@ -29,15 +37,11 @@ const StyledArticleContainer = styled(Box)`
 `
 
 const StyledTagContainer = styled(Box)`
-  display: none;
+  display: flex;
+  flex-direction: column;
   width: 194px;
   min-width: 194px;
   margin-right: 25px;
-
-  ${({ theme }) => theme.mediaQueries.xxl} {
-    display: flex;
-    flex-direction: column;
-  }
 `
 
 const StyledMobileTagContainer = styled(Box)`
@@ -45,10 +49,6 @@ const StyledMobileTagContainer = styled(Box)`
   flex-direction: column;
   padding: 0 16px;
   margin-bottom: 24px;
-
-  ${({ theme }) => theme.mediaQueries.xxl} {
-    display: none;
-  }
 `
 
 const StyledCard = styled(Flex)`
@@ -57,7 +57,7 @@ const StyledCard = styled(Flex)`
   overflow: hidden;
   flex-direction: column;
 
-  ${({ theme }) => theme.mediaQueries.xxl} {
+  ${({ theme }) => theme.mediaQueries.xl || theme.mediaQueries.xxl} {
     border: ${({ theme }) => `1px solid ${theme.colors.cardBorder}`};
     border-bottom: ${({ theme }) => `3px solid ${theme.colors.cardBorder}`};
     border-radius: ${({ theme }) => theme.radii.card};
@@ -66,8 +66,10 @@ const StyledCard = styled(Flex)`
 
 const AllArticle = () => {
   const { t } = useTranslation()
+  const { isDesktop, isMobile, isTablet, isXl } = useMatchBreakpoints()
   const router = useRouter()
   const [query, setQuery] = useState('')
+  const articlesWrapperEl = useRef<HTMLDivElement>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedCategories, setSelectCategoriesSelected] = useState(0)
   const [sortBy, setSortBy] = useState('createAt:desc')
@@ -79,7 +81,10 @@ const AllArticle = () => {
     { label: t('Sort Title A-Z'), value: 'title:asc' },
     { label: t('Sort Title Z-A'), value: 'title:desc' },
   ]
-  const { data: categoriesData } = useSWR<Categories[]>('/categories')
+  const { data: categoriesData } = useQuery<Categories[]>({
+    queryKey: ['/categories'],
+    enabled: false,
+  })
 
   useEffect(() => {
     setCurrentPage(1)
@@ -87,11 +92,15 @@ const AllArticle = () => {
 
   useEffect(() => {
     if (router.isReady && router.query.category) {
-      const searchedTopic = categoriesData?.find(
+      const searchedTopic: Categories | undefined = categoriesData?.find(
         (category) => category.name.toLowerCase() === (router.query.category as string).toLowerCase(),
       )
       if (searchedTopic) {
         setSelectCategoriesSelected(searchedTopic.id)
+        window.scrollTo({
+          top: articlesWrapperEl?.current?.offsetTop,
+          behavior: 'smooth',
+        })
       }
     }
   }, [categoriesData, router.isReady, router.query.category])
@@ -99,8 +108,7 @@ const AllArticle = () => {
   const codeFromStorage = getLanguageCodeFromLS()
   useEffect(() => {
     if (codeFromStorage) {
-      const languageStorage = storageLangMap(codeFromStorage)
-      setLanguageOption(languageStorage)
+      setLanguageOption(codeFromStorage)
     }
   }, [codeFromStorage])
 
@@ -118,8 +126,17 @@ const AllArticle = () => {
     setCurrentPage(value)
   }
 
+  const handleSwitchLanguage = (language: string) => {
+    setLanguageOption(language)
+
+    const blogCodeFromStorage = localStorage.getItem(LS_KEY)
+    if (blogCodeFromStorage !== language) {
+      localStorage.setItem(LS_KEY, language)
+    }
+  }
+
   return (
-    <StyledArticleContainer id="all">
+    <StyledArticleContainer id="all" ref={articlesWrapperEl}>
       <Text
         bold
         color="secondary"
@@ -129,58 +146,62 @@ const AllArticle = () => {
       >
         {t('All articles')}
       </Text>
-      <Flex p={['0', '0', '0', '0', '0', '0', '0 16px']}>
-        <StyledTagContainer>
-          <CategoriesSelector
-            selected={selectedCategories}
-            categoriesData={categoriesData ?? []}
-            setSelected={setSelectCategoriesSelected}
-            childMargin="0 0 28px 0"
-          />
-        </StyledTagContainer>
-        <Flex width={['100%', '100%', '100%', '100%', '100%', '100%', '907px']} flexDirection="column">
+      <Flex p={['0', '0', '0', '0', '0', '0 16px', '0 16px']}>
+        {isDesktop && !isXl && (
+          <StyledTagContainer>
+            <CategoriesSelector
+              selected={selectedCategories}
+              categoriesData={categoriesData ?? []}
+              setSelected={setSelectCategoriesSelected}
+              childMargin="0 0 28px 0"
+            />
+          </StyledTagContainer>
+        )}
+        <Flex width={['100%', '100%', '100%', '100%', '100%', '845px', '907px']} flexDirection="column">
           <Flex
             mb={['18px', '18px', '18px', '24px']}
             flexDirection={['column-reverse', 'column-reverse', 'column-reverse', 'row']}
             alignItems={['flexStart', 'flexStart', 'flexStart', 'center']}
-            p={['0 16px', '0 16px', '0 16px', '0 16px', '0 16px', '0 16px', '0']}
+            p={['0 16px', '0 16px', '0 16px', '0 16px', '0 16px', '0', '0']}
           >
-            <Flex flexDirection={['column', 'row']}>
-              {languageItems.length > 0 && (
+            {languageItems.length > 0 && (
+              <Flex flexDirection={['column', 'row']}>
                 <Box width="100%">
                   <ArticleSortSelect
                     title={t('Languages')}
                     value={languageOption}
                     options={languageItems}
-                    setOption={setLanguageOption}
+                    setOption={handleSwitchLanguage}
                   />
                 </Box>
-              )}
-              <Box width="100%" m={['10px 0 0 0', '0 0 0 16px', '0 0 0 16px', '0 16px']}>
-                <ArticleSortSelect title={t('Sort By')} options={sortByItems} setOption={setSortBy} />
-              </Box>
-            </Flex>
+                <Box width="100%" m={['10px 0 0 0', '0 0 0 16px', '0 0 0 16px', '0 16px']}>
+                  <ArticleSortSelect title={t('Sort By')} options={sortByItems} setOption={setSortBy} />
+                </Box>
+              </Flex>
+            )}
             <Box width="100%" m={['0 0 12px 0', '0 0 12px 0', '0 0 12px 0', '22px 0 0 0']}>
               <InputGroup startIcon={<SearchIcon style={{ zIndex: 1 }} color="textSubtle" width="18px" />}>
                 <SearchInput placeholder="Search" initialValue={query} onChange={(e) => setQuery(e.target.value)} />
               </InputGroup>
             </Box>
           </Flex>
-          <StyledMobileTagContainer>
-            <Text fontSize="12px" textTransform="uppercase" color="textSubtle" fontWeight={600} mb="4px">
-              {t('Filter by')}
-            </Text>
-            <Flex overflowY="auto">
-              <CategoriesSelector
-                selected={selectedCategories}
-                categoriesData={categoriesData ?? []}
-                setSelected={setSelectCategoriesSelected}
-                childMargin="0 4px 4px 0"
-              />
-            </Flex>
-          </StyledMobileTagContainer>
+          {(isMobile || isTablet || isXl) && (
+            <StyledMobileTagContainer>
+              <Text fontSize="12px" textTransform="uppercase" color="textSubtle" fontWeight={600} mb="4px">
+                {t('Filter by')}
+              </Text>
+              <Flex overflowY="auto">
+                <CategoriesSelector
+                  selected={selectedCategories}
+                  categoriesData={categoriesData ?? []}
+                  setSelected={setSelectCategoriesSelected}
+                  childMargin="0 4px 4px 0"
+                />
+              </Flex>
+            </StyledMobileTagContainer>
+          )}
           {!isFetching && articles.length === 0 ? (
-            <Text bold fontSize={20} padding={['0 16px', '0 16px', '0 16px', '0 16px', '0 16px', '0 16px', '0']}>
+            <Text bold fontSize={20} padding={['0 16px', '0 16px', '0 16px', '0 16px', '0 16px', '0', '0']}>
               {t('No results found.')}
             </Text>
           ) : (

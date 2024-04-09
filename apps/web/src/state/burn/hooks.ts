@@ -6,22 +6,14 @@ import useTotalSupply from 'hooks/useTotalSupply'
 
 import { useTranslation } from '@pancakeswap/localization'
 import tryParseAmount from '@pancakeswap/utils/tryParseAmount'
-import { useAtom, useAtomValue } from 'jotai'
-import { burnReducerAtom } from 'state/burn/reducer'
+import { useRemoveLiquidityV2FormDispatch, useRemoveLiquidityV2FormState } from 'state/burn/reducer'
 import useAccountActiveChain from 'hooks/useAccountActiveChain'
 import { useTokenBalances } from '../wallet/hooks'
 import { Field, typeInput } from './actions'
 
-export function useBurnState() {
-  return useAtomValue(burnReducerAtom)
-}
-
 export function useDerivedBurnInfo(
   currencyA: Currency | undefined,
   currencyB: Currency | undefined,
-  removalCheckedA?: boolean,
-  removalCheckedB?: boolean,
-  zapMode?: boolean,
 ): {
   pair?: Pair | null
   parsedAmounts: {
@@ -36,7 +28,7 @@ export function useDerivedBurnInfo(
 } {
   const { account, chainId } = useAccountActiveChain()
 
-  const { independentField, typedValue } = useBurnState()
+  const { independentField, typedValue } = useRemoveLiquidityV2FormState()
 
   const { t } = useTranslation()
 
@@ -101,13 +93,6 @@ export function useDerivedBurnInfo(
       ? CurrencyAmount.fromRawAmount(userLiquidity.currency, percentToRemove.multiply(userLiquidity.quotient).quotient)
       : undefined
 
-  const tokenToReceive =
-    removalCheckedA && removalCheckedB
-      ? undefined
-      : removalCheckedA
-      ? tokens[Field.CURRENCY_A]?.address
-      : tokens[Field.CURRENCY_B]?.address
-
   const amountA =
     tokenA && percentToRemove && percentToRemove.greaterThan('0') && liquidityValueA
       ? CurrencyAmount.fromRawAmount(tokenA, percentToRemove.multiply(liquidityValueA.quotient).quotient)
@@ -118,19 +103,6 @@ export function useDerivedBurnInfo(
       ? CurrencyAmount.fromRawAmount(tokenB, percentToRemove.multiply(liquidityValueB.quotient).quotient)
       : undefined
 
-  const tokenAmountToZap = removalCheckedA && removalCheckedB ? undefined : removalCheckedA ? amountB : amountA
-
-  const estimateZapOutAmount = useMemo(() => {
-    if (pair && tokenAmountToZap) {
-      try {
-        return pair.getOutputAmount(tokenAmountToZap)[0]
-      } catch (error) {
-        return undefined
-      }
-    }
-    return undefined
-  }, [pair, tokenAmountToZap])
-
   const parsedAmounts: {
     [Field.LIQUIDITY_PERCENT]: Percent
     [Field.LIQUIDITY]?: CurrencyAmount<Token>
@@ -139,26 +111,8 @@ export function useDerivedBurnInfo(
   } = {
     [Field.LIQUIDITY_PERCENT]: percentToRemove,
     [Field.LIQUIDITY]: liquidityToRemove,
-    [Field.CURRENCY_A]: !zapMode
-      ? amountA
-      : amountA && removalCheckedA && !removalCheckedB && estimateZapOutAmount && liquidityValueA
-      ? CurrencyAmount.fromRawAmount(
-          tokenA,
-          percentToRemove.multiply(liquidityValueA.quotient).quotient + estimateZapOutAmount.quotient,
-        )
-      : !removalCheckedA
-      ? undefined
-      : amountA,
-    [Field.CURRENCY_B]: !zapMode
-      ? amountB
-      : amountB && removalCheckedB && !removalCheckedA && estimateZapOutAmount && liquidityValueB
-      ? CurrencyAmount.fromRawAmount(
-          tokenB,
-          percentToRemove.multiply(liquidityValueB.quotient).quotient + estimateZapOutAmount.quotient,
-        )
-      : !removalCheckedB
-      ? undefined
-      : amountB,
+    [Field.CURRENCY_A]: amountA,
+    [Field.CURRENCY_B]: amountB,
   }
 
   let error: string | undefined
@@ -166,21 +120,17 @@ export function useDerivedBurnInfo(
     error = t('Connect Wallet')
   }
 
-  if (
-    !parsedAmounts[Field.LIQUIDITY] ||
-    (removalCheckedA && !parsedAmounts[Field.CURRENCY_A]) ||
-    (removalCheckedB && !parsedAmounts[Field.CURRENCY_B])
-  ) {
+  if (!parsedAmounts[Field.LIQUIDITY] || !parsedAmounts[Field.CURRENCY_A] || !parsedAmounts[Field.CURRENCY_B]) {
     error = error ?? t('Enter an amount')
   }
 
-  return { pair, parsedAmounts, error, tokenToReceive, estimateZapOutAmount }
+  return { pair, parsedAmounts, error }
 }
 
 export function useBurnActionHandlers(): {
   onUserInput: (field: Field, typedValue: string) => void
 } {
-  const [, dispatch] = useAtom(burnReducerAtom)
+  const dispatch = useRemoveLiquidityV2FormDispatch()
 
   const onUserInput = useCallback(
     (field: Field, typedValue: string) => {

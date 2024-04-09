@@ -1,55 +1,73 @@
+import { ChainId } from '@pancakeswap/chains'
 import { useTranslation } from '@pancakeswap/localization'
-import { ChainId } from '@pancakeswap/sdk'
 import {
+  AtomBox,
+  AutoColumn,
+  AutoRow,
+  Button,
+  ButtonProps,
+  Checkbox,
   Flex,
   InjectedModalProps,
-  Link,
+  Message,
+  MessageText,
   Modal,
-  ExpertModal,
+  ModalV2,
+  NotificationDot,
   PancakeToggle,
+  PreTitle,
   QuestionHelper,
+  RowFixed,
   Text,
   ThemeSwitcher,
   Toggle,
-  Button,
-  ModalV2,
-  PreTitle,
-  AutoColumn,
-  Message,
-  MessageText,
-  NotificationDot,
-  ButtonProps,
-  Checkbox,
-  AutoRow,
-  RowFixed,
 } from '@pancakeswap/uikit'
-import { useActiveChainId } from 'hooks/useActiveChainId'
-import useTheme from 'hooks/useTheme'
-import { ReactNode, useCallback, useState } from 'react'
-import { useSwapActionHandlers } from 'state/swap/useSwapActionHandlers'
 import {
   useAudioPlay,
   useExpertMode,
-  useUserSingleHopOnly,
   useUserExpertModeAcknowledgement,
+  useUserSingleHopOnly,
 } from '@pancakeswap/utils/user'
+import { ExpertModal } from '@pancakeswap/widgets-internal'
+import { TOKEN_RISK } from 'components/AccessRisk'
+import AccessRiskTooltips from 'components/AccessRisk/AccessRiskTooltips'
+import { useActiveChainId } from 'hooks/useActiveChainId'
+import useTheme from 'hooks/useTheme'
+import { useWebNotifications } from 'hooks/useWebNotifications'
+import { ReactNode, Suspense, lazy, useCallback, useState } from 'react'
+import { useSwapActionHandlers } from 'state/swap/useSwapActionHandlers'
 import { useSubgraphHealthIndicatorManager, useUserUsernameVisibility } from 'state/user/hooks'
+import { useUserShowTestnet } from 'state/user/hooks/useUserShowTestnet'
 import { useUserTokenRisk } from 'state/user/hooks/useUserTokenRisk'
+import { useMMLinkedPoolByDefault } from 'state/user/mmLinkedPool'
+import { useSpeedQuote } from 'hooks/useSpeedQuote'
 import {
   useOnlyOneAMMSourceEnabled,
+  useRoutingSettingChanged,
   useUserSplitRouteEnable,
   useUserStableSwapEnable,
   useUserV2SwapEnable,
   useUserV3SwapEnable,
-  useRoutingSettingChanged,
 } from 'state/user/smartRouter'
-import { AtomBox } from '@pancakeswap/ui'
-import { useMMLinkedPoolByDefault } from 'state/user/mmLinkedPool'
-import styled from 'styled-components'
+import { styled } from 'styled-components'
 import GasSettings from './GasSettings'
 import TransactionSettings from './TransactionSettings'
 import { SettingsMode } from './types'
 
+const WebNotiToggle = lazy(() => import('./WebNotiToggle'))
+
+const BetaTag = styled.div`
+  border: 2px solid ${({ theme }) => theme.colors.success};
+  border-radius: 16px;
+  padding-left: 6px;
+  padding-right: 6px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  color: ${({ theme }) => theme.colors.success};
+  margin-left: 6px;
+  font-weight: bold;
+  font-size: 14px;
+`
 const ScrollableContainer = styled(Flex)`
   flex-direction: column;
   height: auto;
@@ -88,8 +106,12 @@ const SettingsModal: React.FC<React.PropsWithChildren<InjectedModalProps>> = ({ 
   const [showExpertModeAcknowledgement, setShowExpertModeAcknowledgement] = useUserExpertModeAcknowledgement()
   const [expertMode, setExpertMode] = useExpertMode()
   const [audioPlay, setAudioMode] = useAudioPlay()
+  const [speedQuote, setSpeedQuote] = useSpeedQuote()
   const [subgraphHealth, setSubgraphHealth] = useSubgraphHealthIndicatorManager()
   const [userUsernameVisibility, setUserUsernameVisibility] = useUserUsernameVisibility()
+  const [showTestnet, setShowTestnet] = useUserShowTestnet()
+  const { enabled } = useWebNotifications()
+
   const { onChangeRecipient } = useSwapActionHandlers()
   const { chainId } = useActiveChainId()
   const [tokenRisk, setTokenRisk] = useUserTokenRisk()
@@ -162,6 +184,35 @@ const SettingsModal: React.FC<React.PropsWithChildren<InjectedModalProps>> = ({ 
                   }}
                 />
               </Flex>
+              <Flex justifyContent="space-between" alignItems="center" mb="24px">
+                <Flex alignItems="center">
+                  <Text>{t('Allow notifications')}</Text>
+                  <QuestionHelper
+                    text={t(
+                      'Enables the web notifications feature. If turned off you will be automatically unsubscribed and the notification bell will not be visible',
+                    )}
+                    placement="top"
+                    ml="4px"
+                  />
+                  <BetaTag>{t('BETA')}</BetaTag>
+                </Flex>
+                <Suspense fallback={null}>
+                  <WebNotiToggle enabled={enabled} />
+                </Suspense>
+              </Flex>
+              <Flex justifyContent="space-between" alignItems="center" mb="24px">
+                <Flex alignItems="center">
+                  <Text>{t('Show testnet')}</Text>
+                </Flex>
+                <Toggle
+                  id="toggle-show-testnet"
+                  checked={showTestnet}
+                  scale="md"
+                  onChange={() => {
+                    setShowTestnet((s) => !s)
+                  }}
+                />
+              </Flex>
               {chainId === ChainId.BSC && (
                 <>
                   <Flex justifyContent="space-between" alignItems="center" mb="24px">
@@ -169,25 +220,20 @@ const SettingsModal: React.FC<React.PropsWithChildren<InjectedModalProps>> = ({ 
                       <Text>{t('Token Risk Scanning')}</Text>
                       <QuestionHelper
                         text={
-                          <>
-                            <Text>{t('Automatic risk scanning for the selected token')}</Text>
-                            <Text as="span">{t('Risk scan results are provided by a third party')}</Text>
-                            <Link style={{ display: 'inline' }} ml="4px" external href="https://www.avengerdao.org">
-                              AvengerDAO
-                            </Link>
-                            <Text my="8px">
-                              {t(
-                                'It is a tool for indicative purposes only to allow users to check the reference risk level of a BNB Chain Smart Contract. Please do your own research - interactions with any BNB Chain Smart Contract is at your own risk.',
-                              )}
-                            </Text>
-                          </>
+                          <AccessRiskTooltips
+                            hasResult
+                            riskLevel={TOKEN_RISK.SOME_RISK}
+                            riskLevelDescription={t(
+                              'Automatic risk scanning for the selected token. This scanning result is for reference only, and should NOT be taken as investment advice.',
+                            )}
+                          />
                         }
                         placement="top"
                         ml="4px"
                       />
                     </Flex>
                     <Toggle
-                      id="toggle-username-visibility"
+                      id="toggle-token-risk"
                       checked={tokenRisk}
                       scale="md"
                       onChange={() => {
@@ -235,7 +281,28 @@ const SettingsModal: React.FC<React.PropsWithChildren<InjectedModalProps>> = ({ 
                   ml="4px"
                 />
               </Flex>
-              <PancakeToggle checked={audioPlay} onChange={() => setAudioMode((s) => !s)} scale="md" />
+              <PancakeToggle
+                id="toggle-audio-play"
+                checked={audioPlay}
+                onChange={() => setAudioMode((s) => !s)}
+                scale="md"
+              />
+            </Flex>
+            <Flex justifyContent="space-between" alignItems="center" mb="24px">
+              <Flex alignItems="center">
+                <Text>{t('Fast routing (BETA)')}</Text>
+                <QuestionHelper
+                  text={t('Increase the speed of finding best swapping routes')}
+                  placement="top"
+                  ml="4px"
+                />
+              </Flex>
+              <PancakeToggle
+                id="toggle-speed-quote"
+                checked={speedQuote}
+                onChange={() => setSpeedQuote((s) => !s)}
+                scale="md"
+              />
             </Flex>
             <RoutingSettingsButton />
           </>

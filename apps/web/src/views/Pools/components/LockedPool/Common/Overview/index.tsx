@@ -1,20 +1,23 @@
 import { useMemo } from 'react'
 import { Box, Text, Flex, MessageText, Message } from '@pancakeswap/uikit'
+import BN from 'bignumber.js'
 
 import { LightGreyCard } from 'components/Card'
-import { addSeconds } from 'date-fns'
+import dayjs from 'dayjs'
 import { useVaultApy } from 'hooks/useVaultApy'
 import { useTranslation } from '@pancakeswap/localization'
 import _toNumber from 'lodash/toNumber'
-import { convertTimeToSeconds } from 'utils/timeHelper'
+import { convertTimeToMilliseconds } from 'utils/timeHelper'
 import formatSecondsToWeeks from '../../../utils/formatSecondsToWeeks'
 import TextRow from './TextRow'
 import BalanceRow from './BalanceRow'
 import DateRow from './DateRow'
 import formatRoi from '../../utils/formatRoi'
-import formatiCake from '../../utils/formatICake'
+import formatICake from '../../utils/formatICake'
 import { OverviewPropsType } from '../../types'
 import CalculatorButton from '../../Buttons/CalculatorButton'
+
+const ZERO = new BN(0)
 
 const Overview: React.FC<React.PropsWithChildren<OverviewPropsType>> = ({
   usdValueStaked,
@@ -31,7 +34,7 @@ const Overview: React.FC<React.PropsWithChildren<OverviewPropsType>> = ({
   const { getLockedApy, getBoostFactor } = useVaultApy()
   const { t } = useTranslation()
 
-  const lockedApy = useMemo(() => getLockedApy(duration), [getLockedApy, duration])
+  const lockedApy = useMemo(() => getLockedApy(duration) || '', [getLockedApy, duration])
   const boostFactor = useMemo(() => getBoostFactor(duration), [getBoostFactor, duration])
   const newLockedApy = useMemo(() => (newDuration && getLockedApy(newDuration)) || 0, [getLockedApy, newDuration])
   const newBoost = useMemo(() => (newDuration && getBoostFactor(newDuration)) || 0, [getBoostFactor, newDuration])
@@ -41,26 +44,28 @@ const Overview: React.FC<React.PropsWithChildren<OverviewPropsType>> = ({
   }, [lockedApy, usdValueStaked, duration])
 
   const newFormattedRoi = useMemo(() => {
-    return newLockedApy && formatRoi({ usdValueStaked, lockedApy: newLockedApy, duration: newDuration })
+    return newLockedApy && formatRoi({ usdValueStaked, lockedApy: newLockedApy, duration: newDuration || 0 })
   }, [newLockedApy, usdValueStaked, newDuration])
 
-  const now = new Date()
+  const now = dayjs()
 
   const unlockDate = newDuration
-    ? addSeconds(Number(lockStartTime) ? new Date(convertTimeToSeconds(lockStartTime)) : now, newDuration)
+    ? (Number(lockStartTime) ? dayjs(convertTimeToMilliseconds(lockStartTime || '')) : now)
+        .add(newDuration, 'seconds')
+        .toDate()
     : Number(lockEndTime)
-    ? new Date(convertTimeToSeconds(lockEndTime))
-    : addSeconds(now, duration)
+    ? new Date(convertTimeToMilliseconds(lockEndTime || ''))
+    : now.add(duration, 'seconds').toDate()
 
   const formattediCake = useMemo(() => {
-    return formatiCake({ lockedAmount, duration, ceiling })
+    return formatICake({ lockedAmount, duration, ceiling: ceiling || ZERO }) || 0
   }, [lockedAmount, duration, ceiling])
 
   const newFormattediCake = useMemo(() => {
     const amount = Number(newLockedAmount) ? newLockedAmount : lockedAmount
     const lockDuration = Number(newDuration) ? newDuration : duration
 
-    return formatiCake({ lockedAmount: amount, duration: lockDuration, ceiling })
+    return formatICake({ lockedAmount: amount, duration: lockDuration || 0, ceiling: ceiling || ZERO }) || 0
   }, [lockedAmount, newLockedAmount, duration, newDuration, ceiling])
 
   return (
@@ -89,8 +94,8 @@ const Overview: React.FC<React.PropsWithChildren<OverviewPropsType>> = ({
           />
           <TextRow
             title={t('duration')}
-            value={isValidDuration && formatSecondsToWeeks(duration)}
-            newValue={isValidDuration && newDuration && formatSecondsToWeeks(newDuration)}
+            value={isValidDuration ? formatSecondsToWeeks(duration) : ''}
+            newValue={isValidDuration && newDuration ? formatSecondsToWeeks(newDuration) : ''}
           />
           <BalanceRow
             title={t('Yield boost')}
@@ -105,7 +110,7 @@ const Overview: React.FC<React.PropsWithChildren<OverviewPropsType>> = ({
           <DateRow
             color={_toNumber(newDuration) ? 'failure' : 'text'}
             title={t('Unlock on')}
-            value={isValidDuration && unlockDate}
+            value={isValidDuration ? unlockDate : undefined}
           />
           <BalanceRow
             title={t('Expected ROI')}

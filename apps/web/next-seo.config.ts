@@ -1,17 +1,17 @@
 import { DefaultSeoProps } from 'next-seo'
 
 export const SEO: DefaultSeoProps = {
-  titleTemplate: '%s | IguanaDEX',
-  defaultTitle: 'IguanaDEX',
-  description: 'Crypto trading made simple.',
+  titleTemplate: '%s | PancakeSwap',
+  defaultTitle: 'PancakeSwap',
+  description: 'Trade, earn, and own crypto on the all-in-one multichain DEX',
   twitter: {
     cardType: 'summary_large_image',
-    handle: '@IguanaDEX',
-    site: '@IguanaDEX',
+    handle: '@PancakeSwap',
+    site: '@PancakeSwap',
   },
   openGraph: {
-    title: '🦎 IguanaDEX - Trade, earn and discover new horizons',
-    description: 'Crypto trading made simple.',
-    images: [{ url: 'https://raw.githubusercontent.com/Iguana-DEX/assets/main/iguana_brand_assets/hero.webp' }],
+    title: "🥞 PancakeSwap - Everyone's Favorite DEX",
+    description: 'Trade, earn, and own crypto on the all-in-one multichain DEX',
+    images: [{ url: 'https://assets.pancakeswap.finance/web/og/v2/hero.jpg' }],
   },
 }

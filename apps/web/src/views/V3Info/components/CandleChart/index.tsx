@@ -1,10 +1,10 @@
-import { baseColors, lightColors, darkColors } from '@pancakeswap/ui/tokens/colors'
+import { baseColors, darkColors, lightColors } from '@pancakeswap/uikit'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import useTheme from 'hooks/useTheme'
-import { ColorType, createChart, IChartApi } from 'lightweight-charts'
+import { ColorType, IChartApi, createChart } from 'lightweight-charts'
 import React, { Dispatch, ReactNode, SetStateAction, useCallback, useEffect, useRef, useState } from 'react'
-import styled from 'styled-components'
+import { styled } from 'styled-components'
 import Card from '../Card'
 import { RowBetween } from '../Row'
 
@@ -30,7 +30,7 @@ const Wrapper = styled(Card)`
 const DEFAULT_HEIGHT = 300
 
 export type LineChartProps = {
-  data: any[]
+  data?: any[]
   color?: string | undefined
   height?: number | undefined
   minHeight?: number
@@ -105,7 +105,7 @@ const CandleChart = ({
           borderVisible: false,
           secondsVisible: true,
           tickMarkFormatter: (unixTime: number) => {
-            return dayjs.unix(unixTime).format('MM/DD h:mm A')
+            return dayjs.unix(unixTime).format('MM/DD h:mm a')
           },
         },
         watermark: {
@@ -184,7 +184,7 @@ const CandleChart = ({
           if (setLabel) setLabel(undefined)
         } else if (series && param) {
           const timestamp = param.time as number
-          const time = `${dayjs.unix(timestamp).utc().format('MMM D, YYYY h:mm A')} (UTC)`
+          const time = `${dayjs.unix(timestamp).utc().format('MMM D, YYYY h:mm a')} (UTC)`
           const parsed = param.seriesData.get(series) as { open: number } | undefined
           if (setValue) setValue(parsed?.open)
           if (setLabel) setLabel(time)

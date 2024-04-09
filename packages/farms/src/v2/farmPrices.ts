@@ -91,7 +91,7 @@ const getFarmFromTokenAddress = (
 
 const filterFarmsByQuoteToken = (
   farms: SerializedFarmPublicData[],
-  preferredQuoteTokens: string[] = ['BUSD', 'WBNB'],
+  preferredQuoteTokens: string[] | undefined = ['BUSD', 'WBNB'],
 ): SerializedFarmPublicData => {
   const preferredFarm = farms.find((farm) => {
     return preferredQuoteTokens.some((quoteToken) => {
@@ -150,6 +150,43 @@ export type FarmWithPrices = FarmData & {
   lpTokenPrice: string
 }
 
+const isNativeFarm = (
+  farm: FarmData,
+  nativeStableLp: {
+    address: string
+    wNative: string
+    stable: string
+  },
+) => {
+  const isLpFound = equalsIgnoreCase(farm.lpAddress, nativeStableLp.address)
+  if (!isLpFound) {
+    return (
+      equalsIgnoreCase(farm.token.symbol, nativeStableLp.stable) &&
+      equalsIgnoreCase(farm.quoteToken.symbol, nativeStableLp.wNative)
+    )
+  }
+  return true
+}
+
+export function getFarmLpTokenPrice(farm: FarmData, tokenPrice: BN, quoteTokenPrice: BN, decimals: number) {
+  return isStableFarm(farm)
+    ? getStableLpTokenPrice(
+        new BN(farm.lpTotalSupply),
+        new BN(farm.tokenAmountTotal),
+        tokenPrice,
+        new BN(farm.quoteTokenAmountTotal),
+        quoteTokenPrice,
+        decimals,
+      )
+    : getLpTokenPrice(
+        new BN(farm.lpTotalSupply),
+        new BN(farm.lpTotalInQuoteToken),
+        new BN(farm.tokenAmountTotal),
+        tokenPrice,
+        decimals,
+      )
+}
+
 export const getFarmsPrices = (
   farms: FarmData[],
   nativeStableLp: {
@@ -159,9 +196,11 @@ export const getFarmsPrices = (
   },
   decimals: number,
 ): FarmWithPrices[] => {
-  const nativeStableFarm = farms.find((farm) => equalsIgnoreCase(farm.lpAddress, nativeStableLp.address))
+  if (!farms || !nativeStableLp || farms.length === 0) return []
 
-  const isNativeFirst = nativeStableFarm?.token.symbol === nativeStableLp.wNative
+  const nativeStableFarm = farms.find((farm) => isNativeFarm(farm, nativeStableLp))
+
+  const isNativeFirst = nativeStableFarm?.token?.symbol === nativeStableLp.wNative
 
   const nativePriceUSD =
     nativeStableFarm && toNumber(nativeStableFarm?.tokenPriceVsQuote) !== 0
@@ -193,23 +232,7 @@ export const getFarmsPrices = (
       quoteTokenPriceBusd,
     )
 
-    const lpTokenPrice = isStableFarm(farm)
-      ? getStableLpTokenPrice(
-          new BN(farm.lpTotalSupply),
-          new BN(farm.tokenAmountTotal),
-          tokenPriceBusd,
-          new BN(farm.quoteTokenAmountTotal),
-          quoteTokenPriceBusd,
-          decimals,
-        )
-      : getLpTokenPrice(
-          new BN(farm.lpTotalSupply),
-          new BN(farm.lpTotalInQuoteToken),
-          new BN(farm.tokenAmountTotal),
-          tokenPriceBusd,
-          decimals,
-        )
-
+    const lpTokenPrice = getFarmLpTokenPrice(farm, tokenPriceBusd, quoteTokenPriceBusd, decimals)
     return {
       ...farm,
       tokenPriceBusd: tokenPriceBusd.toString(),

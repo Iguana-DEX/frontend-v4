@@ -1,12 +1,12 @@
 import React, { PropsWithChildren, useContext, useRef } from "react";
 import { useTheme } from "styled-components";
-import Heading from "../../components/Heading/Heading";
-import getThemeValue from "../../util/getThemeValue";
-import { ModalBody, ModalHeader, ModalTitle, ModalContainer, ModalCloseButton, ModalBackButton } from "./styles";
-import { ModalProps, ModalWrapperProps } from "./types";
-import { useMatchBreakpoints } from "../../contexts";
-import { ModalV2Context } from "./ModalV2";
 import { Box } from "../../components/Box";
+import Heading from "../../components/Heading/Heading";
+import { useMatchBreakpoints } from "../../contexts";
+import getThemeValue from "../../util/getThemeValue";
+import { ModalV2Context } from "./ModalV2";
+import { ModalBackButton, ModalBody, ModalCloseButton, ModalContainer, ModalHeader, ModalTitle } from "./styles";
+import { ModalProps, ModalWrapperProps } from "./types";
 
 export const MODAL_SWIPE_TO_CLOSE_VELOCITY = 300;
 
@@ -49,11 +49,14 @@ const Modal: React.FC<React.PropsWithChildren<ModalProps>> = ({
   onBack,
   children,
   hideCloseButton = false,
+  headerPadding = "12px 24px",
   bodyPadding = "24px",
   headerBackground = "transparent",
   minWidth = "320px",
   headerRightSlot,
   bodyAlignItems,
+  headerBorderColor,
+  bodyTop = "0px",
   ...props
 }) => {
   const context = useContext(ModalV2Context);
@@ -61,7 +64,11 @@ const Modal: React.FC<React.PropsWithChildren<ModalProps>> = ({
   const theme = useTheme();
   return (
     <ModalWrapper minWidth={minWidth} onDismiss={onDismiss} hideCloseButton={hideCloseButton} {...props}>
-      <ModalHeader background={getThemeValue(theme, `colors.${headerBackground}`, headerBackground)}>
+      <ModalHeader
+        background={getThemeValue(theme, `colors.${headerBackground}`, headerBackground)}
+        p={headerPadding}
+        headerBorderColor={headerBorderColor}
+      >
         <ModalTitle>
           {onBack && <ModalBackButton onBack={onBack} />}
           <Heading>{title}</Heading>
@@ -70,6 +77,8 @@ const Modal: React.FC<React.PropsWithChildren<ModalProps>> = ({
         {!hideCloseButton && <ModalCloseButton onDismiss={onDismiss} />}
       </ModalHeader>
       <ModalBody
+        position="relative"
+        top={bodyTop}
         // prevent drag event from propagating to parent on scroll
         onPointerDownCapture={(e) => e.stopPropagation()}
         p={bodyPadding}

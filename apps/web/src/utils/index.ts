@@ -1,12 +1,13 @@
-import { getAddress } from 'viem'
-import { ChainId, Currency } from '@pancakeswap/sdk'
-import { bsc } from 'wagmi/chains'
-import memoize from 'lodash/memoize'
+import { ChainId } from '@pancakeswap/chains'
+import { Currency } from '@pancakeswap/sdk'
 import { TokenAddressMap } from '@pancakeswap/token-lists'
+import memoize from 'lodash/memoize'
+import { Address, getAddress } from 'viem'
+import { bsc } from 'wagmi/chains'
 import { chains } from './wagmi'
 
-// returns the checksummed address if the address is valid, otherwise returns false
-export const isAddress = memoize((value: any): `0x${string}` | false => {
+// returns the checksummed address if the address is valid, otherwise returns undefined
+export const safeGetAddress = memoize((value: any): Address | undefined => {
   try {
     let value_ = value
     if (typeof value === 'string' && !value.startsWith('0x')) {
@@ -14,18 +15,18 @@ export const isAddress = memoize((value: any): `0x${string}` | false => {
     }
     return getAddress(value_)
   } catch {
-    return false
+    return undefined
   }
 })
 
 export function getBlockExploreLink(
-  data: string | number,
+  data: string | number | undefined | null,
   type: 'transaction' | 'token' | 'address' | 'block' | 'countdown',
   chainIdOverride?: number,
 ): string {
   const chainId = chainIdOverride || ChainId.BSC
   const chain = chains.find((c) => c.id === chainId)
-  if (!chain) return bsc.blockExplorers.default.url
+  if (!chain || !data) return bsc.blockExplorers.default.url
   switch (type) {
     case 'transaction': {
       return `${chain.blockExplorers.default.url}/tx/${data}`
@@ -52,7 +53,8 @@ export function getBlockExploreName(chainIdOverride?: number) {
   return chain?.blockExplorers?.default.name || bsc.blockExplorers.default.name
 }
 
-export function getBscScanLinkForNft(collectionAddress: string, tokenId: string): string {
+export function getBscScanLinkForNft(collectionAddress: string | undefined, tokenId?: string): string {
+  if (!collectionAddress) return ''
   return `${bsc.blockExplorers.default.url}/token/${collectionAddress}?a=${tokenId}`
 }
 

@@ -1,7 +1,7 @@
 import { useTranslation } from '@pancakeswap/localization'
 import { Currency } from '@pancakeswap/sdk'
 import { Button, Flex, SyncAltIcon, Text } from '@pancakeswap/uikit'
-import styled from 'styled-components'
+import { styled } from 'styled-components'
 
 const RateToggleButton = styled(Button)`
   border-radius: 8px;
@@ -13,7 +13,7 @@ export default function RateToggle({
   currencyA,
   handleRateToggle,
 }: {
-  currencyA: Currency
+  currencyA?: Currency | null
   handleRateToggle: () => void
 }) {
   const { t } = useTranslation()

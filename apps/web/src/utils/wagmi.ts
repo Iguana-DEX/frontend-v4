@@ -1,49 +1,18 @@
-import { BinanceWalletConnector } from '@pancakeswap/wagmi/connectors/binanceWallet'
+import { getWagmiConnector } from '@binance/w3w-wagmi-connector'
+import { CyberWalletConnector, isCyberWallet } from '@cyberlab/cyber-app-sdk'
+import { ChainId } from '@pancakeswap/chains'
 import { BloctoConnector } from '@pancakeswap/wagmi/connectors/blocto'
 import { TrustWalletConnector } from '@pancakeswap/wagmi/connectors/trustWallet'
-import { CHAINS } from 'config/chains'
-import { PUBLIC_NODES } from 'config/nodes'
 import memoize from 'lodash/memoize'
-import { configureChains, createConfig, createStorage } from 'wagmi'
-import { mainnet } from 'wagmi/chains'
+import { createConfig, createStorage } from 'wagmi'
 import { CoinbaseWalletConnector } from 'wagmi/connectors/coinbaseWallet'
 import { InjectedConnector } from 'wagmi/connectors/injected'
-import { LedgerConnector } from 'wagmi/connectors/ledger'
+// import { LedgerConnector } from 'wagmi/connectors/ledger'
 import { MetaMaskConnector } from 'wagmi/connectors/metaMask'
 import { WalletConnectConnector } from 'wagmi/connectors/walletConnect'
-import { jsonRpcProvider } from 'wagmi/providers/jsonRpc'
+import { chains, publicClient } from './client'
 
-// get most configs chain nodes length
-const mostNodesConfig = Object.values(PUBLIC_NODES).reduce((prev, cur) => {
-  return cur.length > prev ? cur.length : prev
-}, 0)
-
-export const { publicClient, chains } = configureChains(
-  CHAINS,
-  Array.from({ length: mostNodesConfig })
-    .map((_, i) => i)
-    .map((i) => {
-      return jsonRpcProvider({
-        rpc: (chain) => {
-          if (process.env.NODE_ENV === 'test' && chain.id === mainnet.id && i === 0) {
-            return { http: 'https://cloudflare-eth.com' }
-          }
-          return PUBLIC_NODES[chain.id]?.[i]
-            ? {
-                http: PUBLIC_NODES[chain.id][i],
-              }
-            : null
-        },
-      })
-    }),
-  {
-    batch: {
-      multicall: {
-        batchSize: 1024 * 200,
-      },
-    },
-  },
-)
+export { chains, publicClient }
 
 export const injectedConnector = new InjectedConnector({
   chains,
@@ -63,7 +32,9 @@ export const coinbaseConnector = new CoinbaseWalletConnector({
 export const walletConnectConnector = new WalletConnectConnector({
   chains,
   options: {
-    showQrModal: true,
+    // ignore the error in test environment
+    // Error: To use QR modal, please install @walletconnect/modal package
+    showQrModal: process.env.NODE_ENV !== 'test',
     projectId: 'e542ff314e26ff34de2d4fba98db70bb',
   },
 })
@@ -91,14 +62,12 @@ const bloctoConnector = new BloctoConnector({
   },
 })
 
-const ledgerConnector = new LedgerConnector({
-  chains,
-  options: {
-    projectId: 'e542ff314e26ff34de2d4fba98db70bb',
-  },
-})
-
-export const bscConnector = new BinanceWalletConnector({ chains })
+// const ledgerConnector = new LedgerConnector({
+//   chains,
+//   options: {
+//     projectId: 'e542ff314e26ff34de2d4fba98db70bb',
+//   },
+// })
 
 export const trustWalletConnector = new TrustWalletConnector({
   chains,
@@ -108,10 +77,28 @@ export const trustWalletConnector = new TrustWalletConnector({
   },
 })
 
+export const cyberWalletConnector = isCyberWallet()
+  ? new CyberWalletConnector({
+      chains: chains as any,
+      options: {
+        name: 'PancakeSwap',
+        appId: 'b825cd87-2db3-456d-b108-d61e74d89771',
+      },
+    })
+  : undefined
+
+const BinanceW3WConnector = getWagmiConnector()
+export const binanceWeb3WalletConnector = new BinanceW3WConnector({
+  chains,
+  options: {
+    chainId: ChainId.BSC,
+  },
+})
+
 export const noopStorage = {
-  getItem: (_key) => '',
-  setItem: (_key, _value) => null,
-  removeItem: (_key) => null,
+  getItem: (_key: any) => '',
+  setItem: (_key: any, _value: any) => null,
+  removeItem: (_key: any) => null,
 }
 
 export const wagmiConfig = createConfig({
@@ -126,11 +113,12 @@ export const wagmiConfig = createConfig({
     injectedConnector,
     coinbaseConnector,
     walletConnectConnector,
-    bscConnector,
     // @ts-ignore FIXME: wagmi
     bloctoConnector,
-    ledgerConnector,
+    // ledgerConnector,
     trustWalletConnector,
+    binanceWeb3WalletConnector,
+    ...(cyberWalletConnector ? [cyberWalletConnector as any] : []),
   ],
 })
 

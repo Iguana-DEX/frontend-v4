@@ -1,18 +1,19 @@
+import { PositionDetails } from '@pancakeswap/farms'
 import { useTranslation } from '@pancakeswap/localization'
 import { Currency, CurrencyAmount, Percent } from '@pancakeswap/sdk'
 import { Position } from '@pancakeswap/v3-sdk'
-import { useWeb3React } from '@pancakeswap/wagmi'
 import { useToken } from 'hooks/Tokens'
 import { ReactNode, useMemo } from 'react'
 import { unwrappedToken } from 'utils/wrappedCurrency'
-import { PositionDetails } from '@pancakeswap/farms'
+import { useAccount } from 'wagmi'
+import isUndefinedOrNull from '@pancakeswap/utils/isUndefinedOrNull'
 import { usePool } from './usePools'
 import { useV3PositionFees } from './useV3PositionFees'
 
 export function useDerivedV3BurnInfo(
   position?: PositionDetails,
   percent?: number,
-  asWETH = false,
+  asWNATIVE = false,
 ): {
   position?: Position
   liquidityPercentage?: Percent
@@ -24,7 +25,7 @@ export function useDerivedV3BurnInfo(
   error?: ReactNode
 } {
   const { t } = useTranslation()
-  const { account } = useWeb3React()
+  const { address: account } = useAccount()
 
   const token0 = useToken(position?.token0)
   const token1 = useToken(position?.token1)
@@ -47,25 +48,27 @@ export function useDerivedV3BurnInfo(
     [pool, position],
   )
 
-  const liquidityPercentage = new Percent(percent, 100)
+  const liquidityPercentage = !isUndefinedOrNull(percent) ? new Percent(percent!, 100) : undefined
 
   const discountedAmount0 = positionSDK
-    ? liquidityPercentage.multiply(positionSDK.amount0.quotient).quotient
+    ? liquidityPercentage?.multiply(positionSDK.amount0.quotient).quotient
     : undefined
   const discountedAmount1 = positionSDK
-    ? liquidityPercentage.multiply(positionSDK.amount1.quotient).quotient
+    ? liquidityPercentage?.multiply(positionSDK.amount1.quotient).quotient
     : undefined
 
+  const unwrappedToken0 = token0 ? unwrappedToken(token0) : undefined
+  const unwrappedToken1 = token1 ? unwrappedToken(token1) : undefined
   const liquidityValue0 =
-    token0 && typeof discountedAmount0 !== 'undefined'
-      ? CurrencyAmount.fromRawAmount(asWETH ? token0 : unwrappedToken(token0), discountedAmount0)
+    token0 && unwrappedToken0 && typeof discountedAmount0 !== 'undefined'
+      ? CurrencyAmount.fromRawAmount(asWNATIVE ? token0 : unwrappedToken0, discountedAmount0)
       : undefined
   const liquidityValue1 =
-    token1 && typeof discountedAmount1 !== 'undefined'
-      ? CurrencyAmount.fromRawAmount(asWETH ? token1 : unwrappedToken(token1), discountedAmount1)
+    token1 && unwrappedToken1 && typeof discountedAmount1 !== 'undefined'
+      ? CurrencyAmount.fromRawAmount(asWNATIVE ? token1 : unwrappedToken1, discountedAmount1)
       : undefined
 
-  const [feeValue0, feeValue1] = useV3PositionFees(pool ?? undefined, position?.tokenId, asWETH)
+  const [feeValue0, feeValue1] = useV3PositionFees(pool ?? undefined, position?.tokenId, asWNATIVE)
 
   const outOfRange =
     pool && position ? pool.tickCurrent < position.tickLower || pool.tickCurrent >= position.tickUpper : false

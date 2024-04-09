@@ -1,28 +1,38 @@
+import { useTranslation } from '@pancakeswap/localization'
 import { Currency, CurrencyAmount, Price, Token } from '@pancakeswap/swap-sdk-core'
 import {
-  encodeSqrtRatioX96,
   FeeAmount,
-  nearestUsableTick,
   Pool,
   Position,
-  priceToClosestTick,
   TICK_SPACINGS,
   TickMath,
+  encodeSqrtRatioX96,
+  nearestUsableTick,
+  priceToClosestTick,
 } from '@pancakeswap/v3-sdk'
-import { useWeb3React } from '@pancakeswap/wagmi'
+import { BIG_INT_ZERO } from 'config/constants/exchange'
+import { Bound } from 'config/constants/types'
 import { ReactNode, useMemo } from 'react'
 import { Field } from 'state/mint/actions'
-import tryParseCurrencyAmount from 'utils/tryParseCurrencyAmount'
-import { BIG_INT_ZERO } from 'config/constants/exchange'
 import { useCurrencyBalances } from 'state/wallet/hooks'
-import { useTranslation } from '@pancakeswap/localization'
-import { Bound } from 'config/constants/types'
+import tryParseCurrencyAmount from 'utils/tryParseCurrencyAmount'
 import { MintState } from 'views/AddLiquidityV3/formViews/V3FormView/form/reducer'
 
-import { tryParseTick } from './utils'
-import { usePool } from './usePools'
-import { getTickToPrice } from './utils/getTickToPrice'
+import { useAccount } from 'wagmi'
 import { PoolState } from './types'
+import { usePool } from './usePools'
+import { tryParseTick } from './utils'
+import { getTickToPrice } from './utils/getTickToPrice'
+
+/**
+ * if fee tier = 100 then TickMath.MAX_TICK will cause overflow, so minus 1 here
+ */
+const checkAndParseMaxTick = (tick: number) => {
+  if (tick === TickMath.MAX_TICK) {
+    return TickMath.MAX_TICK - 1
+  }
+  return tick
+}
 
 export default function useV3DerivedInfo(
   currencyA?: Currency,
@@ -54,12 +64,14 @@ export default function useV3DerivedInfo(
   depositBDisabled: boolean
   invertPrice: boolean
   ticksAtLimit: { [bound in Bound]?: boolean | undefined }
+  tickSpaceLimits: { [bound in Bound]: number | undefined }
 } {
   const { t } = useTranslation()
 
-  const { account } = useWeb3React()
+  const { address: account } = useAccount()
 
-  const { independentField, typedValue, leftRangeTypedValue, rightRangeTypedValue, startPriceTypedValue } = formState
+  const { independentField, typedValue, leftRangeTypedValue, rightRangeTypedValue, startPriceTypedValue } =
+    formState || {}
 
   const dependentField = independentField === Field.CURRENCY_A ? Field.CURRENCY_B : Field.CURRENCY_A
 
@@ -140,14 +152,14 @@ export default function useV3DerivedInfo(
 
   // used for ratio calculation when pool not initialized
   const mockPool = useMemo(() => {
-    if (tokenA && tokenB && feeAmount && price && !invalidPrice) {
+    if (!pool && tokenA && tokenB && feeAmount && price && !invalidPrice) {
       const currentTick = priceToClosestTick(price)
       const currentSqrt = TickMath.getSqrtRatioAtTick(currentTick)
       return new Pool(tokenA, tokenB, feeAmount, currentSqrt, 0n, currentTick, [])
     }
 
     return undefined
-  }, [feeAmount, invalidPrice, price, tokenA, tokenB])
+  }, [feeAmount, invalidPrice, price, tokenA, tokenB, pool])
 
   // if pool exists use it, if not use the mock pool
   const poolForPosition: Pool | undefined = pool ?? mockPool
@@ -175,29 +187,24 @@ export default function useV3DerivedInfo(
           : (invertPrice && typeof rightRangeTypedValue === 'boolean') ||
             (!invertPrice && typeof leftRangeTypedValue === 'boolean')
           ? tickSpaceLimits[Bound.LOWER]
+            ? tickSpaceLimits[Bound.LOWER]
+            : tickSpaceLimits[Bound.LOWER]
           : invertPrice
-          ? tryParseTick(token1, token0, feeAmount, rightRangeTypedValue.toString())
-          : tryParseTick(token0, token1, feeAmount, leftRangeTypedValue.toString()),
+          ? tryParseTick(feeAmount, rightRangeTypedValue)
+          : tryParseTick(feeAmount, leftRangeTypedValue),
       [Bound.UPPER]:
         typeof existingPosition?.tickUpper === 'number'
-          ? existingPosition.tickUpper
+          ? checkAndParseMaxTick(existingPosition.tickUpper)
           : (!invertPrice && typeof rightRangeTypedValue === 'boolean') ||
             (invertPrice && typeof leftRangeTypedValue === 'boolean')
           ? tickSpaceLimits[Bound.UPPER]
+            ? checkAndParseMaxTick(tickSpaceLimits[Bound.UPPER])
+            : tickSpaceLimits[Bound.UPPER]
           : invertPrice
-          ? tryParseTick(token1, token0, feeAmount, leftRangeTypedValue.toString())
-          : tryParseTick(token0, token1, feeAmount, rightRangeTypedValue.toString()),
+          ? tryParseTick(feeAmount, leftRangeTypedValue)
+          : tryParseTick(feeAmount, rightRangeTypedValue),
     }
-  }, [
-    existingPosition,
-    feeAmount,
-    invertPrice,
-    leftRangeTypedValue,
-    rightRangeTypedValue,
-    token0,
-    token1,
-    tickSpaceLimits,
-  ])
+  }, [existingPosition, feeAmount, invertPrice, leftRangeTypedValue, rightRangeTypedValue, tickSpaceLimits])
 
   const { [Bound.LOWER]: tickLower, [Bound.UPPER]: tickUpper } = ticks || {}
 
@@ -228,9 +235,9 @@ export default function useV3DerivedInfo(
   )
 
   // amounts
-  const independentAmount: CurrencyAmount<Currency> | undefined = tryParseCurrencyAmount(
-    typedValue,
-    currencies[independentField],
+  const independentAmount: CurrencyAmount<Currency> | undefined = useMemo(
+    () => tryParseCurrencyAmount(typedValue, independentField ? currencies[independentField] : undefined),
+    [typedValue, currencies, independentField],
   )
 
   const dependentAmount: CurrencyAmount<Currency> | undefined = useMemo(() => {
@@ -383,14 +390,14 @@ export default function useV3DerivedInfo(
     currencyAAmount &&
     (currencyAAmount?.equalTo(0) || currencyBalances?.[Field.CURRENCY_A]?.lessThan(currencyAAmount))
   ) {
-    errorMessage = t('Insufficient %symbol% balance', { symbol: currencies[Field.CURRENCY_A]?.symbol })
+    errorMessage = t('Insufficient %symbol% balance', { symbol: currencies[Field.CURRENCY_A]?.symbol ?? '' })
   }
 
   if (
     currencyBAmount &&
     (currencyBAmount?.equalTo(0) || currencyBalances?.[Field.CURRENCY_B]?.lessThan(currencyBAmount))
   ) {
-    errorMessage = t('Insufficient %symbol% balance', { symbol: currencies[Field.CURRENCY_B]?.symbol })
+    errorMessage = t('Insufficient %symbol% balance', { symbol: currencies[Field.CURRENCY_B]?.symbol ?? '' })
   }
 
   const invalidPool = poolState === PoolState.INVALID
@@ -415,5 +422,6 @@ export default function useV3DerivedInfo(
     depositBDisabled,
     invertPrice,
     ticksAtLimit,
+    tickSpaceLimits,
   }
 }

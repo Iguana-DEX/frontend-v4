@@ -1,5 +1,5 @@
 import { nanoid } from '@reduxjs/toolkit'
-import useSWR from 'swr'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import qs from 'qs'
 
 interface AffiliateExistFeeResponse {
@@ -9,9 +9,12 @@ interface AffiliateExistFeeResponse {
 const useDefaultLinkId = () => {
   let randomNanoId = nanoid(20)
 
-  const { data: defaultLinkId, mutate } = useSWR(
-    randomNanoId && ['/affiliate-fee-exist'],
-    async () => {
+  const queryClient = useQueryClient()
+
+  const { data: defaultLinkId, refetch } = useQuery({
+    queryKey: ['affiliates-program', 'affiliate-fee-exist'],
+
+    queryFn: async () => {
       try {
         const queryString = qs.stringify({ linkId: randomNanoId })
         const response = await fetch(`/api/affiliates-program/affiliate-fee-exist?${queryString}`)
@@ -20,7 +23,9 @@ const useDefaultLinkId = () => {
         const regex = /^[a-zA-Z0-9_]+$/
         if (result.exist || !regex.test(randomNanoId)) {
           randomNanoId = nanoid(20)
-          mutate('/affiliate-fee-exist')
+          queryClient.invalidateQueries({
+            queryKey: ['affiliates-program', 'affiliate-fee-exist'],
+          })
         }
         return randomNanoId
       } catch (error) {
@@ -28,17 +33,15 @@ const useDefaultLinkId = () => {
         return ''
       }
     },
-    {
-      revalidateOnFocus: false,
-      revalidateIfStale: false,
-      revalidateOnReconnect: false,
-      revalidateOnMount: true,
-    },
-  )
+
+    enabled: !!randomNanoId,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  })
 
   return {
-    defaultLinkId,
-    refresh: mutate,
+    defaultLinkId: defaultLinkId || '',
+    refresh: refetch,
   }
 }
 

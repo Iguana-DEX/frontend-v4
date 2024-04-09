@@ -13,9 +13,9 @@ import {
   Box,
 } from '@pancakeswap/uikit'
 import { useTranslation } from '@pancakeswap/localization'
-import styled from 'styled-components'
+import { styled } from 'styled-components'
 
-interface CheckType {
+export interface CheckType {
   key: string
   value?: boolean
   content: string

@@ -1,27 +1,33 @@
-import DisclaimerModal from 'components/DisclaimerModal'
+import DisclaimerModal, { CheckType } from 'components/DisclaimerModal'
 import { useUserNotUsCitizenAcknowledgement, IdType } from 'hooks/useUserIsUsCitizenAcknowledgement'
-import { memo, useCallback } from 'react'
+import { memo, useCallback, useEffect } from 'react'
 import { getPerpetualUrl } from 'utils/getPerpetualUrl'
 import { useActiveChainId } from 'hooks/useActiveChainId'
 import { useTheme } from 'styled-components'
 import { Text, Link } from '@pancakeswap/uikit'
 import { useTranslation } from '@pancakeswap/localization'
+import { useRouter } from 'next/router'
+import { usePreviousValue } from '@pancakeswap/hooks'
 
 interface USCitizenConfirmModalProps {
   id: IdType
   title: string
+  checks?: CheckType[]
   onDismiss?: () => void
 }
 
 const USCitizenConfirmModal: React.FC<React.PropsWithChildren<USCitizenConfirmModalProps>> = ({
   id,
   title,
+  checks,
   onDismiss,
 }) => {
   const {
     t,
     currentLanguage: { code },
   } = useTranslation()
+  const { pathname } = useRouter()
+  const previousPathname = usePreviousValue(pathname)
   const [, setHasAcceptedRisk] = useUserNotUsCitizenAcknowledgement(id)
   const { chainId } = useActiveChainId()
   const { isDark } = useTheme()
@@ -35,26 +41,34 @@ const USCitizenConfirmModal: React.FC<React.PropsWithChildren<USCitizenConfirmMo
     onDismiss?.()
   }, [id, setHasAcceptedRisk, onDismiss, chainId, code, isDark])
 
+  useEffect(() => {
+    if (previousPathname && pathname !== previousPathname) {
+      onDismiss?.()
+    }
+  }, [pathname, previousPathname, onDismiss])
+
   return (
     <DisclaimerModal
       modalHeader={title}
-      id="disclaimer-us-citizen"
+      id={id}
       header={t('To proceed to %title%, please check the checkbox below:', { title })}
-      checks={[
-        {
-          key: 'checkbox',
-          content: t(
-            'I confirm that I am not from a prohibited jurisdiction and I am eligible to trade derivatives on this platform',
-          ),
-        },
-      ]}
+      checks={
+        checks ?? [
+          {
+            key: 'checkbox',
+            content: t(
+              'I confirm that I am not from a prohibited jurisdiction and I am eligible to trade derivatives on this platform.',
+            ),
+          },
+        ]
+      }
       footer={
         <>
           <Text as="span">{t('By proceeding, you agree to comply with our')}</Text>
-          <Link m="0 4px" display="inline" href="/terms-of-service">
+          <Link external m="0 4px" display="inline" href="/terms-of-service">
             {t('terms and conditions')}
           </Link>
-          <Text as="span">{t('and all relevant laws and regulations')}</Text>
+          <Text as="span">{t('and all relevant laws and regulations.')}</Text>
         </>
       }
       onSuccess={handleSuccess}

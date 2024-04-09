@@ -1,9 +1,8 @@
-import styled from 'styled-components'
-import { Card, CardHeader, CardBody, CommunityIcon, Heading, PrizeIcon, Text, Skeleton } from '@pancakeswap/uikit'
-import { FetchStatus } from 'config/constants/types'
-import useSWR from 'swr'
-import { getTeam } from 'state/teams/helpers'
 import { useTranslation } from '@pancakeswap/localization'
+import { Card, CardBody, CardHeader, CommunityIcon, Heading, PrizeIcon, Skeleton, Text } from '@pancakeswap/uikit'
+import { useQuery } from '@tanstack/react-query'
+import { getTeam } from 'state/teams/helpers'
+import { styled } from 'styled-components'
 import ComingSoon from './ComingSoon'
 import IconStatBox from './IconStatBox'
 
@@ -76,7 +75,12 @@ const StatRow = styled.div`
 const TeamCard: React.FC<React.PropsWithChildren<TeamCardProps>> = ({ id }) => {
   const { t } = useTranslation()
   const idNumber = Number(id)
-  const { data: team, status } = useSWR(['team', id], async () => getTeam(idNumber))
+  const { data: team, status } = useQuery({
+    queryKey: ['team', id],
+    queryFn: async () => getTeam(idNumber),
+  })
+
+  if (!team) return null
 
   return (
     <Wrapper>
@@ -92,7 +96,7 @@ const TeamCard: React.FC<React.PropsWithChildren<TeamCardProps>> = ({ id }) => {
         </StyledCardHeader>
         <CardBody>
           <StatRow>
-            {status !== FetchStatus.Fetched ? (
+            {status !== 'success' ? (
               <Skeleton width="100px" />
             ) : (
               <IconStatBox icon={CommunityIcon} title={team.users} subtitle={t('Active Members')} />

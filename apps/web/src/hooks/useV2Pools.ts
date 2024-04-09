@@ -1,7 +1,7 @@
 import { Currency } from '@pancakeswap/sdk'
-import { SmartRouter, V2Pool } from '@pancakeswap/smart-router/evm'
+import { SmartRouter, V2Pool } from '@pancakeswap/smart-router'
 import { useMemo, useRef } from 'react'
-import useSWR from 'swr'
+import { useQuery } from '@tanstack/react-query'
 
 import { infoClientWithChain, v3Clients } from 'utils/graphql'
 import { getViemClients } from 'utils/viem'
@@ -19,7 +19,8 @@ export interface V2PoolsResult {
   loading: boolean
   syncing: boolean
   blockNumber?: number
-  refresh: () => void
+  refresh: () => Promise<unknown>
+  dataUpdatedAt?: number
 }
 
 export function useV2CandidatePools(
@@ -36,7 +37,12 @@ export function useV2CandidatePools(
   }, [currencyA])
 
   const key = useMemo(() => {
-    if (!currencyA || !currencyB || currencyA.wrapped.equals(currencyB.wrapped)) {
+    if (
+      !currencyA ||
+      !currencyB ||
+      currencyA.chainId !== currencyB.chainId ||
+      currencyA.wrapped.equals(currencyB.wrapped)
+    ) {
       return ''
     }
     const symbols = currencyA.wrapped.sortsBefore(currencyB.wrapped)
@@ -45,22 +51,20 @@ export function useV2CandidatePools(
     return [...symbols, currencyA.chainId].join('_')
   }, [currencyA, currencyB])
 
-  const fetchingBlock = useRef<string | null>(null)
+  const fetchingBlock = useRef<string | undefined>(undefined)
   const queryEnabled = Boolean(options?.enabled && key)
-  const result = useSWR<{
-    pools: V2Pool[]
-    key?: string
-    blockNumber?: number
-  }>(
-    queryEnabled && key && ['V2_Candidate_Pools', key],
-    async () => {
+
+  const result = useQuery({
+    queryKey: ['V2_Candidate_Pools', key],
+
+    queryFn: async () => {
       fetchingBlock.current = options?.blockNumber?.toString()
       try {
         const pools = await SmartRouter.getV2CandidatePools({
           currencyA,
           currencyB,
           v2SubgraphProvider: ({ chainId }) => infoClientWithChain(chainId),
-          v3SubgraphProvider: ({ chainId }) => v3Clients[chainId],
+          v3SubgraphProvider: ({ chainId }) => (chainId ? v3Clients[chainId] : undefined),
           onChainProvider: getViemClients,
         })
         return {
@@ -69,23 +73,24 @@ export function useV2CandidatePools(
           blockNumber: options?.blockNumber,
         }
       } finally {
-        fetchingBlock.current = null
+        fetchingBlock.current = undefined
       }
     },
-    {
-      refreshInterval,
-      errorRetryCount: 3,
-      revalidateOnFocus: false,
-    },
-  )
 
-  const { mutate, data, isLoading, isValidating } = result
+    enabled: Boolean(queryEnabled && key),
+    refetchInterval: refreshInterval,
+    refetchOnWindowFocus: false,
+    retry: 3,
+  })
+
+  const { refetch, data, isLoading, isFetching, dataUpdatedAt } = result
 
   return {
     pools: data?.pools ?? null,
     loading: isLoading,
-    syncing: isValidating,
+    syncing: isFetching,
     blockNumber: data?.blockNumber,
-    refresh: mutate,
+    refresh: refetch,
+    dataUpdatedAt,
   }
 }

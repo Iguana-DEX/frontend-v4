@@ -1,8 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { SubMenuItems, useModal } from '@pancakeswap/uikit'
 import { useTranslation } from '@pancakeswap/localization'
 import { useRouter } from 'next/router'
-import { useFetchIfo } from 'state/pools/hooks'
 import { useUserNotUsCitizenAcknowledgement, IdType } from 'hooks/useUserIsUsCitizenAcknowledgement'
 import USCitizenConfirmModal from 'components/Modal/USCitizenConfirmModal'
 import Hero from './components/Hero'
@@ -12,11 +11,19 @@ export const IfoPageLayout = ({ children }) => {
   const { t } = useTranslation()
   const router = useRouter()
   const isExact = router.route === '/ifo'
-  useFetchIfo()
 
   const [userNotUsCitizenAcknowledgement] = useUserNotUsCitizenAcknowledgement(IdType.IFO)
   const [onUSCitizenModalPresent] = useModal(
-    <USCitizenConfirmModal title={t('PancakeSwap IFOs')} id={IdType.IFO} />,
+    <USCitizenConfirmModal
+      title={t('PancakeSwap IFOs')}
+      id={IdType.IFO}
+      checks={[
+        {
+          key: 'checkbox',
+          content: t('I confirm that I am eligible to participate in IFOs on this platform.'),
+        },
+      ]}
+    />,
     false,
     false,
     'usCitizenConfirmModal',
@@ -27,26 +34,28 @@ export const IfoPageLayout = ({ children }) => {
       if (!userNotUsCitizenAcknowledgement) {
         onUSCitizenModalPresent()
       }
-    }, 1000)
+    }, 2000)
 
     return () => clearTimeout(timer)
   }, [userNotUsCitizenAcknowledgement, onUSCitizenModalPresent])
 
+  const subMenuItems = useMemo(
+    () => [
+      {
+        label: t('Latest'),
+        href: '/ifo',
+      },
+      {
+        label: t('Finished'),
+        href: '/ifo/history',
+      },
+    ],
+    [t],
+  )
+
   return (
     <IfoProvider>
-      <SubMenuItems
-        items={[
-          {
-            label: t('Latest'),
-            href: '/ifo',
-          },
-          {
-            label: t('Finished'),
-            href: '/ifo/history',
-          },
-        ]}
-        activeItem={isExact ? '/ifo' : '/ifo/history'}
-      />
+      <SubMenuItems items={subMenuItems} activeItem={isExact ? '/ifo' : '/ifo/history'} />
       <Hero />
       {children}
     </IfoProvider>

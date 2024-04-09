@@ -1,12 +1,13 @@
 {
   "extends": "@pancakeswap/tsconfig/nextjs.json",
-  "include": ["next-env.d.ts"],
   "compilerOptions": {
-    "target": "ES2015",
     "baseUrl": "./",
     "paths": {
-      "*": ["./*"]
+      "*": ["./*"],
+      "@pancakeswap/uikit": ["../../packages/uikit/src/index.ts"],
+      "@pancakeswap/uikit/*": ["../../packages/uikit/src/*"]
     }
   },
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"]
 }

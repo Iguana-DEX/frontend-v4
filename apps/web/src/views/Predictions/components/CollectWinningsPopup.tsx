@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef, useState } from 'react'
 import { useAccount } from 'wagmi'
-import styled, { css, keyframes } from 'styled-components'
+import { styled, css, keyframes } from 'styled-components'
 import { Button, CloseIcon, IconButton, TrophyGoldIcon } from '@pancakeswap/uikit'
 import { CSSTransition } from 'react-transition-group'
 import { useTranslation } from '@pancakeswap/localization'
@@ -119,16 +119,17 @@ const Popup = styled.div`
   padding: 16px 8px;
 `
 
+let timer: NodeJS.Timeout
+
 const CollectWinningsPopup = () => {
   const [isOpen, setIsOpen] = useState(false)
   const { t } = useTranslation()
   const ref = useRef(null)
-  const timer = useRef(null)
   const { address: account } = useAccount()
   const predictionStatus = useGetPredictionsStatus()
   const isHistoryPaneOpen = useIsHistoryPaneOpen()
   const dispatch = useLocalDispatch()
-  const { api, token } = useConfig()
+  const config = useConfig()
 
   const handleOpenHistory = () => {
     dispatch(setHistoryPaneState(true))
@@ -136,26 +137,26 @@ const CollectWinningsPopup = () => {
 
   const handleClick = () => {
     setIsOpen(false)
-    clearInterval(timer.current)
+    clearInterval(timer)
   }
 
   // Check user's history for unclaimed winners
   useEffect(() => {
     let isCancelled = false
-    if (account) {
-      timer.current = setInterval(async () => {
+    if (account && config) {
+      timer = setInterval(async () => {
         const bets = await getBetHistory(
           { user: account.toLowerCase(), claimed: false },
           undefined,
           undefined,
-          api,
-          token.symbol,
+          config?.api,
+          config?.token?.symbol,
         )
 
         if (!isCancelled) {
           // Filter out bets that were not winners
           const winnerBets = bets.filter((bet) => {
-            return bet.position === bet.round.position
+            return bet.position === bet?.round?.position
           })
 
           if (!isHistoryPaneOpen) {
@@ -166,10 +167,10 @@ const CollectWinningsPopup = () => {
     }
 
     return () => {
-      clearInterval(timer.current)
+      clearInterval(timer)
       isCancelled = true
     }
-  }, [account, timer, predictionStatus, setIsOpen, isHistoryPaneOpen, api, token.symbol])
+  }, [account, predictionStatus, setIsOpen, isHistoryPaneOpen, config])
 
   // Any time the history pane is open make sure the popup closes
   useEffect(() => {
@@ -181,9 +182,9 @@ const CollectWinningsPopup = () => {
   return (
     <CSSTransition in={isOpen} unmountOnExit nodeRef={ref} timeout={1000} classNames="popup">
       <Wrapper ref={ref}>
-        <Popup>
+        <Popup style={{ position: 'relative' }}>
           <TrophyGoldIcon width="64px" style={{ flex: 'none' }} mr="8px" />
-          <Button style={{ flex: 1 }} onClick={handleOpenHistory}>
+          <Button ml="30px" style={{ flex: 1 }} onClick={handleOpenHistory}>
             {t('Collect Winnings')}
           </Button>
           <IconButton variant="text" onClick={handleClick}>

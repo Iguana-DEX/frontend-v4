@@ -1,7 +1,7 @@
+import { ArticleType, ResponseArticleDataType, ResponseArticleType, transformArticle } from '@pancakeswap/blog'
+import { useQuery } from '@tanstack/react-query'
 import qs from 'qs'
-import useSWR from 'swr'
-import { ResponseArticleType, ResponseArticleDataType } from 'types'
-import { transformArticle, ArticleType } from 'utils/transformArticle'
+import { filterTagArray } from 'utils/filterTagArray'
 
 interface UseAllArticleProps {
   query: string
@@ -23,20 +23,33 @@ const useAllArticle = ({
   languageOption,
   selectedCategories,
 }: UseAllArticleProps): AllArticleType => {
-  const { data: articlesData, isLoading } = useSWR(
-    ['/articles', query, currentPage, selectedCategories, sortBy, languageOption],
-    async () => {
+  const { data: articlesData, isPending } = useQuery({
+    queryKey: ['/articles', query, currentPage, selectedCategories, sortBy, languageOption],
+
+    queryFn: async () => {
       try {
         const urlParamsObject = {
           ...(query && { _q: query }),
           filters: {
-            ...(selectedCategories && {
-              categories: {
-                id: {
-                  $eq: selectedCategories,
+            $and: [
+              {
+                newsOutBoundLink: {
+                  $null: true,
                 },
               },
-            }),
+              {
+                categories: {
+                  name: {
+                    $notIn: filterTagArray,
+                  },
+                  ...(selectedCategories && {
+                    id: {
+                      $eq: selectedCategories,
+                    },
+                  }),
+                },
+              },
+            ],
           },
           locale: languageOption,
           populate: 'categories,image',
@@ -66,16 +79,14 @@ const useAllArticle = ({
         }
       }
     },
-    {
-      revalidateOnFocus: false,
-      revalidateIfStale: false,
-      revalidateOnReconnect: false,
-      revalidateOnMount: true,
-    },
-  )
+
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  })
 
   return {
-    isFetching: isLoading,
+    isFetching: isPending,
     articlesData: articlesData ?? {
       data: [],
       pagination: {

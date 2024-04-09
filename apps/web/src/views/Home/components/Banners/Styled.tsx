@@ -1,5 +1,5 @@
 import { Flex, Heading } from '@pancakeswap/uikit'
-import styled from 'styled-components'
+import { styled } from 'styled-components'
 
 export const StyledSubheading = styled(Heading)`
   background: -webkit-linear-gradient(#ffd800, #eb8c00);
@@ -34,6 +34,7 @@ export const Wrapper = styled.div`
   position: relative;
   border-radius: 32px;
   width: 100%;
+  height: 100%;
   max-height: max-content;
   overflow: visible;
   ${({ theme }) => theme.mediaQueries.sm} {
@@ -46,6 +47,7 @@ export const Inner = styled(Flex)`
   padding: 24px;
   flex-direction: row;
   justify-content: space-between;
+  height: 100%;
   max-height: 192px;
   min-height: 181px;
   &::-webkit-scrollbar {

@@ -1,37 +1,28 @@
-import {
-  AutoRow,
-  Box,
-  Button,
-  Card,
-  CardBody,
-  Flex,
-  Heading,
-  NextLinkFromReactRouter,
-  Text,
-  useMatchBreakpoints,
-} from '@pancakeswap/uikit'
+import { AutoRow, Box, Button, Card, CardBody, Flex, Heading, Text, useMatchBreakpoints } from '@pancakeswap/uikit'
+import { NextLinkFromReactRouter } from '@pancakeswap/widgets-internal'
+
 import { AppHeader } from 'components/App'
 
 import { CurrencyLogo, DoubleCurrencyLogo } from 'components/Logo'
-import styled from 'styled-components'
+import { styled } from 'styled-components'
 import { CHAIN_IDS } from 'utils/wagmi'
 import Page from 'views/Page'
 
+import { getFarmConfig } from '@pancakeswap/farms/constants'
+import { useTranslation } from '@pancakeswap/localization'
+import { useQuery } from '@tanstack/react-query'
 import { LightGreyCard } from 'components/Card'
 import { usePoolTokenPercentage, useTokensDeposited, useTotalUSDValue } from 'components/PositionCard'
 import { useCurrency } from 'hooks/Tokens'
+import { useActiveChainId } from 'hooks/useActiveChainId'
+import { useMasterchef } from 'hooks/useContract'
 import { useV2Pair } from 'hooks/usePairs'
 import useTotalSupply from 'hooks/useTotalSupply'
 import { useRouter } from 'next/router'
-import { useTokenBalance } from 'state/wallet/hooks'
-import { useAccount } from 'wagmi'
-import { useTranslation } from '@pancakeswap/localization'
 import { useLPApr } from 'state/swap/useLPApr'
+import { useTokenBalance } from 'state/wallet/hooks'
 import { formatAmount } from 'utils/formatInfoNumbers'
-import { getFarmConfig } from '@pancakeswap/farms/constants'
-import { useActiveChainId } from 'hooks/useActiveChainId'
-import { useMasterchef } from 'hooks/useContract'
-import useSWRImmutable from 'swr/immutable'
+import { useAccount } from 'wagmi'
 
 export const BodyWrapper = styled(Card)`
   border-radius: 24px;
@@ -52,7 +43,7 @@ export default function PoolV2Page() {
   const baseCurrency = useCurrency(currencyIdA)
   const currencyB = useCurrency(currencyIdB)
 
-  const [, pair] = useV2Pair(baseCurrency, currencyB)
+  const [, pair] = useV2Pair(baseCurrency ?? undefined, currencyB ?? undefined)
 
   const userPoolBalance = useTokenBalance(account ?? undefined, pair?.liquidityToken)
 
@@ -71,12 +62,13 @@ export default function PoolV2Page() {
 
   const masterchefV2Contract = useMasterchef()
 
-  const { data: isFarmExistActiveForPair } = useSWRImmutable(
-    chainId && pair && masterchefV2Contract && ['isFarmExistActiveForPair', chainId, pair.liquidityToken.address],
-    async () => {
+  const { data: isFarmExistActiveForPair } = useQuery({
+    queryKey: ['isFarmExistActiveForPair', chainId, pair?.liquidityToken?.address],
+
+    queryFn: async () => {
       const farmsConfig = (await getFarmConfig(chainId)) || []
       const farmPair = farmsConfig.find(
-        (farm) => farm.lpAddress.toLowerCase() === pair.liquidityToken.address.toLowerCase(),
+        (farm) => farm.lpAddress.toLowerCase() === pair?.liquidityToken?.address?.toLowerCase(),
       )
       if (farmPair) {
         const poolInfo = await masterchefV2Contract.read.poolInfo([BigInt(farmPair.pid)])
@@ -85,7 +77,12 @@ export default function PoolV2Page() {
       }
       return 'exist'
     },
-  )
+
+    enabled: Boolean(chainId && pair && masterchefV2Contract),
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
+  })
 
   const { isMobile } = useMatchBreakpoints()
 
@@ -108,7 +105,7 @@ export default function PoolV2Page() {
           buttons={
             !isMobile && (
               <>
-                <NextLinkFromReactRouter to={`/v2/add/${pair?.token0.address}/${pair?.token1.address}`}>
+                <NextLinkFromReactRouter to={`/v2/add/${pair?.token0.address}/${pair?.token1.address}?increase=1`}>
                   <Button width="100%" disabled={!pair}>
                     {t('Add')}
                   </Button>
@@ -135,7 +132,7 @@ export default function PoolV2Page() {
         <CardBody>
           {isMobile && (
             <>
-              <NextLinkFromReactRouter to={`/v2/add/${pair?.token0.address}/${pair?.token1.address}`}>
+              <NextLinkFromReactRouter to={`/v2/add/${pair?.token0.address}/${pair?.token1.address}?increase=1`}>
                 <Button width="100%" mb="8px" disabled={!pair}>
                   {t('Add')}
                 </Button>
@@ -146,7 +143,7 @@ export default function PoolV2Page() {
                 </Button>
               </NextLinkFromReactRouter>
               {isFarmExistActiveForPair === 'notexist' && (
-                <NextLinkFromReactRouter to={`/v2/migrate/${pair.liquidityToken.address}`}>
+                <NextLinkFromReactRouter to={`/v2/migrate/${pair?.liquidityToken?.address}`}>
                   <Button variant="secondary" width="100%" mb="8px" disabled={!pair}>
                     {t('Migrate')}
                   </Button>
@@ -211,3 +208,4 @@ export default function PoolV2Page() {
 }
 
 PoolV2Page.chains = CHAIN_IDS
+PoolV2Page.screen = true

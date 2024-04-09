@@ -1,11 +1,10 @@
-import styled from 'styled-components'
-import { Flex, Card, Grid, SellIcon, Text, useModal, Box, BinanceIcon, Skeleton, Button } from '@pancakeswap/uikit'
 import { useTranslation } from '@pancakeswap/localization'
+import { BinanceIcon, Box, Button, Card, Flex, Grid, SellIcon, Skeleton, Text, useModal } from '@pancakeswap/uikit'
+import { formatNumber } from '@pancakeswap/utils/formatBalance'
+import { useBNBPrice } from 'hooks/useBNBPrice'
 import useTheme from 'hooks/useTheme'
 import { NftToken } from 'state/nftMarket/types'
-import { useBNBBusdPrice } from 'hooks/useBUSDPrice'
-import { formatNumber } from '@pancakeswap/utils/formatBalance'
-import { multiplyPriceByAmount } from 'utils/prices'
+import { styled } from 'styled-components'
 import useNftOwner from 'views/Nft/market/hooks/useNftOwner'
 import BuyModal from '../../../components/BuySellModals/BuyModal'
 import SellModal from '../../../components/BuySellModals/SellModal'
@@ -43,11 +42,11 @@ const OwnerCard: React.FC<React.PropsWithChildren<OwnerCardProps>> = ({
 }) => {
   const { t } = useTranslation()
   const { theme } = useTheme()
-  const bnbBusdPrice = useBNBBusdPrice()
+  const bnbBusdPrice = useBNBPrice()
 
   const { owner, isLoadingOwner } = useNftOwner(nft, isOwnNft)
 
-  const priceInUsd = multiplyPriceByAmount(bnbBusdPrice, parseFloat(nft?.marketData?.currentAskPrice))
+  const priceInUsd = bnbBusdPrice.multipliedBy(parseFloat(nft?.marketData?.currentAskPrice ?? '0')).toNumber()
 
   const [onPresentBuyModal] = useModal(<BuyModal nftToBuy={nft} />)
   const [onPresentAdjustPriceModal] = useModal(

@@ -1,13 +1,14 @@
 import { useTranslation } from '@pancakeswap/localization'
 import { Currency, CurrencyAmount, Percent, TradeType } from '@pancakeswap/sdk'
 import { LegacyPair as Pair } from '@pancakeswap/smart-router/legacy-router'
-import { Modal, ModalV2, QuestionHelper, SearchIcon, Text, Flex, Link, AutoColumn } from '@pancakeswap/uikit'
+import { AutoColumn, Flex, Link, Modal, ModalV2, QuestionHelper, SearchIcon, Text } from '@pancakeswap/uikit'
 import { formatAmount } from '@pancakeswap/utils/formatFractions'
-import { useState, memo } from 'react'
+import { memo, useState } from 'react'
 
 import { RowBetween, RowFixed } from 'components/Layout/Row'
 import { RoutingSettingsButton } from 'components/Menu/GlobalSettings/SettingsModal'
 import { Field } from 'state/swap/actions'
+import { SlippageAdjustedAmounts } from '../V3Swap/utils/exchange'
 import FormattedPriceImpact from './FormattedPriceImpact'
 import { RouterViewer } from './RouterViewer'
 import SwapRoute from './SwapRoute'
@@ -25,12 +26,9 @@ export const TradeSummary = memo(function TradeSummary({
   inputAmount?: CurrencyAmount<Currency>
   outputAmount?: CurrencyAmount<Currency>
   tradeType?: TradeType
-  slippageAdjustedAmounts: {
-    INPUT?: CurrencyAmount<Currency>
-    OUTPUT?: CurrencyAmount<Currency>
-  }
-  priceImpactWithoutFee?: Percent
-  realizedLPFee?: CurrencyAmount<Currency>
+  slippageAdjustedAmounts: SlippageAdjustedAmounts
+  priceImpactWithoutFee?: Percent | null
+  realizedLPFee?: CurrencyAmount<Currency> | null
   isMM?: boolean
 }) {
   const { t } = useTranslation()
@@ -54,8 +52,8 @@ export const TradeSummary = memo(function TradeSummary({
         <RowFixed>
           <Text fontSize="14px">
             {isExactIn
-              ? `${formatAmount(slippageAdjustedAmounts[Field.OUTPUT], 4)} ${outputAmount.currency.symbol}` ?? '-'
-              : `${formatAmount(slippageAdjustedAmounts[Field.INPUT], 4)} ${inputAmount.currency.symbol}` ?? '-'}
+              ? `${formatAmount(slippageAdjustedAmounts[Field.OUTPUT], 4)} ${outputAmount?.currency?.symbol}` ?? '-'
+              : `${formatAmount(slippageAdjustedAmounts[Field.INPUT], 4)} ${inputAmount?.currency?.symbol}` ?? '-'}
           </Text>
         </RowFixed>
       </RowBetween>
@@ -73,6 +71,12 @@ export const TradeSummary = memo(function TradeSummary({
                       {t('AMM')}
                     </Text>
                     {`: ${t('The difference between the market price and estimated price due to trade size.')}`}
+                  </Text>
+                  <Text mt="10px">
+                    <Text bold display="inline-block">
+                      {t('MM')}
+                    </Text>
+                    {`: ${t('No slippage against quote from market maker')}`}
                   </Text>
                 </>
               }
@@ -108,10 +112,23 @@ export const TradeSummary = memo(function TradeSummary({
                       style={{ display: 'inline' }}
                       ml="4px"
                       external
-                      href="https://docs.iguanadex.com/products/DEX/faq#what-will-be-the-trading-fee-breakdown-for-v3-exchange"
+                      href={
+                        isMM
+                          ? 'https://docs.pancakeswap.finance/products/pancakeswap-exchange/market-maker-integration#fees'
+                          : 'https://docs.pancakeswap.finance/products/pancakeswap-exchange/faq#what-will-be-the-trading-fee-breakdown-for-v3-exchange'
+                      }
                     >
                       {t('Fee Breakdown and Tokenomics')}
                     </Link>
+                  </Text>
+                  <Text mt="10px">
+                    <Text bold display="inline-block">
+                      {t('MM')}
+                    </Text>
+                    :{' '}
+                    {t(
+                      'PancakeSwap does not charge any fees for trades. However, the market makers charge an implied fee of 0.05% - 0.25% (non-stablecoin) / 0.01% (stablecoin) factored into the quotes provided by them.',
+                    )}
                   </Text>
                 </>
               }
@@ -119,7 +136,7 @@ export const TradeSummary = memo(function TradeSummary({
               placement="top"
             />
           </RowFixed>
-          <Text fontSize="14px">{`${formatAmount(realizedLPFee, 4)} ${inputAmount.currency.symbol}`}</Text>
+          <Text fontSize="14px">{`${formatAmount(realizedLPFee, 4)} ${inputAmount?.currency?.symbol}`}</Text>
         </RowBetween>
       )}
     </AutoColumn>
@@ -131,11 +148,8 @@ export interface AdvancedSwapDetailsProps {
   pairs?: Pair[]
   path?: Currency[]
   priceImpactWithoutFee?: Percent
-  realizedLPFee?: CurrencyAmount<Currency>
-  slippageAdjustedAmounts?: {
-    INPUT?: CurrencyAmount<Currency>
-    OUTPUT?: CurrencyAmount<Currency>
-  }
+  realizedLPFee?: CurrencyAmount<Currency> | null
+  slippageAdjustedAmounts: SlippageAdjustedAmounts
   inputAmount?: CurrencyAmount<Currency>
   outputAmount?: CurrencyAmount<Currency>
   tradeType?: TradeType
@@ -165,7 +179,7 @@ export const AdvancedSwapDetails = memo(function AdvancedSwapDetails({
             inputAmount={inputAmount}
             outputAmount={outputAmount}
             tradeType={tradeType}
-            slippageAdjustedAmounts={slippageAdjustedAmounts}
+            slippageAdjustedAmounts={slippageAdjustedAmounts ?? {}}
             priceImpactWithoutFee={priceImpactWithoutFee}
             realizedLPFee={realizedLPFee}
             hasStablePair={hasStablePair}
@@ -176,15 +190,17 @@ export const AdvancedSwapDetails = memo(function AdvancedSwapDetails({
               <RowBetween style={{ padding: '0 24px' }}>
                 <span style={{ display: 'flex', alignItems: 'center' }}>
                   <Text fontSize="14px" color="textSubtle">
-                    {t('Route')}
+                    {t('MM Route')}
                   </Text>
                   <QuestionHelper
-                    text={t('Routing through these tokens resulted in the best price for your trade.')}
+                    text={t(
+                      'The Market Maker (MM) route is automatically selected for your trade to achieve the best price for your trade.',
+                    )}
                     ml="4px"
                     placement="top"
                   />
                 </span>
-                <SwapRoute path={path} />
+                {path ? <SwapRoute path={path} /> : null}
                 <SearchIcon style={{ cursor: 'pointer' }} onClick={() => setIsModalOpen(true)} />
                 <ModalV2 closeOnOverlayClick isOpen={isModalOpen} onDismiss={() => setIsModalOpen(false)}>
                   <Modal
@@ -204,10 +220,10 @@ export const AdvancedSwapDetails = memo(function AdvancedSwapDetails({
                   >
                     <RouterViewer
                       isMM={isMM}
-                      inputCurrency={inputAmount.currency}
+                      inputCurrency={inputAmount?.currency}
                       pairs={pairs}
                       path={path}
-                      outputCurrency={outputAmount.currency}
+                      outputCurrency={outputAmount?.currency}
                     />
                     <Flex mt="3em" width="100%" justifyContent="center">
                       <RoutingSettingsButton />

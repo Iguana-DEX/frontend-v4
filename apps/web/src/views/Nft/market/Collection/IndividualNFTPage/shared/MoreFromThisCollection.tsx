@@ -1,18 +1,18 @@
-import { useState, useMemo, ReactNode } from 'react'
-import shuffle from 'lodash/shuffle'
-import styled from 'styled-components'
-import { Swiper, SwiperSlide } from 'swiper/react'
-import 'swiper/css'
-import type SwiperCore from 'swiper'
-import { ArrowBackIcon, ArrowForwardIcon, Box, IconButton, Text, Flex, useMatchBreakpoints } from '@pancakeswap/uikit'
-import { isAddress } from 'utils'
-import useSWRImmutable from 'swr/immutable'
-import { Address } from 'wagmi'
-import { getNftsFromCollectionApi, getMarketDataForTokenIds } from 'state/nftMarket/helpers'
-import { NftToken } from 'state/nftMarket/types'
+import { ArrowBackIcon, ArrowForwardIcon, Box, Flex, IconButton, Text, useMatchBreakpoints } from '@pancakeswap/uikit'
+import { useQuery } from '@tanstack/react-query'
 import Trans from 'components/Trans'
-import { pancakeBunniesAddress } from '../../../constants'
+import shuffle from 'lodash/shuffle'
+import { ReactNode, useMemo, useState } from 'react'
+import { getMarketDataForTokenIds, getNftsFromCollectionApi } from 'state/nftMarket/helpers'
+import { NftToken } from 'state/nftMarket/types'
+import { styled } from 'styled-components'
+import type SwiperCore from 'swiper'
+import 'swiper/css'
+import { Swiper, SwiperSlide } from 'swiper/react'
+import { safeGetAddress } from 'utils'
+import { Address } from 'wagmi'
 import { CollectibleLinkCard } from '../../../components/CollectibleCard'
+import { pancakeBunniesAddress } from '../../../constants'
 import useAllPancakeBunnyNfts from '../../../hooks/useAllPancakeBunnyNfts'
 
 const INITIAL_SLIDE = 4
@@ -35,7 +35,7 @@ const StyledSwiper = styled.div`
 `
 
 interface MoreFromThisCollectionProps {
-  collectionAddress: string
+  collectionAddress?: string
   currentTokenName?: string
   title?: ReactNode
 }
@@ -45,28 +45,28 @@ const MoreFromThisCollection: React.FC<React.PropsWithChildren<MoreFromThisColle
   currentTokenName = '',
   title = <Trans>More from this collection</Trans>,
 }) => {
-  const [swiperRef, setSwiperRef] = useState<SwiperCore>(null)
+  const [swiperRef, setSwiperRef] = useState<SwiperCore | null>(null)
   const [activeIndex, setActiveIndex] = useState(1)
   const { isMobile, isMd, isLg } = useMatchBreakpoints()
   const allPancakeBunnyNfts = useAllPancakeBunnyNfts(collectionAddress)
 
-  const isPBCollection = isAddress(collectionAddress) === pancakeBunniesAddress
-  const checkSummedCollectionAddress = isAddress(collectionAddress) || collectionAddress
+  const isPBCollection = safeGetAddress(collectionAddress) === safeGetAddress(pancakeBunniesAddress)
+  const checkSummedCollectionAddress = safeGetAddress(collectionAddress) || collectionAddress
 
-  const { data: collectionNfts } = useSWRImmutable<NftToken[]>(
-    !isPBCollection && checkSummedCollectionAddress
-      ? ['nft', 'moreFromCollection', checkSummedCollectionAddress]
-      : null,
-    async () => {
+  const { data: collectionNfts } = useQuery({
+    queryKey: ['nft', 'moreFromCollection', checkSummedCollectionAddress],
+    queryFn: async () => {
       try {
-        const nfts = await getNftsFromCollectionApi(collectionAddress, 100, 1)
+        const nfts = await getNftsFromCollectionApi(collectionAddress!, 100, 1)
 
         if (!nfts?.data) {
           return []
         }
 
-        const tokenIds = Object.values(nfts.data).map((nft) => nft.tokenId)
-        const nftsMarket = await getMarketDataForTokenIds(collectionAddress, tokenIds)
+        const tokenIds = Object.values(nfts.data)
+          .map((nft) => nft.tokenId)
+          .filter(Boolean) as string[]
+        const nftsMarket = await getMarketDataForTokenIds(collectionAddress!, tokenIds)
 
         return tokenIds.map((id) => {
           const apiMetadata = nfts.data[id]
@@ -88,62 +88,72 @@ const MoreFromThisCollection: React.FC<React.PropsWithChildren<MoreFromThisColle
         return []
       }
     },
-  )
+    enabled: Boolean(!isPBCollection && checkSummedCollectionAddress),
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
+  })
 
-  let nftsToShow = useMemo(() => {
-    return shuffle(
+  const nftsToShow = useMemo(() => {
+    let shuffled = shuffle(
       allPancakeBunnyNfts
         ? allPancakeBunnyNfts.filter((nft) => nft.name !== currentTokenName)
-        : collectionNfts?.filter((nft) => nft.name !== currentTokenName && nft.marketData?.isTradable),
-    )
-  }, [allPancakeBunnyNfts, collectionNfts, currentTokenName])
+        : collectionNfts
+        ? collectionNfts.filter((nft) => nft.name !== currentTokenName && nft.marketData?.isTradable)
+        : [],
+    ) as NftToken[]
+
+    if (isPBCollection) {
+      // PancakeBunnies should display 1 card per bunny id
+      shuffled = shuffled.reduce((nftArray, current) => {
+        const bunnyId = current?.attributes?.[0].value
+        if (!nftArray.find((nft) => nft?.attributes?.[0].value === bunnyId)) {
+          nftArray.push(current)
+        }
+        return nftArray
+      }, [] as NftToken[])
+    }
+    return shuffled.slice(0, 12)
+  }, [allPancakeBunnyNfts, collectionNfts, currentTokenName, isPBCollection])
+
+  const [slidesPerView, maxPageIndex] = useMemo(() => {
+    let slides
+    let extraPages = 1
+    if (isMd) {
+      slides = 2
+    } else if (isLg) {
+      slides = 3
+    } else {
+      slides = 4
+    }
+    if (nftsToShow.length % slides === 0) {
+      extraPages = 0
+    }
+    const maxPage = Math.max(Math.floor(nftsToShow.length / slides) + extraPages, 1)
+    return [slides, maxPage]
+  }, [isMd, isLg, nftsToShow?.length])
 
   if (!nftsToShow || nftsToShow.length === 0) {
     return null
   }
 
-  let slidesPerView = 4
-  let maxPageIndex = 3
-
-  if (isMd) {
-    slidesPerView = 2
-    maxPageIndex = 6
-  }
-
-  if (isLg) {
-    slidesPerView = 3
-    maxPageIndex = 4
-  }
-
-  if (isPBCollection) {
-    // PancakeBunnies should display 1 card per bunny id
-    nftsToShow = nftsToShow.reduce((nftArray, current) => {
-      const bunnyId = current.attributes[0].value
-      if (!nftArray.find((nft) => nft.attributes[0].value === bunnyId)) {
-        nftArray.push(current)
-      }
-      return nftArray
-    }, [])
-  }
-  nftsToShow = nftsToShow.slice(0, 12)
-
   const nextSlide = () => {
     if (activeIndex < maxPageIndex - 1) {
       setActiveIndex((index) => index + 1)
-      swiperRef.slideNext()
+      swiperRef?.slideNext()
     }
   }
 
   const previousSlide = () => {
     if (activeIndex > 0) {
       setActiveIndex((index) => index - 1)
-      swiperRef.slidePrev()
+      swiperRef?.slidePrev()
     }
   }
 
   const goToSlide = (index: number) => {
     setActiveIndex(index / slidesPerView)
-    swiperRef.slideTo(index)
+    swiperRef?.slideTo(index)
   }
 
   const updateActiveIndex = ({ activeIndex: newActiveIndex }) => {
@@ -181,7 +191,13 @@ const MoreFromThisCollection: React.FC<React.PropsWithChildren<MoreFromThisColle
               <SwiperSlide key={nft.tokenId}>
                 <CollectibleLinkCard
                   nft={nft}
-                  currentAskPrice={isPBCollection ? null : parseFloat(nft?.marketData?.currentAskPrice)}
+                  currentAskPrice={
+                    isPBCollection
+                      ? undefined
+                      : nft?.marketData?.currentAskPrice
+                      ? parseFloat(nft?.marketData?.currentAskPrice)
+                      : undefined
+                  }
                 />
               </SwiperSlide>
             ))}

@@ -1,22 +1,22 @@
-import { ChangeEvent, useEffect, useRef, useState } from 'react'
-import orderBy from 'lodash/orderBy'
+import { useTranslation } from '@pancakeswap/localization'
 import {
+  ArrowDownIcon,
+  ArrowUpIcon,
   Box,
-  Text,
+  CloseIcon,
   Flex,
   InlineMenu,
-  CloseIcon,
+  Input,
   InputGroup,
   SearchIcon,
-  Input,
-  ArrowUpIcon,
-  ArrowDownIcon,
+  Text,
 } from '@pancakeswap/uikit'
-import { Collection, MarketEvent } from 'state/nftMarket/types'
+import orderBy from 'lodash/orderBy'
+import { ChangeEvent, useEffect, useRef, useState } from 'react'
 import { useGetCollections } from 'state/nftMarket/hooks'
 import { useNftStorage } from 'state/nftMarket/storage'
-import { useTranslation } from '@pancakeswap/localization'
-import { isAddress } from 'utils'
+import { Collection, MarketEvent } from 'state/nftMarket/types'
+import { safeGetAddress } from 'utils'
 import { CloseButton, FilterButton, ListOrderState, SearchWrapper, TriggerButton } from '../ListFilter/styles'
 import { CollectionItemRow } from './styles'
 
@@ -32,8 +32,8 @@ export const ListCollectionFilter: React.FC<React.PropsWithChildren<ListCollecti
   const [query, setQuery] = useState('')
   const [orderState, setOrderState] = useState<ListOrderState>({ orderKey: 'label', orderDir: 'asc' })
   const { data: collections } = useGetCollections()
-  const wrapperRef = useRef(null)
-  const menuRef = useRef(null)
+  const wrapperRef = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
   const { addActivityCollectionFilters, removeActivityCollectionFilters, removeAllActivityCollectionFilters } =
     useNftStorage()
 
@@ -46,7 +46,7 @@ export const ListCollectionFilter: React.FC<React.PropsWithChildren<ListCollecti
       : Object.values(collections)
   ).map((item) => {
     const isItemSelected = nftActivityFilters.collectionFilters.some((collectionAddress) => {
-      return isAddress(item.address) === isAddress(collectionAddress)
+      return safeGetAddress(item.address) === safeGetAddress(collectionAddress)
     })
     return { ...item, isSelected: isItemSelected }
   })
@@ -93,8 +93,8 @@ export const ListCollectionFilter: React.FC<React.PropsWithChildren<ListCollecti
       if (
         wrapperRef.current &&
         menuRef.current &&
-        !menuRef.current.contains(target) &&
-        !wrapperRef.current.contains(target)
+        !menuRef.current.contains(target as Node) &&
+        !wrapperRef.current.contains(target as Node)
       ) {
         setIsOpen(false)
       }

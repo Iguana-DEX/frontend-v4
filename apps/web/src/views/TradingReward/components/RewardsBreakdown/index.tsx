@@ -1,23 +1,24 @@
-import { useEffect, useState, useMemo, useCallback } from 'react'
-import { timeFormat } from 'views/TradingReward/utils/timeFormat'
+import { useTranslation } from '@pancakeswap/localization'
 import {
-  Card,
-  Text,
-  Flex,
-  PaginationButton,
-  useMatchBreakpoints,
+  Box,
   ButtonMenu,
   ButtonMenuItem,
-  Box,
+  Card,
+  Flex,
+  PaginationButton,
+  Text,
+  useMatchBreakpoints,
 } from '@pancakeswap/uikit'
-import { useTranslation } from '@pancakeswap/localization'
-import { UserCampaignInfoDetail } from 'views/TradingReward/hooks/useAllUserCampaignInfo'
-import { AllTradingRewardPairDetail } from 'views/TradingReward/hooks/useAllTradingRewardPair'
-import useRewardBreakdown, { RewardBreakdownDetail } from 'views/TradingReward/hooks/useRewardBreakdown'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import DesktopView from 'views/TradingReward/components/RewardsBreakdown/DesktopView'
 import MobileView from 'views/TradingReward/components/RewardsBreakdown/MobileView'
+import { AllTradingRewardPairDetail, RewardType } from 'views/TradingReward/hooks/useAllTradingRewardPair'
+import { UserCampaignInfoDetail } from 'views/TradingReward/hooks/useAllUserCampaignInfo'
+import useRewardBreakdown, { RewardBreakdownDetail } from 'views/TradingReward/hooks/useRewardBreakdown'
+import { timeFormat } from 'views/TradingReward/utils/timeFormat'
 
 interface RewardsBreakdownProps {
+  type: RewardType
   allUserCampaignInfo: UserCampaignInfoDetail[]
   allTradingRewardPairData: AllTradingRewardPairDetail
   campaignPairs: { [campaignId in string]: { [chainId in string]: Array<string> } }
@@ -33,6 +34,7 @@ const initList: RewardBreakdownDetail = {
 }
 
 const RewardsBreakdown: React.FC<React.PropsWithChildren<RewardsBreakdownProps>> = ({
+  type,
   allUserCampaignInfo,
   allTradingRewardPairData,
   campaignPairs,
@@ -75,25 +77,28 @@ const RewardsBreakdown: React.FC<React.PropsWithChildren<RewardsBreakdownProps>>
   }, [currentPage, sortData])
 
   useEffect(() => {
-    const getActivitySlice = () => {
-      if (currentList?.campaignId) {
-        if (index === 0) {
-          setCurrentPage(1)
-          setList(currentList)
-        } else {
-          setCurrentPage(2)
-          sliceData()
-        }
-      } else {
-        setIndex(1)
-        sliceData()
-      }
-    }
-
     if (sortData.length > 0) {
-      getActivitySlice()
+      sliceData()
     }
-  }, [index, currentPage, sortData, currentList, sliceData])
+  }, [sliceData, sortData])
+
+  const handlePagination = (page: number) => {
+    if (!isFetching) {
+      setCurrentPage(currentList ? page + 1 : page)
+    }
+  }
+
+  const handleIndex = (pageIndex: number) => {
+    if (pageIndex === 0) {
+      setCurrentPage(1)
+      if (currentList) {
+        setList(currentList)
+      }
+    } else {
+      setCurrentPage(2)
+    }
+    setIndex(pageIndex)
+  }
 
   return (
     <Flex
@@ -108,7 +113,7 @@ const RewardsBreakdown: React.FC<React.PropsWithChildren<RewardsBreakdownProps>>
       </Text>
       {currentList && (
         <Box width="350px" margin="auto auto 16px auto">
-          <ButtonMenu activeIndex={index} onItemClick={setIndex} fullWidth scale="sm" variant="subtle">
+          <ButtonMenu activeIndex={index} onItemClick={handleIndex} fullWidth scale="sm" variant="subtle">
             <ButtonMenuItem>{t('Current Round')}</ButtonMenuItem>
             <ButtonMenuItem>{t('Previous Rounds')}</ButtonMenuItem>
           </ButtonMenu>
@@ -123,21 +128,21 @@ const RewardsBreakdown: React.FC<React.PropsWithChildren<RewardsBreakdownProps>>
           })}
         </Text>
       )}
-      {index === 1 && list?.pairs?.length && (
+      {(index === 1 || !currentList) && data.length > 1 ? (
         <Box mb="-16px">
           <PaginationButton
             showMaxPageText
             currentPage={currentList ? currentPage - 1 : currentPage}
             maxPage={currentList ? maxPage - 1 : maxPage}
-            setCurrentPage={setCurrentPage}
+            setCurrentPage={handlePagination}
           />
         </Box>
-      )}
+      ) : null}
       <Card mt="40px">
         {isDesktop ? (
-          <DesktopView list={list} isFetching={isFetching} />
+          <DesktopView type={type} list={list} isFetching={isFetching} />
         ) : (
-          <MobileView list={list} isFetching={isFetching} />
+          <MobileView type={type} list={list} isFetching={isFetching} />
         )}
       </Card>
     </Flex>

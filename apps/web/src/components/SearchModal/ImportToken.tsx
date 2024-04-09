@@ -1,41 +1,39 @@
-import { useState } from 'react'
-import { Token, Currency, ChainId } from '@pancakeswap/sdk'
+import { ChainId } from '@pancakeswap/chains'
+import { useTranslation } from '@pancakeswap/localization'
+import { Currency, Token } from '@pancakeswap/sdk'
+import { WrappedTokenInfo } from '@pancakeswap/token-lists'
 import {
+  AutoColumn,
+  BscScanIcon,
   Button,
-  Text,
+  Checkbox,
   ErrorIcon,
   Flex,
-  Message,
-  Checkbox,
-  Link,
-  Tag,
   Grid,
-  BscScanIcon,
-  ListLogo,
-  useTooltip,
   HelpIcon,
-  AutoColumn,
+  Link,
+  Message,
+  Tag,
+  Text,
+  useTooltip,
 } from '@pancakeswap/uikit'
+import truncateHash from '@pancakeswap/utils/truncateHash'
+import { ListLogo } from '@pancakeswap/widgets-internal'
+import AccessRisk, { TOKEN_RISK } from 'components/AccessRisk'
+import { ACCESS_TOKEN_SUPPORT_CHAIN_IDS } from 'components/AccessRisk/config/supportedChains'
+import { fetchRiskToken } from 'components/AccessRisk/utils/fetchTokenRisk'
+import { useActiveChainId } from 'hooks/useActiveChainId'
+import { useState } from 'react'
+import { useCombinedInactiveList } from 'state/lists/hooks'
 import { useAddUserToken } from 'state/user/hooks'
 import { getBlockExploreLink, getBlockExploreName } from 'utils'
-import useSWRImmutable from 'swr/immutable'
-import truncateHash from '@pancakeswap/utils/truncateHash'
-import { useCombinedInactiveList } from 'state/lists/hooks'
-import { useTranslation } from '@pancakeswap/localization'
 import { chains } from 'utils/wagmi'
-import { useActiveChainId } from 'hooks/useActiveChainId'
-import { WrappedTokenInfo } from '@pancakeswap/token-lists'
-import AccessRisk from 'views/Swap/components/AccessRisk'
-import { SUPPORT_ONLY_BSC } from 'config/constants/supportChains'
-import { fetchRiskToken, TOKEN_RISK } from 'views/Swap/hooks/fetchTokenRisk'
+import { useQuery } from '@tanstack/react-query'
 
 interface ImportProps {
   tokens: Token[]
   handleCurrencySelect?: (currency: Currency) => void
 }
-
-const getStandard = (chainId: ChainId) =>
-  chainId !== ChainId.BSC && chainId !== ChainId.BSC_TESTNET ? 'ERC20' : 'BEP20'
 
 function ImportToken({ tokens, handleCurrencySelect }: ImportProps) {
   const { chainId } = useActiveChainId()
@@ -49,9 +47,18 @@ function ImportToken({ tokens, handleCurrencySelect }: ImportProps) {
   // use for showing import source on inactive tokens
   const inactiveTokenList = useCombinedInactiveList()
 
-  const { data: hasRiskToken } = useSWRImmutable(tokens && ['has-risks', tokens], async () => {
-    const result = await Promise.all(tokens.map((token) => fetchRiskToken(token.address, token.chainId)))
-    return result.some((r) => r.riskLevel > TOKEN_RISK.MEDIUM)
+  const { data: hasRiskToken } = useQuery({
+    queryKey: ['has-risks', tokens],
+
+    queryFn: async () => {
+      const result = await Promise.all(tokens.map((token) => fetchRiskToken(token.address, token.chainId)))
+      return result.some((r) => r.riskLevel >= TOKEN_RISK.MEDIUM)
+    },
+
+    enabled: Boolean(tokens),
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
   })
 
   const { targetRef, tooltip, tooltipVisible } = useTooltip(
@@ -63,18 +70,14 @@ function ImportToken({ tokens, handleCurrencySelect }: ImportProps) {
       <Message variant="warning">
         <Text>
           {t(
-            'Anyone can create a token with any name, including creating fake versions of existing tokens or ones that claim to represent projects without tokens.',
+            'Anyone can create tokens on %network% with any name, including creating fake versions of existing tokens and tokens that claim to represent projects that do not have a token.',
             {
-              standard: getStandard(chainId),
               network: chains.find((c) => c.id === chainId)?.name,
             },
           )}
           <br />
           <br />
-          <b>{t('If you purchase an arbitrary token, you may be unable to sell it back.')}</b>
-          <br />
-          <br />
-          <b>{t('Please be extra careful during this period as altcoin trading volumes are on the surge recently.')}</b>
+          <b>{t('If you purchase a fraudulent token, you may be exposed to permanent loss of funds.')}</b>
         </Text>
       </Message>
 
@@ -82,7 +85,12 @@ function ImportToken({ tokens, handleCurrencySelect }: ImportProps) {
         const list = token.chainId && inactiveTokenList?.[token.chainId]?.[token.address]?.list
         const address = token.address ? `${truncateHash(token.address)}` : null
         return (
-          <Flex key={token.address} alignItems="center" justifyContent="space-between">
+          <Flex
+            flexDirection={['column', 'column', 'row']}
+            key={token.address}
+            alignItems={['left', 'left', 'center']}
+            justifyContent="space-between"
+          >
             <Grid gridTemplateRows="1fr 1fr 1fr 1fr" gridGap="4px">
               {list !== undefined ? (
                 <Tag
@@ -115,7 +123,11 @@ function ImportToken({ tokens, handleCurrencySelect }: ImportProps) {
                 </>
               )}
             </Grid>
-            {token && SUPPORT_ONLY_BSC.includes(token.chainId) && <AccessRisk token={token} />}
+            {token && chainId && ACCESS_TOKEN_SUPPORT_CHAIN_IDS.includes(chainId) && (
+              <Flex mt={['20px', '20px', '0']}>
+                <AccessRisk token={token} />
+              </Flex>
+            )}
           </Flex>
         )
       })}

@@ -1,6 +1,6 @@
-import { vi } from "vitest";
-import { renderWithProvider } from "../../testHelpers";
+import { expect, it, vi } from "vitest";
 import Input from "../../components/Input/Input";
+import { renderWithProvider } from "../../testHelpers";
 
 const handleChange = vi.fn();
 
@@ -22,18 +22,6 @@ it("renders correctly", () => {
       border: 1px solid var(--colors-inputSecondary);
     }
 
-    .c0::-webkit-input-placeholder {
-      color: var(--colors-textSubtle);
-    }
-
-    .c0::-moz-placeholder {
-      color: var(--colors-textSubtle);
-    }
-
-    .c0:-ms-input-placeholder {
-      color: var(--colors-textSubtle);
-    }
-
     .c0::placeholder {
       color: var(--colors-textSubtle);
     }
@@ -51,7 +39,6 @@ it("renders correctly", () => {
 
     <input
         class="c0"
-        scale="md"
         type="text"
         value="input"
       />

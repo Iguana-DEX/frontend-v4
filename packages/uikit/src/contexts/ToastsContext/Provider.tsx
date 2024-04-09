@@ -1,71 +1,191 @@
-import { createContext, useCallback, useState, useMemo } from "react";
-import kebabCase from "lodash/kebabCase";
-import { ToastData, types as toastTypes } from "../../components/Toast";
+import { ReactElement, createContext, useCallback, useEffect, useMemo } from "react";
+import { ExternalToast, toast as sonnerToast, ToastT } from "sonner";
+import { useIsWindowVisible } from "@pancakeswap/hooks";
+import { Toast, ToastData, types } from "../../components/Toast";
 import { ToastContextApi } from "./types";
 
 export const ToastsContext = createContext<ToastContextApi | undefined>(undefined);
 
+const toasts = new Map<string | number, { component: ReactElement; externalData?: ExternalToast }>();
+
+function checkIsWindowVisible() {
+  if (!(typeof document !== "undefined" && "visibilityState" in document)) {
+    return true;
+  }
+  return document.visibilityState === "visible";
+}
+
 export const ToastsProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
-  const [toasts, setToasts] = useState<ToastContextApi["toasts"]>([]);
+  const isWindowVisible = useIsWindowVisible();
 
-  const toast = useCallback(
-    ({ title, description, type }: Omit<ToastData, "id">) => {
-      setToasts((prevToasts) => {
-        const id = kebabCase(title);
+  const deleteCallback = useCallback((toast: ToastT) => {
+    toasts.delete(toast.id);
+  }, []);
 
-        // Remove any existing toasts with the same id
-        const currentToasts = prevToasts.filter((prevToast) => prevToast.id !== id);
-
-        return [
-          {
-            id,
-            title,
-            description,
-            type,
-          },
-          ...currentToasts,
-        ];
+  useEffect(() => {
+    if (isWindowVisible) {
+      toasts.forEach((data, key) => {
+        if (data.externalData?.duration === Infinity) {
+          sonnerToast.custom(() => data.component, {
+            ...data.externalData,
+            id: key,
+            duration: 6000,
+            onDismiss: deleteCallback,
+            onAutoClose: deleteCallback,
+          });
+        }
       });
-    },
-    [setToasts]
-  );
+    }
+  }, [isWindowVisible, deleteCallback]);
 
   const toastError = useCallback(
-    (title: ToastData["title"], description?: ToastData["description"]) => {
-      return toast({ title, description, type: toastTypes.DANGER });
+    (title: ToastData["title"], description?: ToastData["description"], externalData?: ExternalToast) => {
+      const toastExternalData = {
+        ...externalData,
+        ...(!checkIsWindowVisible() && {
+          duration: Infinity,
+        }),
+        onDismiss: deleteCallback,
+        onAutoClose: deleteCallback,
+      };
+      return sonnerToast.custom((t) => {
+        const component = (
+          <Toast
+            toast={{
+              id: t,
+              title,
+              description,
+              type: types.DANGER,
+            }}
+            onRemove={() => {
+              toasts.delete(t);
+              sonnerToast.dismiss(t);
+            }}
+          >
+            {description}
+          </Toast>
+        );
+        toasts.set(t, { component, externalData: toastExternalData });
+        return component;
+      }, toastExternalData);
     },
-    [toast]
+    [deleteCallback]
   );
 
   const toastInfo = useCallback(
-    (title: ToastData["title"], description?: ToastData["description"]) => {
-      return toast({ title, description, type: toastTypes.INFO });
+    (title: ToastData["title"], description?: ToastData["description"], externalData?: ExternalToast) => {
+      const toastExternalData = {
+        ...externalData,
+        ...(!checkIsWindowVisible() && {
+          duration: Infinity,
+        }),
+        onDismiss: deleteCallback,
+        onAutoClose: deleteCallback,
+      };
+      return sonnerToast.custom((t) => {
+        const component = (
+          <Toast
+            toast={{
+              id: t,
+              title,
+              description,
+              type: types.INFO,
+            }}
+            onRemove={() => {
+              toasts.delete(t);
+              sonnerToast.dismiss(t);
+            }}
+          >
+            {description}
+          </Toast>
+        );
+        toasts.set(t, { component, externalData: toastExternalData });
+        return component;
+      }, toastExternalData);
     },
-    [toast]
+    [deleteCallback]
   );
 
   const toastSuccess = useCallback(
-    (title: ToastData["title"], description?: ToastData["description"]) => {
-      return toast({ title, description, type: toastTypes.SUCCESS });
+    (title: ToastData["title"], description?: ToastData["description"], externalData?: ExternalToast) => {
+      const toastExternalData = {
+        ...externalData,
+        ...(!checkIsWindowVisible() && {
+          duration: Infinity,
+        }),
+        onDismiss: deleteCallback,
+        onAutoClose: deleteCallback,
+      };
+      return sonnerToast.custom((t) => {
+        const component = (
+          <Toast
+            toast={{
+              id: t,
+              title,
+              description,
+              type: types.SUCCESS,
+            }}
+            onRemove={() => {
+              toasts.delete(t);
+              sonnerToast.dismiss(t);
+            }}
+          >
+            {description}
+          </Toast>
+        );
+        toasts.set(t, { component, externalData: toastExternalData });
+        return component;
+      }, toastExternalData);
     },
-    [toast]
+    [deleteCallback]
   );
 
   const toastWarning = useCallback(
-    (title: ToastData["title"], description?: ToastData["description"]) => {
-      return toast({ title, description, type: toastTypes.WARNING });
+    (title: ToastData["title"], description?: ToastData["description"], externalData?: ExternalToast) => {
+      const toastExternalData = {
+        ...externalData,
+        ...(!checkIsWindowVisible() && {
+          duration: Infinity,
+        }),
+        onDismiss: deleteCallback,
+        onAutoClose: deleteCallback,
+      };
+      return sonnerToast.custom((t) => {
+        const component = (
+          <Toast
+            toast={{
+              id: t,
+              title,
+              description,
+              type: types.WARNING,
+            }}
+            onRemove={() => {
+              toasts.delete(t);
+              sonnerToast.dismiss(t);
+            }}
+          >
+            {description}
+          </Toast>
+        );
+        toasts.set(t, { component, externalData: toastExternalData });
+        return component;
+      }, toastExternalData);
     },
-    [toast]
+    [deleteCallback]
   );
 
-  const clear = useCallback(() => setToasts([]), []);
-  const remove = useCallback((id: string) => {
-    setToasts((prevToasts) => prevToasts.filter((prevToast) => prevToast.id !== id));
+  const clear = useCallback(() => {
+    toasts.clear();
+    sonnerToast.dismiss();
+  }, []);
+  const remove = useCallback((id: string | number) => {
+    toasts.delete(id);
+    sonnerToast.dismiss(id);
   }, []);
 
   const providerValue = useMemo(() => {
-    return { toasts, clear, remove, toastError, toastInfo, toastSuccess, toastWarning };
-  }, [toasts, clear, remove, toastError, toastInfo, toastSuccess, toastWarning]);
+    return { clear, remove, toastError, toastInfo, toastSuccess, toastWarning };
+  }, [clear, remove, toastError, toastInfo, toastSuccess, toastWarning]);
 
   return <ToastsContext.Provider value={providerValue}>{children}</ToastsContext.Provider>;
 };

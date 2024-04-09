@@ -1,7 +1,7 @@
 // eslint-disable-next-line no-restricted-imports
 import { useTranslation } from '@pancakeswap/localization'
 import { TradeType } from '@pancakeswap/sdk'
-import { SmartRouterTrade } from '@pancakeswap/smart-router/evm'
+import { SmartRouterTrade } from '@pancakeswap/smart-router'
 import { FeeOptions } from '@pancakeswap/v3-sdk'
 import { ReactNode, useMemo } from 'react'
 
@@ -13,18 +13,22 @@ import { basisPointsToPercent } from 'utils/exchange'
 import useAccountActiveChain from 'hooks/useAccountActiveChain'
 import { SendTransactionResult } from 'wagmi/actions'
 import useSendSwapTransaction from './useSendSwapTransaction'
-import { useSwapCallArguments } from './useSwapCallArguments'
 
-export enum SwapCallbackState {
+import { useSwapCallArguments } from './useSwapCallArguments'
+import type { TWallchainMasterInput } from './useWallchain'
+
+enum SwapCallbackState {
   INVALID,
   LOADING,
   VALID,
+  REVERTED,
 }
 
 interface UseSwapCallbackReturns {
   state: SwapCallbackState
   callback?: () => Promise<SendTransactionResult>
   error?: ReactNode
+  reason?: string
 }
 interface UseSwapCallbackArgs {
   trade: SmartRouterTrade<TradeType> | undefined | null // trade to execute, required
@@ -33,6 +37,8 @@ interface UseSwapCallbackArgs {
   // signatureData: SignatureData | null | undefined
   deadline?: bigint
   feeOptions?: FeeOptions
+  onWallchainDrop: () => void
+  wallchainMasterInput?: TWallchainMasterInput
 }
 
 // returns a function that will execute a swap, if the parameters are all valid
@@ -42,7 +48,9 @@ export function useSwapCallback({
   // signatureData,
   deadline,
   feeOptions,
-}: UseSwapCallbackArgs): UseSwapCallbackReturns {
+}: // onWallchainDrop,
+// wallchainMasterInput,
+UseSwapCallbackArgs): UseSwapCallbackReturns {
   const { t } = useTranslation()
   const { account, chainId } = useAccountActiveChain()
   const [allowedSlippageRaw] = useUserSlippage() || [INITIAL_ALLOWED_SLIPPAGE]
@@ -58,7 +66,15 @@ export function useSwapCallback({
     deadline,
     feeOptions,
   )
-  const { callback } = useSendSwapTransaction(account, chainId, trade, swapCalls)
+  // const wallchainSwapCalls = useWallchainSwapCallArguments(
+  //   trade,
+  //   swapCalls,
+  //   account,
+  //   onWallchainDrop,
+  //   wallchainMasterInput,
+  // )
+
+  const { callback } = useSendSwapTransaction(account, chainId, trade, swapCalls, 'V3SmartSwap')
 
   return useMemo(() => {
     if (!trade || !account || !chainId || !callback) {

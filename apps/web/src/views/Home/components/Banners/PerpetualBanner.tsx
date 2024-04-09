@@ -13,7 +13,7 @@ import { useActiveChainId } from 'hooks/useActiveChainId'
 import { useUserNotUsCitizenAcknowledgement, IdType } from 'hooks/useUserIsUsCitizenAcknowledgement'
 import Image from 'next/legacy/image'
 import { memo, useMemo, useRef } from 'react'
-import styled, { useTheme } from 'styled-components'
+import { styled, useTheme } from 'styled-components'
 import { getPerpetualUrl } from 'utils/getPerpetualUrl'
 import { perpetualImage, perpetualMobileImage } from './images'
 import * as S from './Styled'
@@ -56,8 +56,8 @@ const PerpetualBanner = () => {
   const perpetualUrl = useMemo(() => getPerpetualUrl({ chainId, languageCode: code, isDark }), [chainId, code, isDark])
   const headerRef = useRef<HTMLDivElement>(null)
   const [onUSCitizenModalPresent] = useModal(
-    <USCitizenConfirmModal title={t('IguanaDEX Perpetuals')} id={IdType.PERPETUALS} />,
-    false,
+    <USCitizenConfirmModal title={t('PancakeSwap Perpetuals')} id={IdType.PERPETUALS} />,
+    true,
     false,
     'usCitizenConfirmModal',
   )
@@ -79,7 +79,7 @@ const PerpetualBanner = () => {
       <S.Inner>
         <S.LeftWrapper>
           <S.StyledSubheading ref={headerRef}>{t('Perpetual Futures')}</S.StyledSubheading>
-          <Header width={['160px', '160px', 'auto']}>{t('Up to 100× Leverage')}</Header>
+          <Header width={['160px', '160px', 'auto']}>{t('Up to 1001× Leverage')}</Header>
           <Link
             href={perpetualUrl}
             external

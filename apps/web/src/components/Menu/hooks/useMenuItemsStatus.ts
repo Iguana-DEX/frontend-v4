@@ -1,36 +1,21 @@
-import { ChainId } from '@pancakeswap/sdk'
-import { useActiveIfoWithBlocks } from 'hooks/useActiveIfoWithBlocks'
 import { useUserCakeLockStatus } from 'hooks/useUserCakeLockStatus'
 import { useMemo } from 'react'
-import { useChainCurrentBlock } from 'state/block/hooks'
-import { PotteryDepositStatus } from 'state/types'
-import { getStatus } from 'views/Ifos/hooks/helpers'
 import { useCompetitionStatus } from './useCompetitionStatus'
-import { usePotteryStatus } from './usePotteryStatus'
 import { useVotingStatus } from './useVotingStatus'
 import { useTradingRewardStatus } from './useTradingRewardStatus'
+import { useIfoStatus } from './useIfoStatus'
 
 export const useMenuItemsStatus = (): Record<string, string> => {
-  const currentBlock = useChainCurrentBlock(ChainId.BSC)
-  const activeIfo = useActiveIfoWithBlocks()
+  const ifoStatus = useIfoStatus()
   const competitionStatus = useCompetitionStatus()
-  const potteryStatus = usePotteryStatus()
   const votingStatus = useVotingStatus()
   const isUserLocked = useUserCakeLockStatus()
   const tradingRewardStatus = useTradingRewardStatus()
 
-  const ifoStatus =
-    currentBlock && activeIfo && activeIfo.endBlock > currentBlock
-      ? getStatus(Number(currentBlock), activeIfo.startBlock, activeIfo.endBlock)
-      : null
-
   return useMemo(() => {
     return {
-      '/competition': competitionStatus,
-      '/ifo': ifoStatus === 'coming_soon' ? 'soon' : ifoStatus,
-      ...(potteryStatus === PotteryDepositStatus.BEFORE_LOCK && {
-        '/pottery': 'pot_open',
-      }),
+      '/competition': competitionStatus || '',
+      '/ifo': ifoStatus || '',
       ...(votingStatus && {
         '/voting': votingStatus,
       }),
@@ -41,5 +26,5 @@ export const useMenuItemsStatus = (): Record<string, string> => {
         '/trading-reward': tradingRewardStatus,
       }),
     }
-  }, [competitionStatus, ifoStatus, potteryStatus, votingStatus, isUserLocked, tradingRewardStatus])
+  }, [competitionStatus, ifoStatus, votingStatus, isUserLocked, tradingRewardStatus])
 }

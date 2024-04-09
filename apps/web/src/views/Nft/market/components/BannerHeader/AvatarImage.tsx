@@ -1,4 +1,4 @@
-import styled from 'styled-components'
+import { styled } from 'styled-components'
 
 interface AvatarImageProps {
   src: string
@@ -16,6 +16,7 @@ const AvatarImage = styled.div.attrs<AvatarImageProps>(({ alt }) => ({
   position: relative;
   width: 96px;
   height: 96px;
+  background-color: ${({ theme }) => theme.colors.background};
   border: 4px ${({ borderColor }) => borderColor || '#f2ecf2'} solid;
 
   & > img {

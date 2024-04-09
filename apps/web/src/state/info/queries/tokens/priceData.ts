@@ -1,4 +1,4 @@
-import { getUnixTime } from 'date-fns'
+import dayjs from 'dayjs'
 import { gql } from 'graphql-request'
 import orderBy from 'lodash/orderBy'
 
@@ -7,10 +7,18 @@ import { getBlocksFromTimestamps } from 'utils/getBlocksFromTimestamps'
 import { multiQuery } from 'views/Info/utils/infoQueryHelpers'
 import {
   MultiChainName,
-  multiChainQueryMainToken,
   checkIsStableSwap,
   getMultiChainQueryEndPointWithStableSwap,
+  multiChainQueryMainToken,
 } from '../../constant'
+
+interface FormattedHistory {
+  time: number
+  open: number
+  close: number
+  high: number
+  low: number
+}
 
 const getPriceSubqueries = (chainName: MultiChainName, tokenAddress: string, blocks: any) =>
   blocks.map(
@@ -45,8 +53,8 @@ const fetchTokenPriceData = async (
   error: boolean
 }> => {
   // Construct timestamps to query against
-  const endTimestamp = getUnixTime(new Date())
-  const timestamps = []
+  const endTimestamp = dayjs().unix()
+  const timestamps: number[] = []
   let time = startTimestamp
   while (time <= endTimestamp) {
     timestamps.push(time)
@@ -126,7 +134,7 @@ const fetchTokenPriceData = async (
     // graphql-request does not guarantee same ordering of batched requests subqueries, hence sorting by timestamp from oldest to newest
     const sortedTokenPrices = orderBy(tokenPrices, (tokenPrice) => parseInt(tokenPrice.timestamp, 10))
 
-    const formattedHistory = []
+    const formattedHistory: FormattedHistory[] = []
 
     // for each timestamp, construct the open and close price
     for (let i = 0; i < sortedTokenPrices.length - 1; i++) {

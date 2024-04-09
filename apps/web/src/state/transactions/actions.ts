@@ -1,6 +1,6 @@
-import { createAction } from '@reduxjs/toolkit'
-import { ChainId } from '@pancakeswap/sdk'
 import { Order } from '@gelatonetwork/limit-orders-lib'
+import { ChainId } from '@pancakeswap/chains'
+import { createAction } from '@reduxjs/toolkit'
 
 export type TransactionType =
   | 'approve'
@@ -17,6 +17,8 @@ export type TransactionType =
   | 'limit-order-approval'
   | 'non-bsc-farm'
   | 'migrate-v3'
+  | 'bridge-icake'
+  | 'claim-liquid-staking'
 
 export interface SerializableTransactionReceipt {
   to: string
@@ -74,7 +76,7 @@ export const addTransaction = createAction<{
   approval?: { tokenAddress: string; spender: string }
   claim?: { recipient: string }
   summary?: string
-  translatableSummary?: { text: string; data?: Record<string, string | number> }
+  translatableSummary?: { text: string; data?: Record<string, string | number | undefined> }
   type?: TransactionType
   order?: Order
   nonBscFarm?: NonBscFarmTransactionType

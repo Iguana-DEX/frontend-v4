@@ -1,20 +1,13 @@
-import BigNumber from 'bignumber.js'
+import { DeserializedFarmsState, DeserializedFarmUserData, supportedChainIdV2 } from '@pancakeswap/farms'
+import { getFarmConfig } from '@pancakeswap/farms/constants'
+import { useQuery } from '@tanstack/react-query'
 import { SLOW_INTERVAL } from 'config/constants'
+import { useActiveChainId } from 'hooks/useActiveChainId'
 import { useMemo } from 'react'
 import { useSelector } from 'react-redux'
 import { useAppDispatch } from 'state'
-import useSWRImmutable from 'swr/immutable'
-import { useBCakeProxyContractAddress } from 'views/Farms/hooks/useBCakeProxyContractAddress'
 import { getMasterChefContract } from 'utils/contractHelpers'
-import { getFarmConfig } from '@pancakeswap/farms/constants'
-import {
-  DeserializedFarm,
-  DeserializedFarmsState,
-  DeserializedFarmUserData,
-  supportedChainIdV2,
-} from '@pancakeswap/farms'
-import { useActiveChainId } from 'hooks/useActiveChainId'
-import { useCakePriceAsBN } from 'hooks/useCakePriceAsBN'
+import { useBCakeProxyContractAddress } from 'views/Farms/hooks/useBCakeProxyContractAddress'
 
 import useAccountActiveChain from 'hooks/useAccountActiveChain'
 import { fetchFarmsPublicDataAsync, fetchFarmUserDataAsync } from '.'
@@ -27,25 +20,37 @@ import {
 
 export function useFarmsLength() {
   const { chainId } = useActiveChainId()
-  return useSWRImmutable(
-    chainId && supportedChainIdV2.includes(chainId) ? ['farmsLength', chainId] : null,
-    async () => {
+  return useQuery({
+    queryKey: ['farmsLength', chainId],
+
+    queryFn: async () => {
       const mc = getMasterChefContract(undefined, chainId)
       return Number(await mc.read.poolLength())
     },
-  )
+
+    enabled: Boolean(chainId && supportedChainIdV2.includes(chainId)),
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  })
 }
 
 export function useFarmV2PublicAPI() {
   const { chainId } = useActiveChainId()
-  return useSWRImmutable(
-    chainId && supportedChainIdV2.includes(chainId) ? ['farm-v2-pubic-api', chainId] : null,
-    async () => {
+  return useQuery({
+    queryKey: ['farm-v2-pubic-api', chainId],
+
+    queryFn: async () => {
       return fetch(`https://farms-api.pancakeswap.com/${chainId}`)
         .then((res) => res.json())
         .then((res) => res.data)
     },
-  )
+
+    enabled: Boolean(chainId && supportedChainIdV2.includes(chainId)),
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  })
 }
 
 export const usePollFarmsWithUserData = () => {
@@ -57,37 +62,53 @@ export const usePollFarmsWithUserData = () => {
     isLoading: isProxyContractLoading,
   } = useBCakeProxyContractAddress(account, chainId)
 
-  useSWRImmutable(
-    chainId && supportedChainIdV2.includes(chainId) ? ['publicFarmData', chainId] : null,
-    async () => {
+  useQuery({
+    queryKey: ['publicFarmData', chainId],
+
+    queryFn: async () => {
+      if (!chainId) {
+        throw new Error('ChainId is not defined')
+      }
       const farmsConfig = await getFarmConfig(chainId)
-      if (!farmsConfig) return
+      if (!farmsConfig) {
+        throw new Error('Failed to fetch farm config')
+      }
       const pids = farmsConfig.map((farmToFetch) => farmToFetch.pid)
 
       dispatch(fetchFarmsPublicDataAsync({ pids, chainId }))
+      return null
     },
-    {
-      refreshInterval: SLOW_INTERVAL,
-    },
-  )
+
+    enabled: Boolean(chainId && supportedChainIdV2.includes(chainId)),
+    refetchInterval: SLOW_INTERVAL,
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  })
 
   const name = proxyCreated
     ? ['farmsWithUserData', account, proxyAddress, chainId]
     : ['farmsWithUserData', account, chainId]
 
-  useSWRImmutable(
-    account && chainId && !isProxyContractLoading ? name : null,
-    async () => {
+  useQuery({
+    queryKey: name,
+
+    queryFn: async () => {
+      if (!account || !chainId) return
+
       const farmsConfig = await getFarmConfig(chainId)
+
       if (!farmsConfig) return
       const pids = farmsConfig.map((farmToFetch) => farmToFetch.pid)
       const params = proxyCreated ? { account, pids, proxyAddress, chainId } : { account, pids, chainId }
       dispatch(fetchFarmUserDataAsync(params))
     },
-    {
-      refreshInterval: SLOW_INTERVAL,
-    },
-  )
+    enabled: Boolean(account && chainId && !isProxyContractLoading),
+    refetchInterval: SLOW_INTERVAL,
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  })
 }
 
 export const useFarms = (): DeserializedFarmsState => {
@@ -95,7 +116,7 @@ export const useFarms = (): DeserializedFarmsState => {
   return useSelector(useMemo(() => farmSelector(chainId), [chainId]))
 }
 
-export const useFarmFromPid = (pid: number): DeserializedFarm => {
+export const useFarmFromPid = (pid?: number) => {
   const farmFromPid = useMemo(() => makeFarmFromPidSelector(pid), [pid])
   return useSelector(farmFromPid)
 }
@@ -108,8 +129,4 @@ export const useFarmUser = (pid): DeserializedFarmUserData => {
 export const useLpTokenPrice = (symbol: string) => {
   const lpTokenPriceFromLpSymbol = useMemo(() => makeLpTokenPriceFromLpSymbolSelector(symbol), [symbol])
   return useSelector(lpTokenPriceFromLpSymbol)
-}
-
-export const usePriceCakeUSD = (): BigNumber => {
-  return useCakePriceAsBN()
 }

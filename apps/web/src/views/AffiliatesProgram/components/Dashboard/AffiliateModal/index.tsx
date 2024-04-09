@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/router'
-import { ModalV2, Modal, Flex, Text, Checkbox, Button, Link } from '@pancakeswap/uikit'
-import { useAccount } from 'wagmi'
-import { useAtom } from 'jotai'
 import { useTranslation } from '@pancakeswap/localization'
-import useAuthAffiliateExist from 'views/AffiliatesProgram/hooks/useAuthAffiliateExist'
+import { Button, Checkbox, Flex, Link, Modal, ModalV2, Text } from '@pancakeswap/uikit'
+import { useAtom } from 'jotai'
+import { useRouter } from 'next/router'
+import { useCallback, useEffect, useState } from 'react'
 import atomWithStorageWithErrorCatch from 'utils/atomWithStorageWithErrorCatch'
+import useAuthAffiliateExist from 'views/AffiliatesProgram/hooks/useAuthAffiliateExist'
 import useUserExist from 'views/AffiliatesProgram/hooks/useUserExist'
+import { useAccount } from 'wagmi'
 
 const showAffiliateModalAtom = atomWithStorageWithErrorCatch('pcs::showAffiliateModalAtom', true)
 
@@ -24,19 +24,28 @@ const AffiliateModal = () => {
     const { ref, user, discount, perps } = router.query
     // Close when switch address
     setIsOpen(
-      (isAffiliateExist || isUserExist) && !isFetching && address && showModal && !ref && !user && !discount && !perps,
+      Boolean(
+        (isAffiliateExist || isUserExist) &&
+          !isFetching &&
+          address &&
+          showModal &&
+          !ref &&
+          !user &&
+          !discount &&
+          !perps,
+      ),
     )
   }, [address, isAffiliateExist, isUserExist, isFetching, showModal, router])
 
-  const handleCheckbox = () => setIsChecked(!isChecked)
+  const handleCheckbox = useCallback(() => setIsChecked((prevState) => !prevState), [])
 
-  const handleCloseButton = () => {
+  const handleCloseButton = useCallback(() => {
     setIsOpen(false)
     setShowModal(false)
-  }
+  }, [setShowModal])
 
   return (
-    <ModalV2 isOpen={isOpen}>
+    <ModalV2 isOpen={isOpen} closeOnOverlayClick={false}>
       <Modal title={t('Affiliate Program Update')} maxWidth={['100%', '100%', '100%', '480px']} hideCloseButton>
         <Flex flexDirection="column">
           <Text mb="24px">

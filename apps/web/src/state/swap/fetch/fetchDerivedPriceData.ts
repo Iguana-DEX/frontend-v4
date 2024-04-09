@@ -1,13 +1,7 @@
-import { ChainId } from '@pancakeswap/sdk'
-import {
-  INFO_CLIENT,
-  INFO_CLIENT_ETH,
-  INFO_CLIENT_WITH_CHAIN,
-  STABLESWAP_SUBGRAPH_CLIENT,
-  V3_SUBGRAPH_URLS,
-} from 'config/constants/endpoints'
+import { ChainId, STABLESWAP_SUBGRAPHS } from '@pancakeswap/chains'
+import { INFO_CLIENT, INFO_CLIENT_ETH, INFO_CLIENT_WITH_CHAIN, V3_SUBGRAPH_URLS } from 'config/constants/endpoints'
 import { ONE_DAY_UNIX, ONE_HOUR_SECONDS } from 'config/constants/info'
-import { getUnixTime, startOfHour, sub } from 'date-fns'
+import dayjs from 'dayjs'
 import request from 'graphql-request'
 import mapValues from 'lodash/mapValues'
 import orderBy from 'lodash/orderBy'
@@ -15,7 +9,7 @@ import { multiChainName } from 'state/info/constant'
 import { Block } from 'state/info/types'
 import { getBlocksFromTimestamps } from 'utils/getBlocksFromTimestamps'
 import { multiQuery } from 'views/Info/utils/infoQueryHelpers'
-import { getTVL, getDerivedPrices, getDerivedPricesQueryConstructor } from '../queries/getDerivedPrices'
+import { getDerivedPrices, getDerivedPricesQueryConstructor, getTVL } from '../queries/getDerivedPrices'
 import { PairDataTimeWindowEnum } from '../types'
 
 const PROTOCOL = ['v2', 'v3', 'stable'] as const
@@ -26,7 +20,7 @@ type ProtocolEndpoint = Record<Protocol, string>
 const SWAP_INFO_BY_CHAIN = {
   [ChainId.BSC]: {
     v2: INFO_CLIENT,
-    stable: STABLESWAP_SUBGRAPH_CLIENT,
+    stable: STABLESWAP_SUBGRAPHS[ChainId.BSC],
     // v3: V3_SUBGRAPH_URLS[ChainId.BSC],
   },
   [ChainId.ETHEREUM]: {
@@ -37,23 +31,42 @@ const SWAP_INFO_BY_CHAIN = {
     v3: V3_SUBGRAPH_URLS[ChainId.BSC_TESTNET],
   },
   [ChainId.GOERLI]: {},
-  // TODO: new chains
   [ChainId.ARBITRUM_ONE]: {
     v2: INFO_CLIENT_WITH_CHAIN[ChainId.ARBITRUM_ONE],
     v3: V3_SUBGRAPH_URLS[ChainId.ARBITRUM_ONE],
+    stable: STABLESWAP_SUBGRAPHS[ChainId.ARBITRUM_ONE],
   },
   [ChainId.ARBITRUM_GOERLI]: {},
   [ChainId.POLYGON_ZKEVM]: {
     v3: V3_SUBGRAPH_URLS[ChainId.POLYGON_ZKEVM],
   },
   [ChainId.POLYGON_ZKEVM_TESTNET]: {},
-  [ChainId.ZKSYNC]: {},
+  [ChainId.ZKSYNC]: {
+    v3: V3_SUBGRAPH_URLS[ChainId.ZKSYNC],
+  },
   [ChainId.ZKSYNC_TESTNET]: {},
+  [ChainId.LINEA]: {},
   [ChainId.LINEA_TESTNET]: {
     v2: INFO_CLIENT_WITH_CHAIN[ChainId.LINEA_TESTNET],
     v3: V3_SUBGRAPH_URLS[ChainId.LINEA_TESTNET],
   },
-  [ChainId.ETHERLINK_TESTNET]:{},
+  [ChainId.OPBNB]: {
+    v2: INFO_CLIENT_WITH_CHAIN[ChainId.OPBNB],
+    v3: V3_SUBGRAPH_URLS[ChainId.OPBNB],
+  },
+  [ChainId.OPBNB_TESTNET]: {},
+  [ChainId.BASE]: {
+    v3: V3_SUBGRAPH_URLS[ChainId.BASE],
+  },
+  [ChainId.BASE_TESTNET]: {
+    v3: V3_SUBGRAPH_URLS[ChainId.BASE_TESTNET],
+  },
+  [ChainId.SCROLL_SEPOLIA]: {
+    v3: V3_SUBGRAPH_URLS[ChainId.SCROLL_SEPOLIA],
+  },
+  [ChainId.SEPOLIA]: {},
+  [ChainId.ARBITRUM_SEPOLIA]: {},
+  [ChainId.BASE_SEPOLIA]: {},
 } satisfies Record<ChainId, Partial<ProtocolEndpoint>>
 
 export const getTokenBestTvlProtocol = async (tokenAddress: string, chainId: ChainId): Promise<Protocol | null> => {
@@ -163,14 +176,15 @@ const fetchDerivedPriceData = async (
   chainId: ChainId,
 ) => {
   const interval = getInterval(timeWindow)
-  const endTimestamp = getUnixTime(new Date())
-  const startTimestamp = getUnixTime(startOfHour(sub(endTimestamp * 1000, { days: getSkipDaysToStart(timeWindow) })))
-  const timestamps = []
+  const endTimestamp = dayjs()
+  const endTimestampUnix = endTimestamp.unix()
+  const startTimestamp = endTimestamp.subtract(getSkipDaysToStart(timeWindow), 'days').startOf('hour').unix()
+  const timestamps: number[] = []
   let time = startTimestamp
   if (!SWAP_INFO_BY_CHAIN[chainId][protocol0] || !SWAP_INFO_BY_CHAIN[chainId][protocol1]) {
     return null
   }
-  while (time <= endTimestamp) {
+  while (time <= endTimestampUnix) {
     timestamps.push(time)
     time += interval
   }

@@ -1,8 +1,9 @@
-import styled from 'styled-components'
-import { Text, Flex, Skeleton, Farm as FarmUI } from '@pancakeswap/uikit'
-import { TokenPairImage } from 'components/TokenImage'
+import { ChainId } from '@pancakeswap/chains'
 import { Token } from '@pancakeswap/swap-sdk-core'
-import { ChainId } from '@pancakeswap/sdk'
+import { Flex, Skeleton, Text } from '@pancakeswap/uikit'
+import { FarmWidget } from '@pancakeswap/widgets-internal'
+import { TokenPairImage } from 'components/TokenImage'
+import { styled } from 'styled-components'
 
 const TokenWrapper = styled.div`
   padding-right: 8px;
@@ -13,7 +14,7 @@ const TokenWrapper = styled.div`
   }
 `
 
-const { V3Tag, V3FeeTag, EthTag, BscTag } = FarmUI.Tags
+const { V3Tag, V3FeeTag, EthTag, BscTag, ZkEVMTag, ZkSyncTag, ArbTag, BaseTag, LineaTag, OpBnbTag } = FarmWidget.Tags
 
 interface PairInfoProps {
   isReady: boolean
@@ -72,6 +73,12 @@ const PairInfo: React.FunctionComponent<React.PropsWithChildren<PairInfoProps>> 
             <Flex ml="4px">
               {chainId === ChainId.ETHEREUM && <EthTag />}
               {chainId === ChainId.BSC && <BscTag />}
+              {chainId === ChainId.POLYGON_ZKEVM && <ZkEVMTag />}
+              {chainId === ChainId.ZKSYNC && <ZkSyncTag />}
+              {chainId === ChainId.ARBITRUM_ONE && <ArbTag />}
+              {chainId === ChainId.LINEA && <LineaTag />}
+              {chainId === ChainId.BASE && <BaseTag />}
+              {chainId === ChainId.OPBNB && <OpBnbTag />}
             </Flex>
           </Flex>
         </Flex>

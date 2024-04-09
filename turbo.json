@@ -18,12 +18,17 @@
       "dependsOn": ["^build"],
       "outputs": ["storybook-static/**"]
     },
+    "build:uikit": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
     "lint": {
+      "dependsOn": ["@pancakeswap/next-config#build"],
       "outputs": []
     },
     "dev": {
+      "dependsOn": ["@pancakeswap/next-config#build"],
       "cache": false,
-      "dependsOn": ["^build"],
       "persistent": true
     },
     "start": {

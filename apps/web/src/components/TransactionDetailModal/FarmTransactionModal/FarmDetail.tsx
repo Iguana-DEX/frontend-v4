@@ -1,13 +1,14 @@
-import { useMemo } from 'react'
-import { Flex, Box, Text, RefreshIcon, WarningIcon, ScanLink } from '@pancakeswap/uikit'
 import { useTranslation } from '@pancakeswap/localization'
-import { chains } from 'utils/wagmi'
+import { Box, Flex, RefreshIcon, ScanLink, Text, WarningIcon } from '@pancakeswap/uikit'
 import { ChainLogo } from 'components/Logo/ChainLogo'
-import { getBlockExploreLink, getBlockExploreName } from 'utils'
+import { useMemo } from 'react'
+import { ChainLinkSupportChains } from 'state/info/constant'
 import { FarmTransactionStatus, NonBscFarmTransactionStep } from 'state/transactions/actions'
+import { getBlockExploreLink, getBlockExploreName } from 'utils'
+import { chains } from 'utils/wagmi'
 
 interface HarvestDetailProps {
-  status: FarmTransactionStatus
+  status?: FarmTransactionStatus
   step: NonBscFarmTransactionStep
 }
 
@@ -39,7 +40,10 @@ const FarmDetail: React.FC<React.PropsWithChildren<HarvestDetailProps>> = ({ ste
             <Flex>
               {isFail && <WarningIcon mr="4px" color="failure" />}
               {step.tx && (
-                <ScanLink chainId={step.chainId} href={getBlockExploreLink(step.tx, 'transaction', step.chainId)}>
+                <ScanLink
+                  useBscCoinFallback={ChainLinkSupportChains.includes(step.chainId)}
+                  href={getBlockExploreLink(step.tx, 'transaction', step.chainId)}
+                >
                   {getBlockExploreName(step.chainId)}
                 </ScanLink>
               )}

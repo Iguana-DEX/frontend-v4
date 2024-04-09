@@ -1,36 +1,26 @@
+export { getCheckAgainstBaseTokens, getPairCombinations } from './functions'
 export { getBestTrade } from './getBestTrade'
+export * from './providers'
+export { v2PoolTvlSelector as v2PoolSubgraphSelection, v3PoolTvlSelector as v3PoolSubgraphSelection } from './providers'
+export * as APISchema from './schema'
+export type { V2PoolWithTvl as SubgraphV2Pool, V3PoolWithTvl as SubgraphV3Pool } from './types'
 export {
-  createPoolProvider,
-  createQuoteProvider,
-  createStaticPoolProvider,
-  createOffChainQuoteProvider,
-  getV2PoolsOnChain,
-  getStablePoolsOnChain,
-  getV3PoolsWithoutTicksOnChain,
-  getV3PoolSubgraph,
-  getV2PoolSubgraph,
-  getV2CandidatePools,
-  getV3CandidatePools,
-  getStableCandidatePools,
-  getCandidatePools,
-  getAllV3PoolsFromSubgraph,
-  v2PoolTvlSelector as v2PoolSubgraphSelection,
-  v3PoolTvlSelector as v3PoolSubgraphSelection,
-} from './providers'
-export {
+  Transformer,
   getExecutionPrice,
-  maximumAmountIn,
-  minimumAmountOut,
+  getPoolAddress,
   isV2Pool,
   isV3Pool,
   isStablePool,
   getMidPrice,
   involvesCurrency,
-  metric,
+  encodeMixedRouteToPath,
+  buildBaseRoute,
+  getOutputOfPools,
+  partitionMixedRouteByProtocol,
   log,
-  Transformer,
-  getPoolAddress,
+  logger,
+  getPriceImpact,
+  maximumAmountIn,
+  metric,
+  minimumAmountOut,
 } from './utils'
-export { getPairCombinations, getCheckAgainstBaseTokens } from './functions'
-export * as APISchema from './schema'
-export type { V3PoolWithTvl as SubgraphV3Pool, V2PoolWithTvl as SubgraphV2Pool } from './types'

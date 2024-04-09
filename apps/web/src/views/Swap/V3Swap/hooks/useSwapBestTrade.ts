@@ -2,11 +2,11 @@ import { TradeType } from '@pancakeswap/sdk'
 import tryParseAmount from '@pancakeswap/utils/tryParseAmount'
 import { useUserSingleHopOnly } from '@pancakeswap/utils/user'
 
-import { useSwapState } from 'state/swap/hooks'
-import { Field } from 'state/swap/actions'
 import { useCurrency } from 'hooks/Tokens'
 import { useBestAMMTrade } from 'hooks/useBestAMMTrade'
-import { useDeferredValue } from 'react'
+import { useDeferredValue, useMemo } from 'react'
+import { Field } from 'state/swap/actions'
+import { useSwapState } from 'state/swap/hooks'
 import {
   useUserSplitRouteEnable,
   useUserStableSwapEnable,
@@ -38,6 +38,10 @@ export function useSwapBestTrade({ maxHops }: Options = {}) {
   const [v2Swap] = useUserV2SwapEnable()
   const [v3Swap] = useUserV3SwapEnable()
   const [stableSwap] = useUserStableSwapEnable()
+  // stable swap only support exact in
+  const stableSwapEnable = useMemo(() => {
+    return stableSwap && isExactIn
+  }, [stableSwap, isExactIn])
 
   const { isLoading, trade, refresh, syncing, isStale, error } = useBestAMMTrade({
     amount,
@@ -48,8 +52,9 @@ export function useSwapBestTrade({ maxHops }: Options = {}) {
     maxSplits: split ? undefined : 0,
     v2Swap,
     v3Swap,
-    stableSwap,
+    stableSwap: stableSwapEnable,
     type: 'auto',
+    trackPerf: true,
   })
 
   return {
@@ -57,7 +62,7 @@ export function useSwapBestTrade({ maxHops }: Options = {}) {
     syncing,
     isStale,
     error,
-    isLoading: useDeferredValue(isLoading || (typedValue && !trade && !error)),
-    trade: typedValue ? trade : null,
+    isLoading: useDeferredValue(Boolean(isLoading || (typedValue && !trade && !error))),
+    trade: typedValue ? trade : undefined,
   }
 }

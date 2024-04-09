@@ -1,11 +1,11 @@
 import { useState, useCallback } from 'react'
 import { useAccount } from 'wagmi'
 import BigNumber from 'bignumber.js'
-import { Ifo, PoolIds } from 'config/constants/types'
+import { Ifo, PoolIds } from '@pancakeswap/ifos'
 import { useERC20, useIfoV1Contract } from 'hooks/useContract'
 import { BIG_ZERO } from '@pancakeswap/utils/bigNumber'
 import { publicClient } from 'utils/wagmi'
-import { ChainId } from '@pancakeswap/sdk'
+import { ChainId } from '@pancakeswap/chains'
 import { ifoV1ABI } from 'config/abi/ifoV1'
 import useIfoAllowance from '../useIfoAllowance'
 import { WalletIfoState, WalletIfoData } from '../../types'
@@ -61,6 +61,10 @@ const useGetWalletIfoData = (ifo: Ifo): WalletIfoData => {
   }
 
   const fetchIfoData = useCallback(async () => {
+    if (!account) {
+      return
+    }
+
     const [offeringAmount, userInfoResponse, refundingAmount] = await publicClient({ chainId: ChainId.BSC }).multicall({
       contracts: [
         {

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import styled from 'styled-components'
+import { styled } from 'styled-components'
 import { Button, Heading, Text, Flex, Checkbox, AutoRenewIcon, useToast } from '@pancakeswap/uikit'
 import { useTradingCompetitionContractMoD } from 'hooks/useContract'
 import { useTranslation } from '@pancakeswap/localization'
@@ -28,7 +28,7 @@ const RegisterWithProfile: React.FC<React.PropsWithChildren<CompetitionProps>> =
   const { fetchWithCatchTxError, loading: isConfirming } = useCatchTxError()
   const { t } = useTranslation()
   const { callWithGasPrice } = useCallWithGasPrice()
-  const { usernameWithVisibility } = useGetUsernameWithVisibility(profile?.username)
+  const { usernameWithVisibility } = useGetUsernameWithVisibility(profile?.username || '')
 
   const handleConfirmClick = async () => {
     const receipt = await fetchWithCatchTxError(() => {
@@ -39,8 +39,8 @@ const RegisterWithProfile: React.FC<React.PropsWithChildren<CompetitionProps>> =
         t('You have registered for the competition!'),
         <ToastDescriptionWithTx txHash={receipt.transactionHash} />,
       )
-      onDismiss()
-      onRegisterSuccess()
+      onDismiss?.()
+      onRegisterSuccess?.()
     }
   }
 

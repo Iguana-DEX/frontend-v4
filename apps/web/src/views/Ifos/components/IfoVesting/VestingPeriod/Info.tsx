@@ -1,16 +1,18 @@
 import { useMemo } from 'react'
-import styled from 'styled-components'
+import { styled } from 'styled-components'
 import { useTranslation } from '@pancakeswap/localization'
 import { Flex, Text, Progress, Tag } from '@pancakeswap/uikit'
 import { VestingData } from 'views/Ifos/hooks/vesting/fetchUserWalletIfoData'
-import { PoolIds } from 'config/constants/types'
+import { PoolIds } from '@pancakeswap/ifos'
 import { getFullDisplayBalance } from '@pancakeswap/utils/formatBalance'
 import { useCurrentBlock } from 'state/block/hooks'
 import useGetPublicIfoV3Data from 'views/Ifos/hooks/v3/useGetPublicIfoData'
 import BigNumber from 'bignumber.js'
-import useSWRImmutable from 'swr/immutable'
-import { format } from 'date-fns'
+import dayjs from 'dayjs'
+
+import { useQuery } from '@tanstack/react-query'
 import Claim from './Claim'
+import { isBasicSale } from '../../../hooks/v7/helpers'
 
 const WhiteCard = styled.div`
   background: ${({ theme }) => theme.colors.backgroundAlt};
@@ -29,9 +31,15 @@ interface InfoProps {
   poolId: PoolIds
   data: VestingData
   fetchUserVestingData: () => void
+  ifoBasicSaleType?: number
 }
 
-const Info: React.FC<React.PropsWithChildren<InfoProps>> = ({ poolId, data, fetchUserVestingData }) => {
+const Info: React.FC<React.PropsWithChildren<InfoProps>> = ({
+  poolId,
+  data,
+  fetchUserVestingData,
+  ifoBasicSaleType,
+}) => {
   const { t } = useTranslation()
   const { token } = data.ifo
   const { vestingStartTime } = data.userVestingData
@@ -43,19 +51,28 @@ const Info: React.FC<React.PropsWithChildren<InfoProps>> = ({ poolId, data, fetc
     vestingReleased,
     vestingInformationDuration,
   } = data.userVestingData[poolId]
-  const labelText = poolId === PoolIds.poolUnlimited ? t('Public Sale') : t('Private Sale')
+  const labelText =
+    poolId === PoolIds.poolUnlimited
+      ? t('Public Sale')
+      : isBasicSale(ifoBasicSaleType)
+      ? t('Basic Sale')
+      : t('Private Sale')
 
   const currentBlock = useCurrentBlock()
   const publicIfoData = useGetPublicIfoV3Data(data.ifo)
   const { fetchIfoData: fetchPublicIfoData, isInitialized: isPublicIfoDataInitialized } = publicIfoData
-  useSWRImmutable(
-    !isPublicIfoDataInitialized && currentBlock && ['fetchPublicIfoData', currentBlock, data.ifo.id],
-    async () => fetchPublicIfoData(currentBlock),
-  )
+  useQuery({
+    queryKey: ['fetchPublicIfoData', currentBlock, data?.ifo?.id],
+    queryFn: async () => fetchPublicIfoData(currentBlock),
+    enabled: Boolean(!isPublicIfoDataInitialized && currentBlock),
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
+  })
 
   const { cliff } = publicIfoData[poolId]?.vestingInformation || {}
   const currentTimeStamp = Date.now()
-  const timeCliff = vestingStartTime === 0 ? currentTimeStamp : (vestingStartTime + cliff) * 1000
+  const timeCliff = vestingStartTime === 0 ? currentTimeStamp : (vestingStartTime + (cliff ?? 0)) * 1000
   const timeVestingEnd = (vestingStartTime + vestingInformationDuration) * 1000
   const isVestingOver = currentTimeStamp > timeVestingEnd
 
@@ -115,7 +132,7 @@ const Info: React.FC<React.PropsWithChildren<InfoProps>> = ({ poolId, data, fetc
           {cliff === 0 ? t('Vesting Start') : t('Cliff')}
         </Text>
         <Text fontSize="12px" color="textSubtle">
-          {format(timeCliff, 'MM/dd/yyyy HH:mm')}
+          {dayjs(timeCliff).format('MM/DD/YYYY HH:mm')}
         </Text>
       </Flex>
       <Flex justifyContent="space-between">
@@ -123,7 +140,7 @@ const Info: React.FC<React.PropsWithChildren<InfoProps>> = ({ poolId, data, fetc
           {t('Vesting end')}
         </Text>
         <Text fontSize="12px" color="textSubtle">
-          {format(timeVestingEnd, 'MM/dd/yyyy HH:mm')}
+          {dayjs(timeVestingEnd).format('MM/DD/YYYY HH:mm')}
         </Text>
       </Flex>
       <WhiteCard>

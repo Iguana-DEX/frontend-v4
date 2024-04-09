@@ -1,18 +1,18 @@
-import { useState, useEffect } from 'react'
-import { isAddress } from 'utils'
+import { useEffect, useState } from 'react'
 import {
   getAllPancakeBunniesLowestPrice,
   getAllPancakeBunniesRecentUpdatedAt,
   getNftsFromCollectionApi,
 } from 'state/nftMarket/helpers'
 import { NftToken } from 'state/nftMarket/types'
+import { safeGetAddress } from 'utils'
 import { pancakeBunniesAddress } from '../constants'
 
 // If collection is PancakeBunnies - gets all available bunnies, otherwise - null
-const useAllPancakeBunnyNfts = (collectionAddress: string) => {
-  const [allPancakeBunnyNfts, setAllPancakeBunnyNfts] = useState<NftToken[]>(null)
+const useAllPancakeBunnyNfts = (collectionAddress: string | undefined) => {
+  const [allPancakeBunnyNfts, setAllPancakeBunnyNfts] = useState<NftToken[] | null>(null)
 
-  const isPBCollection = isAddress(collectionAddress) === pancakeBunniesAddress
+  const isPBCollection = safeGetAddress(collectionAddress) === safeGetAddress(pancakeBunniesAddress)
 
   useEffect(() => {
     const fetchPancakeBunnies = async () => {

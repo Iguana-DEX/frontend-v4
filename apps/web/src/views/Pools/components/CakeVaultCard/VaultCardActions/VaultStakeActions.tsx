@@ -1,18 +1,20 @@
-import { Flex, Skeleton, useModal, Pool } from '@pancakeswap/uikit'
+import { Flex, Skeleton, useModal } from '@pancakeswap/uikit'
+import { Pool } from '@pancakeswap/widgets-internal'
+
+import { Token } from '@pancakeswap/sdk'
 import BigNumber from 'bignumber.js'
 import { VaultKey } from 'state/types'
-import { Token } from '@pancakeswap/sdk'
+import LockedStakeModal from '../../LockedPool/Modals/LockedStakeModal'
 import NotEnoughTokensModal from '../../Modals/NotEnoughTokensModal'
 import { VaultStakeButtonGroup } from '../../Vault/VaultStakeButtonGroup'
 import VaultStakeModal from '../VaultStakeModal'
-import LockedStakeModal from '../../LockedPool/Modals/LockedStakeModal'
 import HasSharesActions from './HasSharesActions'
 
 interface VaultStakeActionsProps {
   pool: Pool.DeserializedPool<Token>
   stakingTokenBalance: BigNumber
-  accountHasSharesStaked: boolean
-  performanceFee: number
+  accountHasSharesStaked?: boolean
+  performanceFee?: number
 }
 
 const VaultStakeActions: React.FC<React.PropsWithChildren<VaultStakeActionsProps>> = ({
@@ -21,7 +23,7 @@ const VaultStakeActions: React.FC<React.PropsWithChildren<VaultStakeActionsProps
   accountHasSharesStaked,
   performanceFee,
 }) => {
-  const { stakingToken, userDataLoaded } = pool
+  const { stakingToken, stakingTokenPrice, userDataLoaded } = pool
   const [onPresentTokenRequired] = useModal(<NotEnoughTokensModal tokenSymbol={stakingToken.symbol} />)
   const [onPresentStake] = useModal(
     <VaultStakeModal stakingMax={stakingTokenBalance} pool={pool} performanceFee={performanceFee} />,
@@ -30,6 +32,7 @@ const VaultStakeActions: React.FC<React.PropsWithChildren<VaultStakeActionsProps
     <LockedStakeModal
       currentBalance={stakingTokenBalance}
       stakingToken={stakingToken}
+      stakingTokenPrice={stakingTokenPrice}
       stakingTokenBalance={stakingTokenBalance}
     />,
   )
@@ -40,7 +43,7 @@ const VaultStakeActions: React.FC<React.PropsWithChildren<VaultStakeActionsProps
     ) : (
       <VaultStakeButtonGroup
         onFlexibleClick={stakingTokenBalance.gt(0) ? onPresentStake : onPresentTokenRequired}
-        onLockedClick={pool.vaultKey === VaultKey.CakeVault ? openPresentLockedStakeModal : null}
+        onLockedClick={pool.vaultKey === VaultKey.CakeVault ? openPresentLockedStakeModal : () => {}}
       />
     )
   }

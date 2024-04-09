@@ -1,7 +1,9 @@
-import { Button, Flex, NextLinkFromReactRouter, Text, useMatchBreakpoints, OpenNewIcon } from '@pancakeswap/uikit'
+import { Button, Flex, Text, useMatchBreakpoints, OpenNewIcon } from '@pancakeswap/uikit'
+import { NextLinkFromReactRouter } from '@pancakeswap/widgets-internal'
+
 import { useTranslation } from '@pancakeswap/localization'
 import Image from 'next/legacy/image'
-import styled, { css } from 'styled-components'
+import { styled, css } from 'styled-components'
 
 import { ASSET_CDN } from 'config/constants/endpoints'
 
@@ -142,7 +144,7 @@ export const PolygonZkEvmBanner = () => {
           <Title data-text={title}>{title}</Title>
           {isDesktop && (
             <Text color="#FFE437" fontSize={24} fontWeight={700} mb="8px">
-              {t('Swap and provide liquidity on Polygon zkEVM now')}
+              {t('Swap, LP, and Farms on Polygon zkEVM now')}
             </Text>
           )}
           <Flex>

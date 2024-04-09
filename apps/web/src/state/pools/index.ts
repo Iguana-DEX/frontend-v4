@@ -1,57 +1,59 @@
-import { createAsyncThunk, createSlice, PayloadAction, isAnyOf } from '@reduxjs/toolkit'
-import BigNumber from 'bignumber.js'
-import keyBy from 'lodash/keyBy'
-import { BIG_ZERO } from '@pancakeswap/utils/bigNumber'
-import { bscTokens } from '@pancakeswap/tokens'
-import { getBalanceNumber } from '@pancakeswap/utils/formatBalance'
-import { fetchTokenUSDValue } from '@pancakeswap/utils/llamaPrice'
+import { ChainId } from '@pancakeswap/chains'
+import { getFarmsPrices } from '@pancakeswap/farms/farmPrices'
+import { fetchPublicIfoData, fetchUserIfoCredit } from '@pancakeswap/ifos'
 import {
-  fetchPoolsTimeLimits,
-  fetchPoolsTotalStaking,
+  fetchFlexibleSideVaultUser,
+  fetchPoolsAllowance,
   fetchPoolsProfileRequirement,
   fetchPoolsStakingLimits,
-  fetchPoolsAllowance,
+  fetchPoolsTimeLimits,
+  fetchPoolsTotalStaking,
+  fetchPublicFlexibleSideVaultData,
+  fetchPublicVaultData,
   fetchUserBalances,
   fetchUserPendingRewards,
   fetchUserStakeBalances,
-  fetchPublicIfoData,
-  fetchUserIfoCredit,
-  fetchPublicVaultData,
-  fetchPublicFlexibleSideVaultData,
-  fetchVaultUser,
   fetchVaultFees,
-  fetchFlexibleSideVaultUser,
-  getCakeVaultAddress,
+  fetchVaultUser,
   getCakeFlexibleSideVaultAddress,
+  getCakeVaultAddress,
+  getPoolAprByTokenPerBlock,
+  getPoolAprByTokenPerSecond,
   getPoolsConfig,
   isLegacyPool,
-  getPoolAprByTokenPerSecond,
-  getPoolAprByTokenPerBlock,
 } from '@pancakeswap/pools'
-import { ChainId } from '@pancakeswap/sdk'
+import { bscTokens } from '@pancakeswap/tokens'
+import { BIG_ZERO } from '@pancakeswap/utils/bigNumber'
+import { getBalanceNumber } from '@pancakeswap/utils/formatBalance'
+import { getCurrencyUsdPrice } from '@pancakeswap/price-api-sdk'
+import { PayloadAction, createAsyncThunk, createSlice, isAnyOf } from '@reduxjs/toolkit'
+import BigNumber from 'bignumber.js'
+import keyBy from 'lodash/keyBy'
+import orderBy from 'lodash/orderBy'
 
+import { getPoolsPriceHelperLpFiles } from 'config/constants/priceHelperLps'
+import { getCakePriceFromOracle } from 'hooks/useCakePrice'
+import { farmV3ApiFetch } from 'state/farmsV3/hooks'
 import {
   PoolsState,
+  PublicIfoData,
+  SerializedCakeVault,
+  SerializedLockedCakeVault,
+  SerializedLockedVaultUser,
   SerializedPool,
   SerializedVaultFees,
-  SerializedCakeVault,
-  SerializedLockedVaultUser,
-  PublicIfoData,
   SerializedVaultUser,
-  SerializedLockedCakeVault,
 } from 'state/types'
-import { Address, erc20ABI } from 'wagmi'
-import { isAddress } from 'utils'
-import { publicClient } from 'utils/wagmi'
+import { safeGetAddress } from 'utils'
+import { fetchTokenAplPrice, isAlpToken } from 'utils/fetchTokenAplPrice'
 import { getViemClients } from 'utils/viem'
-import { getPoolsPriceHelperLpFiles } from 'config/constants/priceHelperLps/index'
-import { farmV3ApiFetch } from 'state/farmsV3/hooks'
-import { getCakePriceFromOracle } from 'hooks/useCakePriceAsBN'
+import { publicClient } from 'utils/wagmi'
+import { Address, erc20ABI } from 'wagmi'
 
 import fetchFarms from '../farms/fetchFarms'
-import getFarmsPrices from '../farms/getFarmsPrices'
-import { getTokenPricesFromFarm } from './helpers'
+import { nativeStableLpMap } from '../farms/getFarmsPrices'
 import { resetUserState } from '../global/actions'
+import { getTokenPricesFromFarm } from './helpers'
 
 export const initialPoolVaultState = Object.freeze({
   totalShares: null,
@@ -89,15 +91,15 @@ export const initialIfoState = Object.freeze({
 const initialState: PoolsState = {
   data: [],
   userDataLoaded: false,
-  cakeVault: initialPoolVaultState,
-  ifo: initialIfoState,
-  cakeFlexibleSideVault: initialPoolVaultState,
+  cakeVault: initialPoolVaultState as any,
+  ifo: initialIfoState as any,
+  cakeFlexibleSideVault: initialPoolVaultState as any,
 }
 
 export const fetchCakePoolPublicDataAsync = () => async (dispatch) => {
-  const cakePrice = await getCakePriceFromOracle()
-  const stakingTokenPrice = cakePrice
+  const cakePrice = parseFloat(await getCakePriceFromOracle())
 
+  const stakingTokenPrice = cakePrice
   const earningTokenPrice = cakePrice
 
   dispatch(
@@ -160,19 +162,20 @@ export const fetchPoolsPublicDataAsync = (chainId: number) => async (dispatch, g
           .filter((pool) => {
             const poolTimeLimit = timeLimitsSousIdMap[pool.sousId]
             if (poolTimeLimit) {
-              return poolTimeLimit.endTimestamp > Number(block.timestamp)
+              return poolTimeLimit.endTimestamp > Number(block?.timestamp)
             }
             return false
           }).length > 0
       )
     })
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const fetchFarmV3Promise = farmV3ApiFetch(chainId).catch((error) => {
-      return undefined
-    })
+    const fetchFarmV3Promise = farmV3ApiFetch(chainId)
+      .then((result) => result?.farmsWithPrice || [])
+      .catch(() => {
+        return []
+      })
 
-    const [totalStakings, profileRequirements, poolsWithDifferentFarmToken, farmV3] = await Promise.all([
+    const [totalStakings, profileRequirements, poolsWithDifferentFarmToken, farmsV3Data] = await Promise.all([
       fetchPoolsTotalStaking(chainId, getViemClients),
       fetchPoolsProfileRequirement(chainId, getViemClients),
       activePriceHelperLpsConfig.length > 0 ? fetchFarms(priceHelperLpsConfig, chainId) : Promise.resolve([]),
@@ -181,20 +184,19 @@ export const fetchPoolsPublicDataAsync = (chainId: number) => async (dispatch, g
 
     const totalStakingsSousIdMap = keyBy(totalStakings, 'sousId')
 
-    const farmsData = getState().farms.data
-    const bnbBusdFarm =
+    const farmsV2Data = getState().farms.data
+    const bnbBusdFarms =
       activePriceHelperLpsConfig.length > 0
-        ? farmsData.find((farm) => farm.token.symbol === 'BUSD' && farm.quoteToken.symbol === 'WBNB')
-        : null
-    const farmsWithPricesOfDifferentTokenPools = bnbBusdFarm
-      ? getFarmsPrices([bnbBusdFarm, ...poolsWithDifferentFarmToken], chainId)
-      : []
+        ? [...orderBy(farmsV3Data, 'lmPoolLiquidity', 'desc'), ...farmsV2Data].filter(
+            (farm) => farm.token.symbol === 'BUSD' && farm.quoteToken.symbol === 'WBNB',
+          )
+        : []
+    const farmsWithPricesOfDifferentTokenPools =
+      bnbBusdFarms.length > 0
+        ? getFarmsPrices([...bnbBusdFarms, ...poolsWithDifferentFarmToken], nativeStableLpMap[chainId], 18)
+        : []
 
-    const prices = getTokenPricesFromFarm([
-      ...farmsData,
-      ...farmsWithPricesOfDifferentTokenPools,
-      ...(farmV3?.farmsWithPrice ?? []),
-    ])
+    const prices = getTokenPricesFromFarm([...farmsV2Data, ...farmsV3Data, ...farmsWithPricesOfDifferentTokenPools])
 
     const liveData: any[] = []
 
@@ -205,20 +207,25 @@ export const fetchPoolsPublicDataAsync = (chainId: number) => async (dispatch, g
         block.timestamp > 0 && timeLimit ? block.timestamp > Number(timeLimit.endTimestamp) : false
       const isPoolFinished = pool.isFinished || isPoolEndBlockExceeded
 
-      const stakingTokenAddress = isAddress(pool.stakingToken.address)
+      const stakingTokenAddress = safeGetAddress(pool.stakingToken.address)
       let stakingTokenPrice = stakingTokenAddress ? prices[stakingTokenAddress] : 0
       if (stakingTokenAddress && !prices[stakingTokenAddress] && !isPoolFinished) {
-        // eslint-disable-next-line no-await-in-loop
-        const result = await fetchTokenUSDValue(chainId, [stakingTokenAddress])
-        stakingTokenPrice = result.get(stakingTokenAddress) || 0
+        // TODO: Remove this when fetchTokenUSDValue can get APL USD Price
+        const isAlpTokenValid = isAlpToken({ chainId, tokenAddress: stakingTokenAddress })
+        if (isAlpTokenValid) {
+          // eslint-disable-next-line no-await-in-loop
+          stakingTokenPrice = await fetchTokenAplPrice()
+        } else {
+          // eslint-disable-next-line no-await-in-loop
+          stakingTokenPrice = await getCurrencyUsdPrice({ chainId, address: stakingTokenAddress })
+        }
       }
 
-      const earningTokenAddress = isAddress(pool.earningToken.address)
+      const earningTokenAddress = safeGetAddress(pool.earningToken.address)
       let earningTokenPrice = earningTokenAddress ? prices[earningTokenAddress] : 0
       if (earningTokenAddress && !prices[earningTokenAddress] && !isPoolFinished) {
         // eslint-disable-next-line no-await-in-loop
-        const result = await fetchTokenUSDValue(chainId, [earningTokenAddress])
-        earningTokenPrice = result.get(earningTokenAddress) || 0
+        earningTokenPrice = await getCurrencyUsdPrice({ chainId, address: earningTokenAddress })
       }
       const totalStaked = getBalanceNumber(new BigNumber(totalStaking.totalStaked), pool.stakingToken.decimals)
       const apr = !isPoolFinished
@@ -260,7 +267,7 @@ export const fetchPoolsStakingLimitsAsync = (chainId: ChainId) => async (dispatc
     const stakingLimits = await fetchPoolsStakingLimits({ poolsWithStakingLimit, chainId, provider: getViemClients })
 
     const poolsConfig = getPoolsConfig(chainId)
-    const stakingLimitData = poolsConfig.map((pool) => {
+    const stakingLimitData = poolsConfig?.map((pool) => {
       if (poolsWithStakingLimit.includes(pool.sousId)) {
         return { sousId: pool.sousId }
       }
@@ -274,8 +281,9 @@ export const fetchPoolsStakingLimitsAsync = (chainId: ChainId) => async (dispatc
         numberSecondsForUserLimit,
       }
     })
-
-    dispatch(setPoolsPublicData(stakingLimitData))
+    if (stakingLimitData) {
+      dispatch(setPoolsPublicData(stakingLimitData))
+    }
   } catch (error) {
     console.error('[Pools Action] error when getting staking limits', error)
   }
@@ -287,7 +295,7 @@ export const fetchPoolsUserDataAsync = createAsyncThunk<
     account: string
     chainId: ChainId
   }
->('pool/fetchPoolsUserData', async ({ account, chainId }, { rejectWithValue }) => {
+>('pool/fetchPoolsUserData', async ({ account, chainId }: any, { rejectWithValue }: any) => {
   try {
     const [allowances, stakingTokenBalances, stakedBalances, pendingRewards] = await Promise.all([
       fetchPoolsAllowance({ account, chainId, provider: getViemClients }),
@@ -344,7 +352,7 @@ export const updateUserPendingReward = createAsyncThunk<
 
 export const fetchCakeVaultPublicData = createAsyncThunk<SerializedLockedCakeVault, ChainId>(
   'cakeVault/fetchPublicData',
-  async (chainId) => {
+  async (chainId: any): Promise<any> => {
     const publicVaultInfo = await fetchPublicVaultData({ chainId, provider: getViemClients })
     return publicVaultInfo
   },
@@ -352,7 +360,7 @@ export const fetchCakeVaultPublicData = createAsyncThunk<SerializedLockedCakeVau
 
 export const fetchCakeFlexibleSideVaultPublicData = createAsyncThunk<SerializedCakeVault, ChainId>(
   'cakeFlexibleSideVault/fetchPublicData',
-  async (chainId) => {
+  async (chainId: any): Promise<any> => {
     const publicVaultInfo = await fetchPublicFlexibleSideVaultData({ chainId, provider: getViemClients })
     return publicVaultInfo
   },
@@ -360,7 +368,7 @@ export const fetchCakeFlexibleSideVaultPublicData = createAsyncThunk<SerializedC
 
 export const fetchCakeVaultFees = createAsyncThunk<SerializedVaultFees, ChainId>(
   'cakeVault/fetchFees',
-  async (chainId) => {
+  async (chainId: any): Promise<any> => {
     const vaultFees = await fetchVaultFees({
       chainId,
       provider: getViemClients,
@@ -372,7 +380,7 @@ export const fetchCakeVaultFees = createAsyncThunk<SerializedVaultFees, ChainId>
 
 export const fetchCakeFlexibleSideVaultFees = createAsyncThunk<SerializedVaultFees, ChainId>(
   'cakeFlexibleSideVault/fetchFees',
-  async (chainId) => {
+  async (chainId: any): Promise<any> => {
     const vaultFees = await fetchVaultFees({
       chainId,
       provider: getViemClients,
@@ -425,9 +433,9 @@ export const PoolsSlice = createSlice({
       const poolsConfig = getPoolsConfig(chainId) || []
       state.data = [...poolsConfig]
       state.userDataLoaded = false
-      state.cakeVault = initialPoolVaultState
-      state.ifo = initialIfoState
-      state.cakeFlexibleSideVault = initialPoolVaultState
+      state.cakeVault = initialPoolVaultState as any
+      state.ifo = initialIfoState as any
+      state.cakeFlexibleSideVault = initialPoolVaultState as any
     },
     setPoolPublicData: (state, action) => {
       const { sousId } = action.payload
@@ -467,8 +475,8 @@ export const PoolsSlice = createSlice({
         return { ...pool }
       })
       state.userDataLoaded = false
-      state.cakeVault = { ...state.cakeVault, userData: initialPoolVaultState.userData }
-      state.cakeFlexibleSideVault = { ...state.cakeFlexibleSideVault, userData: initialPoolVaultState.userData }
+      state.cakeVault = { ...state.cakeVault, userData: initialPoolVaultState.userData as any }
+      state.cakeFlexibleSideVault = { ...state.cakeFlexibleSideVault, userData: initialPoolVaultState.userData as any }
     })
     builder.addCase(
       fetchPoolsUserDataAsync.fulfilled,
@@ -539,7 +547,10 @@ export const PoolsSlice = createSlice({
         const index = state.data.findIndex((p) => p.sousId === sousId)
 
         if (index >= 0) {
-          state.data[index] = { ...state.data[index], userData: { ...state.data[index].userData, [field]: value } }
+          state.data[index] = {
+            ...state.data[index],
+            userData: { ...state.data[index].userData, [field]: value } as any,
+          }
         }
       },
     )

@@ -1,13 +1,14 @@
-import { Address, PublicClient, formatUnits } from 'viem'
-import BN from 'bignumber.js'
+import { ChainId } from '@pancakeswap/chains'
 import { BIG_TWO, BIG_ZERO } from '@pancakeswap/utils/bigNumber'
-import { ChainId } from '@pancakeswap/sdk'
-import { getFarmsPrices } from './farmPrices'
+import { CurrencyParams, getCurrencyKey, getCurrencyListUsdPrice } from '@pancakeswap/price-api-sdk'
+import BN from 'bignumber.js'
+import { Address, PublicClient, formatUnits } from 'viem'
+import { FarmV2SupportedChainId, supportedChainIdV2 } from '../const'
+import { SerializedFarmConfig, isStableFarm } from '../types'
+import { getFarmLpTokenPrice, getFarmsPrices } from './farmPrices'
 import { fetchPublicFarmsData } from './fetchPublicFarmData'
 import { fetchStableFarmData } from './fetchStableFarmData'
-import { isStableFarm, SerializedFarmConfig } from '../types'
 import { getFullDecimalMultiplier } from './getFullDecimalMultiplier'
-import { FarmV2SupportedChainId, supportedChainIdV2 } from '../const'
 
 const evmNativeStableLpMap: Record<
   FarmV2SupportedChainId,
@@ -37,11 +38,6 @@ const evmNativeStableLpMap: Record<
     wNative: 'WBNB',
     stable: 'BUSD',
   },
-  [ChainId.ETHERLINK_TESTNET]:{
-    address: '0xf5bf0C34d3c428A74Ceb98d27d38d0036C587200',
-    wNative: 'WXTZ',
-    stable: 'eUSD',
-  }
 }
 
 export const getTokenAmount = (balance: BN, decimals: number) => {
@@ -128,7 +124,43 @@ export async function farmV2FetchFarms({
     }
   })
 
-  const farmsDataWithPrices = getFarmsPrices(farmsData, evmNativeStableLpMap[chainId as FarmV2SupportedChainId], 18)
+  const decimals = 18
+  const farmsDataWithPrices = getFarmsPrices(
+    farmsData,
+    evmNativeStableLpMap[chainId as FarmV2SupportedChainId],
+    decimals,
+  )
+
+  const tokensWithoutPrice = farmsDataWithPrices.reduce<Map<string, CurrencyParams>>((acc, cur) => {
+    if (cur.tokenPriceBusd === '0') {
+      acc.set(cur.token.address, cur.token)
+    }
+    if (cur.quoteTokenPriceBusd === '0') {
+      acc.set(cur.quoteToken.address, cur.quoteToken)
+    }
+    return acc
+  }, new Map<string, CurrencyParams>())
+  const tokenInfoList = Array.from(tokensWithoutPrice.values())
+  if (tokenInfoList.length) {
+    const prices = await getCurrencyListUsdPrice(tokenInfoList)
+
+    return farmsDataWithPrices.map((f) => {
+      if (f.tokenPriceBusd !== '0' && f.quoteTokenPriceBusd !== '0') {
+        return f
+      }
+      const tokenKey = getCurrencyKey(f.token)
+      const quoteTokenKey = getCurrencyKey(f.quoteToken)
+      const tokenPrice = new BN(tokenKey ? prices[tokenKey] ?? 0 : 0)
+      const quoteTokenPrice = new BN(quoteTokenKey ? prices[quoteTokenKey] ?? 0 : 0)
+      const lpTokenPrice = getFarmLpTokenPrice(f, tokenPrice, quoteTokenPrice, decimals)
+      return {
+        ...f,
+        tokenPriceBusd: tokenPrice.toString(),
+        quoteTokenPriceBusd: quoteTokenPrice.toString(),
+        lpTokenPrice: lpTokenPrice.toString(),
+      }
+    })
+  }
 
   return farmsDataWithPrices
 }

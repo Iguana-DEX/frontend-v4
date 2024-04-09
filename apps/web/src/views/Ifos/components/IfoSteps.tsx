@@ -1,4 +1,4 @@
-import styled from 'styled-components'
+import { styled } from 'styled-components'
 import every from 'lodash/every'
 import {
   Balance,
@@ -13,31 +13,36 @@ import {
   Heading,
   Link,
   LogoRoundIcon,
-  NextLinkFromReactRouter as RouterLink,
   Skeleton,
   Step,
   StepStatus,
   Stepper,
   Text,
-  TooltipText,
-  useTooltip,
 } from '@pancakeswap/uikit'
+import { NextLinkFromReactRouter as RouterLink, Ifo } from '@pancakeswap/widgets-internal'
+import { ChainId, CurrencyAmount, Currency } from '@pancakeswap/sdk'
 import { Address, useAccount } from 'wagmi'
+import { useMemo, ReactNode } from 'react'
 
 import { useTranslation } from '@pancakeswap/localization'
-import useTokenBalance from 'hooks/useTokenBalance'
 import { useProfile } from 'state/profile/hooks'
 import ConnectWalletButton from 'components/ConnectWalletButton'
-import { getBalanceNumber } from '@pancakeswap/utils/formatBalance'
-import { useBUSDCakeAmount } from 'hooks/useBUSDPrice'
-import { useIfoCredit, useIfoCeiling } from 'state/pools/hooks'
-import { getICakeWeekDisplay } from 'views/Pools/helpers'
+import { useCakePrice } from 'hooks/useCakePrice'
+
+import { useChainName } from '../hooks/useChainNames'
 
 interface TypeProps {
+  sourceChainIfoCredit?: CurrencyAmount<Currency>
+  dstChainIfoCredit?: CurrencyAmount<Currency>
+  srcChainId?: ChainId
+  ifoChainId?: ChainId
   ifoCurrencyAddress: Address
   hasClaimed: boolean
   isCommitted: boolean
   isLive?: boolean
+  isFinished?: boolean
+  isCrossChainIfo?: boolean
+  hasBridged?: boolean
 }
 
 const SmallStakePoolCard = styled(Box)`
@@ -58,83 +63,107 @@ const Wrapper = styled(Container)`
   }
 `
 
-const InlineLink = styled(Link)`
-  display: inline;
-`
+function ICakeCard({
+  icon,
+  title,
+  credit,
+  more,
+  action,
+}: {
+  action?: ReactNode
+  icon?: ReactNode
+  title?: ReactNode
+  credit?: CurrencyAmount<Currency>
+  more?: ReactNode
+}) {
+  const balanceNumber = useMemo(() => credit && Number(credit.toExact()), [credit])
 
-const Step1 = ({ hasProfile }: { hasProfile: boolean }) => {
-  const { t } = useTranslation()
-  const credit = useIfoCredit()
-  const ceiling = useIfoCeiling()
-  const creditDollarValue = useBUSDCakeAmount(getBalanceNumber(credit))
-  const weeksDisplay = getICakeWeekDisplay(ceiling)
-
-  const { targetRef, tooltip, tooltipVisible } = useTooltip(
-    <Box>
-      <Text>
-        {t(
-          'The number of iCAKE equals the locked staking amount if the staking duration is longer than %weeks% weeks. If the staking duration is less than %weeks% weeks, it will linearly decrease based on the staking duration.',
-          {
-            weeks: weeksDisplay,
-          },
-        )}
-      </Text>
-      <InlineLink external href="https://docs.pancakeswap.finance/products/ifo-initial-farm-offering/icake">
-        {t('Learn more about iCAKE')}
-      </InlineLink>
-    </Box>,
-    {},
+  return (
+    <SmallStakePoolCard borderRadius="default" p="16px">
+      <FlexGap justifyContent="space-between" alignItems="center" flexWrap="wrap" gap="16px">
+        <Flex>
+          {icon}
+          <Box ml="16px">
+            <Text bold fontSize="12px" textTransform="uppercase" color="secondary">
+              {title}
+            </Text>
+            <Balance fontSize="20px" bold decimals={5} value={balanceNumber ?? 0} />
+            {more}
+          </Box>
+        </Flex>
+        {action}
+      </FlexGap>
+    </SmallStakePoolCard>
   )
+}
+
+const Step1 = ({
+  hasProfile,
+  sourceChainIfoCredit,
+}: {
+  srcChainId?: ChainId
+  hasProfile: boolean
+  sourceChainIfoCredit?: CurrencyAmount<Currency>
+}) => {
+  const { t } = useTranslation()
+  const cakePrice = useCakePrice()
+  const balanceNumber = useMemo(
+    () => sourceChainIfoCredit && Number(sourceChainIfoCredit.toExact()),
+    [sourceChainIfoCredit],
+  )
+  const creditDollarValue = cakePrice.multipliedBy(balanceNumber ?? 1).toNumber()
 
   return (
     <CardBody>
-      {tooltipVisible && tooltip}
       <Heading as="h4" color="secondary" mb="16px">
         {t('Lock CAKE in the CAKE pool')}
       </Heading>
       <Box>
         <Text mb="4px" color="textSubtle" small>
           {t(
-            'The maximum amount of CAKE you can commit to the Public Sale equals the number of your iCAKE. Lock more CAKE for longer durations to increase the maximum CAKE you can commit to the sale.',
+            'The maximum amount of CAKE you can commit to the Public Sale equals the number of your iCAKE, which is based on your veCAKE balance at the snapshot time of each IFO. Lock more CAKE for longer durations to increase the maximum CAKE you can commit to the sale.',
           )}
         </Text>
-        <TooltipText as="span" fontWeight={700} ref={targetRef} color="textSubtle" small>
+        <Link
+          external
+          fontWeight={700}
+          color="textSubtle"
+          small
+          href="https://docs.pancakeswap.finance/products/ifo-initial-farm-offering/icake#how-is-icake-calculated"
+        >
           {t('How does the number of iCAKE calculated?')}
-        </TooltipText>
+        </Link>
         <Text mt="4px" color="textSubtle" small>
-          {t(
-            'Missed this IFO? You will enjoy the same amount of iCAKE for future IFOs if your locked-staking position is not unlocked.',
-          )}
+          {t('Missed this IFO? Lock CAKE today for the next IFO, while enjoying a wide range of veCAKE benefits!')}
         </Text>
       </Box>
       {hasProfile && (
-        <SmallStakePoolCard borderRadius="default" p="16px">
-          <FlexGap justifyContent="space-between" alignItems="center" flexWrap="wrap" gap="16px">
-            <Flex>
-              <LogoRoundIcon style={{ alignSelf: 'flex-start' }} width={32} height={32} />
-              <Box ml="16px">
-                <Text bold fontSize="12px" textTransform="uppercase" color="secondary">
-                  {t('Your max CAKE entry')}
-                </Text>
-                <Balance fontSize="20px" bold decimals={5} value={getBalanceNumber(credit)} />
-                <Text fontSize="12px" color="textSubtle">
-                  {creditDollarValue !== undefined ? (
-                    <Balance
-                      value={creditDollarValue}
-                      fontSize="12px"
-                      color="textSubtle"
-                      decimals={2}
-                      prefix="~"
-                      unit=" USD"
-                    />
-                  ) : (
-                    <Skeleton mt="1px" height={16} width={64} />
-                  )}
-                </Text>
-              </Box>
-            </Flex>
-          </FlexGap>
-        </SmallStakePoolCard>
+        <ICakeCard
+          icon={
+            <Ifo.IfoSalesLogo
+              size={66}
+              hasICake={Boolean(sourceChainIfoCredit && sourceChainIfoCredit.quotient > 0n)}
+            />
+          }
+          credit={sourceChainIfoCredit}
+          title={t('Your ICAKE')}
+          more={
+            <Text fontSize="12px" color="textSubtle">
+              {creditDollarValue !== undefined ? (
+                <Balance
+                  value={creditDollarValue}
+                  fontSize="12px"
+                  color="textSubtle"
+                  decimals={2}
+                  prefix="~"
+                  unit=" USD"
+                />
+              ) : (
+                <Skeleton mt="1px" height={16} width={64} />
+              )}
+            </Text>
+          }
+        />
       )}
     </CardBody>
   )
@@ -144,17 +173,17 @@ const Step2 = ({ hasProfile, isLive, isCommitted }: { hasProfile: boolean; isLiv
   const { t } = useTranslation()
   return (
     <CardBody>
-      <Heading as="h4" color="secondary" mb="16px">
+      <Heading as="h4" color="secondary" mb="1rem">
         {t('Commit CAKE')}
       </Heading>
       <Text color="textSubtle" small>
-        {t(
-          'Please note that CAKE in the fixed-term staking positions will remain locked and can not be used for committing to IFO sales. You will need a separate amount of CAKE in your wallet balance to commit to the IFO sales.',
-        )}{' '}
-        <br />
+        {t('When the IFO sales are live, you can click “commit” to commit CAKE and buy the tokens being sold.')}
+      </Text>
+      <Text color="textSubtle" small mt="1rem">
+        {t('You will need a separate amount of CAKE in your wallet balance to commit to the IFO sales.')}
       </Text>
       {hasProfile && isLive && !isCommitted && (
-        <Button as="a" href="#current-ifo" mt="16px">
+        <Button as="a" href="#current-ifo" mt="1rem">
           {t('Commit CAKE')}
         </Button>
       )}
@@ -163,16 +192,28 @@ const Step2 = ({ hasProfile, isLive, isCommitted }: { hasProfile: boolean; isLiv
 }
 
 const IfoSteps: React.FC<React.PropsWithChildren<TypeProps>> = ({
+  dstChainIfoCredit,
+  sourceChainIfoCredit,
+  srcChainId,
+  ifoChainId,
   isCommitted,
   hasClaimed,
   isLive,
-  ifoCurrencyAddress,
+  isFinished,
+  isCrossChainIfo,
+  hasBridged,
 }) => {
   const { hasActiveProfile } = useProfile()
   const { address: account } = useAccount()
   const { t } = useTranslation()
-  const { balance } = useTokenBalance(ifoCurrencyAddress)
-  const stepsValidationStatus = [hasActiveProfile, balance.isGreaterThan(0), isCommitted, hasClaimed]
+  const ifoChainName = useChainName(ifoChainId)
+  const sourceChainHasICake = useMemo(
+    () => sourceChainIfoCredit && sourceChainIfoCredit.quotient > 0n,
+    [sourceChainIfoCredit],
+  )
+  const stepsValidationStatus = isCrossChainIfo
+    ? [hasActiveProfile, sourceChainHasICake, hasBridged, isCommitted, hasClaimed]
+    : [hasActiveProfile, sourceChainHasICake, isCommitted, hasClaimed]
 
   const getStatusProp = (index: number): StepStatus => {
     const arePreviousValid = index === 0 ? true : every(stepsValidationStatus.slice(0, index), Boolean)
@@ -208,6 +249,51 @@ const IfoSteps: React.FC<React.PropsWithChildren<TypeProps>> = ({
       )
     }
 
+    const renderCommitCakeStep = () => (
+      <Step2 hasProfile={hasActiveProfile} isLive={Boolean(isLive)} isCommitted={isCommitted} />
+    )
+    const renderClaimStep = () => (
+      <CardBody>
+        <Heading as="h4" color="secondary" mb="16px">
+          {t('Claim your tokens')}
+        </Heading>
+        <Text color="textSubtle" small>
+          {t('After the IFO sales finish, you can claim any IFO tokens that you bought, and any unspent CAKE.')}
+        </Text>
+      </CardBody>
+    )
+    const renderBridge = () => (
+      <CardBody>
+        <Heading as="h4" color="secondary" mb="16px">
+          {t('Bridge iCAKE')}
+        </Heading>
+        <Text color="textSubtle" small>
+          {t(
+            'To participate in the cross chain Public Sale, you need to bridge your iCAKE to the blockchain where the IFO will be hosted on.',
+          )}
+        </Text>
+        <Text color="textSubtle" small mt="1rem">
+          {t(
+            'Before or during the sale, you may bridge you iCAKE again if you’ve added more CAKE or extended your lock staking position.',
+          )}
+        </Text>
+        {sourceChainHasICake && (
+          <ICakeCard
+            icon={<LogoRoundIcon style={{ alignSelf: 'flex-start' }} width={32} height={32} />}
+            credit={dstChainIfoCredit}
+            title={t('Your iCAKE on %chainName%', { chainName: ifoChainName })}
+            action={
+              !isStepValid && !isFinished ? (
+                <Button as="a" href="#bridge-icake">
+                  {t('Bridge iCAKE')}
+                </Button>
+              ) : null
+            }
+          />
+        )}
+      </CardBody>
+    )
+
     switch (step) {
       case 0:
         return (
@@ -222,22 +308,21 @@ const IfoSteps: React.FC<React.PropsWithChildren<TypeProps>> = ({
           </CardBody>
         )
       case 1:
-        return <Step1 hasProfile={hasActiveProfile} />
-      case 2:
-        return <Step2 hasProfile={hasActiveProfile} isLive={isLive} isCommitted={isCommitted} />
-      case 3:
         return (
-          <CardBody>
-            <Heading as="h4" color="secondary" mb="16px">
-              {t('Claim your tokens and achievement')}
-            </Heading>
-            <Text color="textSubtle" small>
-              {t(
-                'After the IFO sales finish, you can claim any IFO tokens that you bought, and any unspent CAKE tokens will be returned to your wallet.',
-              )}
-            </Text>
-          </CardBody>
+          <Step1 hasProfile={hasActiveProfile} sourceChainIfoCredit={sourceChainIfoCredit} srcChainId={srcChainId} />
         )
+      case 2:
+        if (isCrossChainIfo) {
+          return renderBridge()
+        }
+        return renderCommitCakeStep()
+      case 3:
+        if (isCrossChainIfo) {
+          return renderCommitCakeStep()
+        }
+        return renderClaimStep()
+      case 4:
+        return renderClaimStep()
       default:
         return null
     }

@@ -1,10 +1,9 @@
 import { useTranslation } from '@pancakeswap/localization'
 import { Currency } from '@pancakeswap/sdk'
 import { LegacyRouter, LegacyPair as Pair } from '@pancakeswap/smart-router/legacy-router'
-import { AtomBox } from '@pancakeswap/ui'
-import { Box, Flex, Text, useTooltip } from '@pancakeswap/uikit'
+import { AtomBox, Box, Flex, Text, useTooltip } from '@pancakeswap/uikit'
 import { CurrencyLogo } from 'components/Logo'
-import styled from 'styled-components'
+import { styled } from 'styled-components'
 
 const { isStableSwapPair } = LegacyRouter
 
@@ -96,14 +95,14 @@ export const RouterViewer: React.FC<RouterViewerProps> = ({
   isMM = false,
 }) => {
   const { t } = useTranslation()
-  const { targetRef, tooltip, tooltipVisible } = useTooltip(<Text>{inputCurrency.symbol}</Text>, {
+  const { targetRef, tooltip, tooltipVisible } = useTooltip(<Text>{inputCurrency?.symbol}</Text>, {
     placement: 'right',
   })
   const {
     targetRef: outputTargetRef,
     tooltip: outputTooltip,
     tooltipVisible: outputTooltipVisible,
-  } = useTooltip(<Text>{outputCurrency.symbol}</Text>, {
+  } = useTooltip(<Text>{outputCurrency?.symbol}</Text>, {
     placement: 'right',
   })
   return (
@@ -120,7 +119,7 @@ export const RouterViewer: React.FC<RouterViewerProps> = ({
           return (
             <RouterPoolBox
               key={`tradingPairIds${isStableSwap ? p.stableSwapAddress : p.liquidityToken.address}`}
-              className={isStableSwap && 'isStableSwap'}
+              className={isStableSwap ? 'isStableSwap' : undefined}
             >
               <CurrencyLogo size="32px" currency={index === 0 ? inputCurrency : path[index]} />
               <CurrencyLogo size="32px" currency={index === pairs.length - 1 ? outputCurrency : path[index + 1]} />

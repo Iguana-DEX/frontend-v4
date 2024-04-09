@@ -1,22 +1,21 @@
-import { useState, useMemo, useEffect } from 'react'
-import { Modal, Box } from '@pancakeswap/uikit'
-import useTheme from 'hooks/useTheme'
-import { useBUSDCakeAmount } from 'hooks/useBUSDPrice'
-import { VaultKey } from 'state/types'
-import { getDecimalAmount } from '@pancakeswap/utils/formatBalance'
 import { useTranslation } from '@pancakeswap/localization'
-import _toNumber from 'lodash/toNumber'
+import { Box, Modal } from '@pancakeswap/uikit'
+import { getBalanceNumber, getDecimalAmount } from '@pancakeswap/utils/formatBalance'
 import BigNumber from 'bignumber.js'
-import { GenericModalProps } from '../types'
+import useTheme from 'hooks/useTheme'
+import { useEffect, useMemo, useState } from 'react'
+import { VaultKey } from 'state/types'
+import { useCheckVaultApprovalStatus } from '../../../hooks/useApprove'
 import BalanceField from '../Common/BalanceField'
 import LockedBodyModal from '../Common/LockedModalBody'
+import { GenericModalProps } from '../types'
 import RoiCalculatorModalProvider from './RoiCalculatorModalProvider'
-import { useCheckVaultApprovalStatus } from '../../../hooks/useApprove'
 
 const LockedStakeModal: React.FC<React.PropsWithChildren<GenericModalProps>> = ({
   onDismiss,
   currentBalance,
   stakingToken,
+  stakingTokenPrice,
   stakingTokenBalance,
   customLockAmount,
   customLockWeekInSeconds,
@@ -31,7 +30,14 @@ const LockedStakeModal: React.FC<React.PropsWithChildren<GenericModalProps>> = (
     }
   }, [customLockAmount])
 
-  const usdValueStaked = useBUSDCakeAmount(_toNumber(lockedAmount))
+  const usdValueStaked = useMemo(
+    () =>
+      getBalanceNumber(
+        getDecimalAmount(new BigNumber(lockedAmount), stakingToken.decimals).multipliedBy(stakingTokenPrice ?? 0),
+        stakingToken.decimals,
+      ),
+    [lockedAmount, stakingTokenPrice, stakingToken.decimals],
+  )
 
   const { allowance } = useCheckVaultApprovalStatus(VaultKey.CakeVault)
   const needApprove = useMemo(() => {
@@ -48,7 +54,7 @@ const LockedStakeModal: React.FC<React.PropsWithChildren<GenericModalProps>> = (
             stakingSymbol={stakingToken.symbol}
             stakingDecimals={stakingToken.decimals}
             lockedAmount={lockedAmount}
-            usedValueStaked={usdValueStaked}
+            usdValueStaked={usdValueStaked}
             stakingMax={currentBalance}
             setLockedAmount={setLockedAmount}
             stakingTokenBalance={stakingTokenBalance}
@@ -58,6 +64,7 @@ const LockedStakeModal: React.FC<React.PropsWithChildren<GenericModalProps>> = (
         <LockedBodyModal
           currentBalance={currentBalance}
           stakingToken={stakingToken}
+          stakingTokenPrice={stakingTokenPrice}
           onDismiss={onDismiss}
           lockedAmount={new BigNumber(lockedAmount)}
           customLockWeekInSeconds={customLockWeekInSeconds}

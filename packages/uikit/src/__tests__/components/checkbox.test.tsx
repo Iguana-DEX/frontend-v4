@@ -1,6 +1,6 @@
-import { vi } from "vitest";
-import { renderWithProvider } from "../../testHelpers";
+import { expect, it, vi } from "vitest";
 import Checkbox from "../../components/Checkbox/Checkbox";
+import { renderWithProvider } from "../../testHelpers";
 
 const handleChange = vi.fn();
 
@@ -9,8 +9,6 @@ it("renders correctly", () => {
   expect(asFragment()).toMatchInlineSnapshot(`
     <DocumentFragment>
       .c0 {
-      -webkit-appearance: none;
-      -moz-appearance: none;
       appearance: none;
       overflow: hidden;
       cursor: pointer;
@@ -18,8 +16,9 @@ it("renders correctly", () => {
       display: inline-block;
       height: 32px;
       width: 32px;
+      min-height: 32px;
+      min-width: 32px;
       vertical-align: middle;
-      -webkit-transition: background-color 0.2s ease-in-out;
       transition: background-color 0.2s ease-in-out;
       border: 0;
       border-radius: 8px;
@@ -39,10 +38,7 @@ it("renders correctly", () => {
       width: 50%;
       height: 25%;
       margin: auto;
-      -webkit-transform: rotate(-50deg);
-      -ms-transform: rotate(-50deg);
       transform: rotate(-50deg);
-      -webkit-transition: border-color 0.2s ease-in-out;
       transition: border-color 0.2s ease-in-out;
     }
 
@@ -71,7 +67,6 @@ it("renders correctly", () => {
     }
 
     <input
-        checked=""
         class="c0"
         scale="md"
         type="checkbox"

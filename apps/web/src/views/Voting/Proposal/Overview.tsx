@@ -1,17 +1,18 @@
-import { ArrowBackIcon, Box, Button, Flex, Heading, NotFound, ReactMarkdown } from '@pancakeswap/uikit'
-import { getAllVotes, getProposal } from 'state/voting/helpers'
-import { useAccount } from 'wagmi'
-import useSWRImmutable from 'swr/immutable'
-import { ProposalState } from 'state/types'
-import Link from 'next/link'
-import { useRouter } from 'next/router'
 import { useTranslation } from '@pancakeswap/localization'
+import { ArrowBackIcon, Box, Button, Flex, Heading, NotFound, ReactMarkdown } from '@pancakeswap/uikit'
+import { useQuery } from '@tanstack/react-query'
 import Container from 'components/Layout/Container'
 import PageLoader from 'components/Loader/PageLoader'
-import { FetchStatus } from 'config/constants/types'
-import { isCoreProposal } from '../helpers'
-import { ProposalStateTag, ProposalTypeTag } from '../components/Proposals/tags'
+import { NextSeo } from 'next-seo'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
+import { useMemo } from 'react'
+import { ProposalState } from 'state/types'
+import { getAllVotes, getProposal } from 'state/voting/helpers'
+import { useAccount } from 'wagmi'
 import Layout from '../components/Layout'
+import { ProposalStateTag, ProposalTypeTag } from '../components/Proposals/tags'
+import { isCoreProposal } from '../helpers'
 import Details from './Details'
 import Results from './Results'
 import Vote from './Vote'
@@ -27,19 +28,45 @@ const Overview = () => {
     status: proposalLoadingStatus,
     data: proposal,
     error,
-  } = useSWRImmutable(id ? ['proposal', id] : null, () => getProposal(id))
+  } = useQuery({
+    queryKey: ['voting', 'proposal', id],
+    queryFn: () => getProposal(id),
+    enabled: Boolean(id),
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  })
 
   const {
     status: votesLoadingStatus,
-    data: votes,
-    mutate: refetch,
-  } = useSWRImmutable(proposal ? ['proposal', proposal, 'votes'] : null, async () => getAllVotes(proposal))
+    data,
+    refetch,
+  } = useQuery({
+    queryKey: ['voting', 'proposal', proposal, 'votes'],
+    queryFn: async () => {
+      if (!proposal) {
+        throw new Error('No proposal')
+      }
+      return getAllVotes(proposal)
+    },
+    enabled: Boolean(proposal),
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  })
+
+  const votes = useMemo(() => data || [], [data])
+
   const hasAccountVoted = account && votes && votes.some((vote) => vote.voter.toLowerCase() === account.toLowerCase())
 
-  const isPageLoading = votesLoadingStatus === FetchStatus.Fetching || proposalLoadingStatus === FetchStatus.Fetching
+  const isPageLoading = votesLoadingStatus === 'pending' || proposalLoadingStatus === 'pending'
 
   if (!proposal && error) {
-    return <NotFound />
+    return (
+      <NotFound LinkComp={Link}>
+        <NextSeo title="404" />
+      </NotFound>
+    )
   }
 
   if (isFallback || !proposal) {
@@ -72,11 +99,15 @@ const Overview = () => {
           {!isPageLoading && !hasAccountVoted && proposal.state === ProposalState.ACTIVE && (
             <Vote proposal={proposal} onSuccess={refetch} mb="16px" />
           )}
-          <Votes votes={votes} totalVotes={votes?.length ?? proposal.votes} votesLoadingStatus={votesLoadingStatus} />
+          <Votes
+            votes={votes || []}
+            totalVotes={votes?.length ?? proposal.votes}
+            votesLoadingStatus={votesLoadingStatus}
+          />
         </Box>
         <Box position="sticky" top="60px">
           <Details proposal={proposal} />
-          <Results choices={proposal.choices} votes={votes} votesLoadingStatus={votesLoadingStatus} />
+          <Results choices={proposal.choices} votes={votes || []} votesLoadingStatus={votesLoadingStatus} />
         </Box>
       </Layout>
     </Container>

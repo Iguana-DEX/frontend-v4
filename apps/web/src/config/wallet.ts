@@ -1,8 +1,8 @@
+import { isCyberWallet } from '@cyberlab/cyber-app-sdk'
 import { WalletConfigV2 } from '@pancakeswap/ui-wallets'
 import { WalletFilledIcon } from '@pancakeswap/uikit'
-import type { ExtendEthereum } from 'global'
-import { isFirefox } from 'react-device-detect'
 import { getTrustWalletProvider } from '@pancakeswap/wagmi/connectors/trustWallet'
+import type { ExtendEthereum } from 'global'
 import { walletConnectNoQrCodeConnector } from '../utils/wagmi'
 import { ASSET_CDN } from './constants/endpoints'
 
@@ -11,11 +11,13 @@ export enum ConnectorNames {
   Injected = 'injected',
   WalletConnect = 'walletConnect',
   WalletConnectV1 = 'walletConnectLegacy',
-  BSC = 'bsc',
+  // BSC = 'bsc',
+  BinanceW3W = 'BinanceW3W',
   Blocto = 'blocto',
   WalletLink = 'coinbaseWallet',
-  Ledger = 'ledger',
+  // Ledger = 'ledger',
   TrustWallet = 'trustWallet',
+  CyberWallet = 'cyberwallet',
 }
 
 const createQrCode = (chainId: number, connect) => async () => {
@@ -45,6 +47,10 @@ const isMetamaskInstalled = () => {
   return false
 }
 
+function isBinanceWeb3WalletInstalled() {
+  return typeof window !== 'undefined' && Boolean((window.ethereum as ExtendEthereum)?.isBinance)
+}
+
 const walletsConfig = ({
   chainId,
   connect,
@@ -68,22 +74,35 @@ const walletsConfig = ({
       downloadLink: 'https://metamask.app.link/dapp/pancakeswap.finance/',
     },
     {
-      id: 'binance',
-      title: 'Binance Wallet',
-      icon: `${ASSET_CDN}/web/wallets/binance.png`,
+      id: 'BinanceW3W',
+      title: 'Binance Web3 Wallet',
+      icon: `${ASSET_CDN}/web/wallets/binance-w3w.png`,
+      connectorId: isBinanceWeb3WalletInstalled() ? ConnectorNames.Injected : ConnectorNames.BinanceW3W,
       get installed() {
-        return typeof window !== 'undefined' && Boolean(window.BinanceChain)
-      },
-      connectorId: ConnectorNames.BSC,
-      guide: {
-        desktop: 'https://www.bnbchain.org/en/binance-wallet',
-      },
-      downloadLink: {
-        desktop: isFirefox
-          ? 'https://addons.mozilla.org/en-US/firefox/addon/binance-chain/?src=search'
-          : 'https://chrome.google.com/webstore/detail/binance-wallet/fhbohimaelbohpjbbldcngcnapndodjp',
+        if (isBinanceWeb3WalletInstalled()) {
+          return true
+        }
+        // still showing the SDK if not installed
+        return undefined
       },
     },
+    // {
+    //   id: 'binance',
+    //   title: 'Binance Wallet',
+    //   icon: `${ASSET_CDN}/web/wallets/binance.png`,
+    //   get installed() {
+    //     return typeof window !== 'undefined' && Boolean(window.BinanceChain)
+    //   },
+    //   connectorId: ConnectorNames.BSC,
+    //   guide: {
+    //     desktop: 'https://www.bnbchain.org/en/binance-wallet',
+    //   },
+    //   downloadLink: {
+    //     desktop: isFirefox
+    //       ? 'https://addons.mozilla.org/en-US/firefox/addon/binance-chain/?src=search'
+    //       : 'https://chrome.google.com/webstore/detail/binance-wallet/fhbohimaelbohpjbbldcngcnapndodjp',
+    //   },
+    // },
     {
       id: 'coinbase',
       title: 'Coinbase Wallet',
@@ -131,6 +150,21 @@ const walletsConfig = ({
         return typeof window !== 'undefined' && Boolean(window.ethereum?.isBraveWallet)
       },
       downloadLink: 'https://brave.com/wallet/',
+    },
+    {
+      id: 'rabby',
+      title: 'Rabby Wallet',
+      icon: `${ASSET_CDN}/web/wallets/rabby.png`,
+      get installed() {
+        return typeof window !== 'undefined' && Boolean(window.ethereum?.isRabby)
+      },
+      connectorId: ConnectorNames.Injected,
+      guide: {
+        desktop: 'https://rabby.io/',
+      },
+      downloadLink: {
+        desktop: 'https://chrome.google.com/webstore/detail/rabby/acmacodkjbdgmoleebolmdjonilkdbch',
+      },
     },
     {
       id: 'math',
@@ -189,11 +223,24 @@ const walletsConfig = ({
       },
     },
     {
-      id: 'ledger',
-      title: 'Ledger',
-      icon: `${ASSET_CDN}/web/wallets/ledger.png`,
-      connectorId: ConnectorNames.Ledger,
+      id: 'cyberwallet',
+      title: 'CyberWallet',
+      icon: `${ASSET_CDN}/web/wallets/cyberwallet.png`,
+      connectorId: ConnectorNames.CyberWallet,
+      get installed() {
+        return typeof window !== 'undefined' && isCyberWallet()
+      },
+      isNotExtension: true,
+      guide: {
+        desktop: 'https://docs.cyber.co/sdk/cyber-account#supported-chains',
+      },
     },
+    // {
+    //   id: 'ledger',
+    //   title: 'Ledger',
+    //   icon: `${ASSET_CDN}/web/wallets/ledger.png`,
+    //   connectorId: ConnectorNames.Ledger,
+    // },
   ]
 }
 

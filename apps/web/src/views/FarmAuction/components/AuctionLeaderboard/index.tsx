@@ -3,7 +3,7 @@ import { Box, Card, Flex, Spinner, Text } from '@pancakeswap/uikit'
 import { TabToggle, TabToggleGroup } from 'components/TabToggle'
 import { Auction, AuctionStatus, Bidder } from 'config/constants/types'
 import { useState } from 'react'
-import styled from 'styled-components'
+import { styled } from 'styled-components'
 import AuctionHistory from '../AuctionHistory'
 import AuctionLeaderboardTable from './AuctionLeaderboardTable'
 import AuctionProgress from './AuctionProgress'
@@ -15,8 +15,8 @@ const AuctionLeaderboardCard = styled(Card)`
 `
 
 interface AuctionLeaderboardProps {
-  auction: Auction
-  bidders: Bidder[]
+  auction: Auction | null
+  bidders: Bidder[] | null
 }
 
 enum Tabs {
@@ -77,7 +77,7 @@ const CurrentAuctionCard: React.FC<React.PropsWithChildren<AuctionLeaderboardPro
           <AuctionLeaderboardTable bidders={bidders} noBidsText={t('No bids yet')} auctionId={id} />
         </Box>
       ) : (
-        <AuctionHistory mostRecentClosedAuctionId={getMostRecentClosedAuctionId(id, status)} />
+        <AuctionHistory mostRecentClosedAuctionId={getMostRecentClosedAuctionId(id, status) ?? 0} />
       )}
     </AuctionLeaderboardCard>
   )

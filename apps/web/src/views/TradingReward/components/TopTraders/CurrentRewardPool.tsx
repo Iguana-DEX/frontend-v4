@@ -1,16 +1,16 @@
-import styled from 'styled-components'
-import { useState, useCallback } from 'react'
 import { useInterval } from '@pancakeswap/hooks'
-import { Box, Flex, Text, Button, useMatchBreakpoints } from '@pancakeswap/uikit'
 import { useTranslation } from '@pancakeswap/localization'
-import getTimePeriods from '@pancakeswap/utils/getTimePeriods'
+import { Box, Button, Flex, Text, useMatchBreakpoints } from '@pancakeswap/uikit'
 import { formatNumber } from '@pancakeswap/utils/formatBalance'
-import { timeFormat } from 'views/TradingReward/utils/timeFormat'
-import { Incentives } from 'views/TradingReward/hooks/useAllTradingRewardPair'
-import { CampaignIdInfoDetail } from 'views/TradingReward/hooks/useCampaignIdInfo'
+import getTimePeriods from '@pancakeswap/utils/getTimePeriods'
 import Link from 'next/link'
+import { useCallback, useState } from 'react'
+import { styled } from 'styled-components'
 import TextComponent from 'views/TradingReward/components/TopTraders/YourTradingReward/TextComponent'
 import TimeText from 'views/TradingReward/components/TopTraders/YourTradingReward/TimeText'
+import { Incentives } from 'views/TradingReward/hooks/useAllTradingRewardPair'
+import { CampaignIdInfoDetail } from 'views/TradingReward/hooks/useCampaignIdInfo'
+import { timeFormat } from 'views/TradingReward/utils/timeFormat'
 
 const Container = styled(Flex)`
   position: relative;
@@ -73,7 +73,7 @@ const Decorations = styled(Box)`
 }`
 
 interface CurrentRewardPoolProps {
-  incentives: Incentives
+  incentives: Incentives | undefined
   campaignInfoData: CampaignIdInfoDetail
 }
 
@@ -90,7 +90,7 @@ const CurrentRewardPool: React.FC<React.PropsWithChildren<CurrentRewardPoolProps
   const [remainingSeconds, setRemainingSeconds] = useState(0)
 
   const updateRemainingSeconds = useCallback(() => {
-    setRemainingSeconds(campaignClaimTime - Date.now() / 1000)
+    setRemainingSeconds(Number(campaignClaimTime) - Date.now() / 1000)
   }, [campaignClaimTime])
 
   // Update every minute
@@ -105,7 +105,7 @@ const CurrentRewardPool: React.FC<React.PropsWithChildren<CurrentRewardPoolProps
         <Flex justifyContent="space-between" mb="10px">
           <TextComponent text={t('Starts')} />
           <Text bold color="white" fontSize={['14px', '14px', '14px', '20px']}>
-            {t('On %date%', { date: timeFormat(locale, incentives?.campaignStart) })}
+            {t('On %date%', { date: timeFormat(locale, incentives?.campaignStart ?? 0) })}
           </Text>
         </Flex>
         <Flex justifyContent="space-between" mb="10px">
@@ -120,14 +120,14 @@ const CurrentRewardPool: React.FC<React.PropsWithChildren<CurrentRewardPoolProps
             </Text>
           ) : (
             <Text bold color="white" fontSize={['14px', '14px', '14px', '20px']}>
-              {timeFormat(locale, incentives?.campaignClaimTime)}
+              {timeFormat(locale, incentives?.campaignClaimTime ?? 0)}
             </Text>
           )}
         </Flex>
         <Flex justifyContent="space-between" mb="10px">
           <TextComponent text={t('To win')} />
           <Text bold color="white" fontSize={['14px', '14px', '14px', '20px']}>
-            {t('Rank #50 or higher')}
+            {t('Rank #100 or higher')}
           </Text>
         </Flex>
         <Flex justifyContent="space-between" mb="10px">

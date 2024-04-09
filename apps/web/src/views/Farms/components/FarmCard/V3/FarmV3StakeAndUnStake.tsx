@@ -1,22 +1,27 @@
-import { useMemo, useState } from 'react'
 import { PositionDetails } from '@pancakeswap/farms'
 import { useTranslation } from '@pancakeswap/localization'
 import { Token } from '@pancakeswap/swap-sdk-core'
-import { AutoRow, QuestionHelper, RowBetween, SyncAltIcon } from '@pancakeswap/uikit'
-import { Balance } from '@pancakeswap/uikit/src/components/Balance'
-import { Box } from '@pancakeswap/uikit/src/components/Box'
-import { Button } from '@pancakeswap/uikit/src/components/Button'
-import { Link } from '@pancakeswap/uikit/src/components/Link'
-import { ChevronRightIcon } from '@pancakeswap/uikit/src/components/Svg'
-import { Text } from '@pancakeswap/uikit/src/components/Text'
-import { unwrappedToken } from '@pancakeswap/utils/unwrappedToken'
+import {
+  AutoRow,
+  Balance,
+  Box,
+  Button,
+  ChevronRightIcon,
+  Link,
+  QuestionHelper,
+  RowBetween,
+  SyncAltIcon,
+  Text,
+} from '@pancakeswap/uikit'
 import BigNumber from 'bignumber.js'
 import { RangeTag } from 'components/RangeTag'
 import { Bound } from 'config/constants/types'
 import { useDerivedPositionInfo } from 'hooks/v3/useDerivedPositionInfo'
 import useIsTickAtLimit from 'hooks/v3/useIsTickAtLimit'
 import { formatTickPrice } from 'hooks/v3/utils/formatTickPrice'
-import styled from 'styled-components'
+import { useMemo, useState } from 'react'
+import { styled } from 'styled-components'
+import { unwrappedToken } from 'utils/wrappedCurrency'
 import { V3Farm } from 'views/Farms/FarmsV3'
 import { FarmV3ApyButton } from './FarmV3ApyButton'
 
@@ -76,7 +81,7 @@ export const FarmV3LPPosition = ({
   const [inverted, setInverted] = useState(false)
 
   const priceLower = useMemo(() => {
-    if (!position) return null
+    if (!position) return undefined
     return token.equals(position.amount0.currency)
       ? inverted
         ? position.token0PriceLower
@@ -86,7 +91,7 @@ export const FarmV3LPPosition = ({
       : position.token0PriceLower
   }, [position, inverted, token])
   const priceUpper = useMemo(() => {
-    if (!position) return null
+    if (!position) return undefined
     return token.equals(position.amount1.currency)
       ? inverted
         ? position.token0PriceLower.invert()
@@ -119,8 +124,8 @@ export const FarmV3LPPosition = ({
         <Box>
           <Text bold fontSize="12px">
             {t('%assetA% per %assetB%', {
-              assetA: inverted ? unwrappedToken(quoteToken).symbol : unwrappedToken(token).symbol,
-              assetB: inverted ? unwrappedToken(token).symbol : unwrappedToken(quoteToken).symbol,
+              assetA: inverted ? unwrappedToken(quoteToken)?.symbol : unwrappedToken(token)?.symbol,
+              assetB: inverted ? unwrappedToken(token)?.symbol : unwrappedToken(quoteToken)?.symbol,
             })}
           </Text>
         </Box>
@@ -181,13 +186,13 @@ export function FarmV3LPPositionDetail({
           />
         </AutoRow>
       )}
-      <Balance fontSize="12px" color="textSubtle" decimals={2} value={estimatedUSD} unit=" USD" prefix="~" />
+      <Balance fontSize="12px" color="textSubtle" decimals={2} value={estimatedUSD ?? 0} unit=" USD" prefix="~" />
       <AutoRow columnGap="8px">
         <Balance
           fontSize="12px"
           color="textSubtle"
           decimals={2}
-          value={position ? +amountA.toSignificant(6) : 0}
+          value={position && amountA ? Number(amountA.toSignificant(6)) : 0}
           unit={` ${token.symbol}`}
           startFromValue
         />
@@ -195,7 +200,7 @@ export function FarmV3LPPositionDetail({
           fontSize="12px"
           color="textSubtle"
           decimals={2}
-          value={position ? +amountB.toSignificant(6) : 0}
+          value={position && amountB ? Number(amountB.toSignificant(6)) : 0}
           unit={` ${quoteToken.symbol}`}
           startFromValue
         />

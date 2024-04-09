@@ -4,8 +4,8 @@ import { request, gql } from 'graphql-request'
 import BigNumber from 'bignumber.js'
 import chunk from 'lodash/chunk'
 import _toLower from 'lodash/toLower'
-import { sub, getUnixTime } from 'date-fns'
-import { ChainId } from '@pancakeswap/sdk'
+import dayjs from 'dayjs'
+import { ChainId, getChainName } from '@pancakeswap/chains'
 import { SerializedFarmConfig } from '@pancakeswap/farms'
 import { BlockResponse } from '../apps/web/src/components/SubgraphHealthIndicator'
 import { BLOCKS_CLIENT_WITH_CHAIN } from '../apps/web/src/config/constants/endpoints'
@@ -27,8 +27,7 @@ interface AprMap {
 }
 
 const getWeekAgoTimestamp = () => {
-  const weekAgo = sub(new Date(), { weeks: 1 })
-  return getUnixTime(weekAgo)
+  return dayjs().subtract(1, 'weeks').unix()
 }
 
 const LP_HOLDERS_FEE = 0.0017
@@ -106,28 +105,39 @@ const getAprsForStableFarm = async (stableFarm: any): Promise<BigNumber> => {
   const stableSwapAddress = stableFarm?.stableSwapAddress
 
   try {
-    const day7Ago = sub(new Date(), { days: 7 })
+    const day3Ago = dayjs().subtract(3, 'days')
+    const day7Ago = dayjs().subtract(7, 'days')
 
-    const day7AgoTimestamp = getUnixTime(day7Ago)
+    const day3AgoTimestamp = day3Ago.unix()
+    const day7AgoTimestamp = day7Ago.unix()
 
-    const blockDay7Ago = await getBlockAtTimestamp(day7AgoTimestamp)
+    const [block3DaysAgo, block7DaysAgo] = await Promise.all([
+      getBlockAtTimestamp(day3AgoTimestamp),
+      getBlockAtTimestamp(day7AgoTimestamp),
+    ])
 
-    const { virtualPriceAtLatestBlock, virtualPriceOneDayAgo: virtualPrice7DayAgo } = await stableSwapClient.request(
+    const { virtualPriceAtLatestBlock, virtualPrice3DaysAgo, virtualPrice7DaysAgo } = await stableSwapClient.request(
       gql`
-        query virtualPriceStableSwap($stableSwapAddress: String, $blockDayAgo: Int!) {
+        query virtualPriceStableSwap($stableSwapAddress: String, $block3DaysAgo: Int!, $block7DaysAgo: Int!) {
           virtualPriceAtLatestBlock: pair(id: $stableSwapAddress) {
             virtualPrice
           }
-          virtualPriceOneDayAgo: pair(id: $stableSwapAddress, block: { number: $blockDayAgo }) {
+          virtualPrice3DaysAgo: pair(id: $stableSwapAddress, block: { number: $block3DaysAgo }) {
+            virtualPrice
+          }
+          virtualPrice7DaysAgo: pair(id: $stableSwapAddress, block: { number: $block7DaysAgo }) {
             virtualPrice
           }
         }
       `,
-      { stableSwapAddress: _toLower(stableSwapAddress), blockDayAgo: blockDay7Ago },
+      { stableSwapAddress: _toLower(stableSwapAddress), block7DaysAgo, block3DaysAgo },
     )
 
     const virtualPrice = virtualPriceAtLatestBlock?.virtualPrice
-    const preVirtualPrice = virtualPrice7DayAgo?.virtualPrice
+    const preVirtualPrice =
+      !virtualPrice7DaysAgo?.virtualPrice || virtualPrice7DaysAgo?.virtualPrice === '0'
+        ? virtualPrice3DaysAgo?.virtualPrice
+        : virtualPrice7DaysAgo?.virtualPrice
 
     const current = new BigNumber(virtualPrice)
     const prev = new BigNumber(preVirtualPrice)
@@ -219,13 +229,14 @@ const fetchAndUpdateLPsAPR = async () => {
 
 let logged = false
 export const getFarmConfig = async (chainId: ChainId) => {
+  const chainName = getChainName(chainId)
   try {
-    return (await import(`../packages/farms/constants/${chainId}`)).default.filter(
+    return (await import(`../packages/farms/constants/${chainName}`)).default.filter(
       (f: SerializedFarmConfig) => f.pid !== null,
     ) as SerializedFarmConfig[]
   } catch (error) {
     if (!logged) {
-      console.error('Cannot get farm config', error, chainId)
+      console.error('Cannot get farm config', error, chainId, chainName)
       logged = true
     }
     return []

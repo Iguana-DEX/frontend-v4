@@ -1,25 +1,20 @@
 import { useTranslation } from '@pancakeswap/localization'
 import { Currency, CurrencyAmount, Pair, Percent, Price, Token } from '@pancakeswap/sdk'
+import tryParseAmount from '@pancakeswap/utils/tryParseAmount'
 import { BIG_INT_ZERO } from 'config/constants/exchange'
 import { PairState, useV2Pair } from 'hooks/usePairs'
 import useTotalSupply from 'hooks/useTotalSupply'
 import { useCallback, useMemo } from 'react'
-import tryParseAmount from '@pancakeswap/utils/tryParseAmount'
-import { mintReducerAtom } from 'state/mint/reducer'
+import { useAddLiquidityV2FormDispatch, useAddLiquidityV2FormState } from 'state/mint/reducer'
 import { useAccount } from 'wagmi'
-import { useAtom, useAtomValue } from 'jotai'
 import { useCurrencyBalances } from '../wallet/hooks'
 import { Field, typeInput } from './actions'
-
-export function useMintState() {
-  return useAtomValue(mintReducerAtom)
-}
 
 export function useMintActionHandlers(noLiquidity: boolean | undefined): {
   onFieldAInput: (typedValue: string) => void
   onFieldBInput: (typedValue: string) => void
 } {
-  const [, dispatch] = useAtom(mintReducerAtom)
+  const dispatch = useAddLiquidityV2FormDispatch()
 
   const onFieldAInput = useCallback(
     (typedValue: string) => {
@@ -44,6 +39,7 @@ export function useDerivedMintInfo(
   currencyA: Currency | undefined,
   currencyB: Currency | undefined,
 ): {
+  isOneWeiAttack?: boolean
   dependentField: Field
   currencies: { [field in Field]?: Currency }
   pair?: Pair | null
@@ -61,7 +57,7 @@ export function useDerivedMintInfo(
 
   const { t } = useTranslation()
 
-  const { independentField, typedValue, otherTypedValue } = useMintState()
+  const { independentField, typedValue, otherTypedValue } = useAddLiquidityV2FormState()
 
   const dependentField = independentField === Field.CURRENCY_A ? Field.CURRENCY_B : Field.CURRENCY_A
 
@@ -79,15 +75,28 @@ export function useDerivedMintInfo(
 
   const totalSupply = useTotalSupply(pair?.liquidityToken)
 
+  const isOneWeiAttack = useMemo(
+    () =>
+      Boolean(
+        pairState === PairState.EXISTS &&
+          pair &&
+          totalSupply &&
+          totalSupply.quotient === BIG_INT_ZERO &&
+          ((pair.reserve0.quotient > BIG_INT_ZERO && pair.reserve1.quotient === BIG_INT_ZERO) ||
+            (pair.reserve1.quotient > BIG_INT_ZERO && pair.reserve0.quotient === BIG_INT_ZERO)),
+      ),
+    [pairState, totalSupply, pair],
+  )
+
   const noLiquidity: boolean =
     pairState === PairState.NOT_EXISTS ||
-    Boolean(totalSupply && totalSupply.quotient === BIG_INT_ZERO) ||
     Boolean(
       pairState === PairState.EXISTS &&
         pair &&
         pair.reserve0.quotient === BIG_INT_ZERO &&
         pair.reserve1.quotient === BIG_INT_ZERO,
-    )
+    ) ||
+    isOneWeiAttack
 
   // balances
   const balances = useCurrencyBalances(
@@ -151,8 +160,11 @@ export function useDerivedMintInfo(
       }
       return undefined
     }
+    if (!pair || pair.reserve0.quotient === BIG_INT_ZERO || pair.reserve1.quotient === BIG_INT_ZERO) {
+      return undefined
+    }
     const wrappedCurrencyA = currencyA?.wrapped
-    return pair && wrappedCurrencyA ? pair.priceOf(wrappedCurrencyA) : undefined
+    return wrappedCurrencyA ? pair.priceOf(wrappedCurrencyA) : undefined
   }, [currencyA, noLiquidity, pair, parsedAmounts])
 
   // liquidity minted
@@ -210,7 +222,12 @@ export function useDerivedMintInfo(
     addError = t('Insufficient %symbol% balance', { symbol: currencies[Field.CURRENCY_B]?.symbol })
   }
 
+  if (isOneWeiAttack) {
+    addError = t('Invalid Pair')
+  }
+
   return {
+    isOneWeiAttack,
     dependentField,
     currencies,
     pair,

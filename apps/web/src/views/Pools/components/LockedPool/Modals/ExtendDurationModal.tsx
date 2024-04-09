@@ -1,14 +1,13 @@
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { Modal, Box } from '@pancakeswap/uikit'
 import _noop from 'lodash/noop'
 import useTheme from 'hooks/useTheme'
-import { useBUSDCakeAmount } from 'hooks/useBUSDPrice'
 import { MAX_LOCK_DURATION } from '@pancakeswap/pools'
 import { useTranslation } from '@pancakeswap/localization'
 import BigNumber from 'bignumber.js'
 import { useIfoCeiling } from 'state/pools/hooks'
 
-import { getBalanceAmount } from '@pancakeswap/utils/formatBalance'
+import { getBalanceAmount, getBalanceNumber, getDecimalAmount } from '@pancakeswap/utils/formatBalance'
 import StaticAmount from '../Common/StaticAmount'
 import LockedBodyModal from '../Common/LockedModalBody'
 import Overview from '../Common/Overview'
@@ -19,6 +18,7 @@ import { ENABLE_EXTEND_LOCK_AMOUNT } from '../../../helpers'
 const ExtendDurationModal: React.FC<ExtendDurationModal> = ({
   modalTitle,
   stakingToken,
+  stakingTokenPrice,
   onDismiss,
   currentLockedAmount,
   currentDuration,
@@ -32,11 +32,18 @@ const ExtendDurationModal: React.FC<ExtendDurationModal> = ({
   const ceiling = useIfoCeiling()
   const { t } = useTranslation()
 
-  const usdValueStaked = useBUSDCakeAmount(currentLockedAmount)
+  const usdValueStaked = useMemo(
+    () =>
+      getBalanceNumber(
+        getDecimalAmount(new BigNumber(currentLockedAmount), stakingToken?.decimals).multipliedBy(stakingTokenPrice),
+        stakingToken?.decimals,
+      ),
+    [currentLockedAmount, stakingTokenPrice, stakingToken?.decimals],
+  )
 
   const validator = useCallback(
     ({ duration }) => {
-      const isValidAmount = currentLockedAmount && currentLockedAmount > 0
+      const isValidAmount = Boolean(currentLockedAmount && currentLockedAmount > 0)
       const totalDuration = currentDurationLeft + duration
 
       const isValidDuration = duration > 0 && totalDuration > 0 && totalDuration <= MAX_LOCK_DURATION
@@ -55,10 +62,10 @@ const ExtendDurationModal: React.FC<ExtendDurationModal> = ({
       finalDuration: duration,
       finalLockedAmount:
         currentDuration && currentDuration + duration > MAX_LOCK_DURATION
-          ? getBalanceAmount(ENABLE_EXTEND_LOCK_AMOUNT, stakingToken.decimals).toNumber()
+          ? getBalanceAmount(ENABLE_EXTEND_LOCK_AMOUNT, stakingToken?.decimals).toNumber()
           : 0,
     }),
-    [stakingToken.decimals, currentDuration],
+    [stakingToken?.decimals, currentDuration],
   )
 
   const customOverview = useCallback(
@@ -103,25 +110,28 @@ const ExtendDurationModal: React.FC<ExtendDurationModal> = ({
       >
         <Box mb="16px">
           <StaticAmount
-            stakingAddress={stakingToken.address}
-            stakingSymbol={stakingToken.symbol}
+            stakingAddress={stakingToken?.address || ''}
+            stakingSymbol={stakingToken?.symbol || ''}
             lockedAmount={currentLockedAmount}
             usdValueStaked={usdValueStaked}
           />
         </Box>
-        <LockedBodyModal
-          stakingToken={stakingToken}
-          currentBalance={currentBalance}
-          currentDuration={currentDuration}
-          currentDurationLeft={currentDurationLeft}
-          onDismiss={onDismiss}
-          lockedAmount={new BigNumber(currentLockedAmount)}
-          validator={validator}
-          prepConfirmArg={prepConfirmArg}
-          customOverview={customOverview}
-          isRenew={isRenew}
-          customLockWeekInSeconds={customLockWeekInSeconds}
-        />
+        {stakingToken ? (
+          <LockedBodyModal
+            stakingToken={stakingToken}
+            stakingTokenPrice={stakingTokenPrice}
+            currentBalance={currentBalance}
+            currentDuration={currentDuration}
+            currentDurationLeft={currentDurationLeft}
+            onDismiss={onDismiss}
+            lockedAmount={new BigNumber(currentLockedAmount)}
+            validator={validator}
+            prepConfirmArg={prepConfirmArg}
+            customOverview={customOverview}
+            isRenew={isRenew}
+            customLockWeekInSeconds={customLockWeekInSeconds}
+          />
+        ) : null}
       </Modal>
     </RoiCalculatorModalProvider>
   )

@@ -1,4 +1,4 @@
-import styled from 'styled-components'
+import { styled } from 'styled-components'
 import { Flex, Skeleton, PocketWatchIcon, Text } from '@pancakeswap/uikit'
 import { useTranslation } from '@pancakeswap/localization'
 import getTimePeriods from '@pancakeswap/utils/getTimePeriods'
@@ -75,9 +75,9 @@ const Countdown: React.FC<
   const { t } = useTranslation()
   const finishMs = currentPhase.ends
   const currentMs = Date.now()
-  const secondsUntilNextEvent = (finishMs - currentMs) / 1000
+  const secondsUntilNextEvent = finishMs !== null && finishMs !== undefined ? (finishMs - currentMs) / 1000 : undefined
 
-  const { minutes, hours, days } = getTimePeriods(secondsUntilNextEvent)
+  const { minutes, hours, days } = getTimePeriods(secondsUntilNextEvent || 0)
 
   const renderTimer = () => {
     if (hasCompetitionEnded) {
@@ -123,7 +123,7 @@ const Countdown: React.FC<
         {!secondsUntilNextEvent ? (
           <Skeleton height={42} width={190} />
         ) : (
-          <ProgressStepper steps={CompetitionSteps} activeStepIndex={currentPhase.step.index} />
+          <ProgressStepper steps={CompetitionSteps} activeStepIndex={currentPhase.step?.index} />
         )}
       </Flex>
     </Wrapper>

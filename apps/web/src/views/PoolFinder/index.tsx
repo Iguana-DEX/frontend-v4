@@ -1,20 +1,13 @@
 import { Currency } from '@pancakeswap/sdk'
-import {
-  AddIcon,
-  Button,
-  ChevronDownIcon,
-  Text,
-  useModal,
-  NextLinkFromReactRouter,
-  AutoColumn,
-  ColumnCenter,
-} from '@pancakeswap/uikit'
+import { AddIcon, Button, ChevronDownIcon, Text, useModal, AutoColumn, ColumnCenter } from '@pancakeswap/uikit'
+import { NextLinkFromReactRouter } from '@pancakeswap/widgets-internal'
+
 import { useAccount } from 'wagmi'
 import { useTranslation } from '@pancakeswap/localization'
 import { BIG_INT_ZERO } from 'config/constants/exchange'
 import useNativeCurrency from 'hooks/useNativeCurrency'
 import { useCallback, useEffect, useState } from 'react'
-import styled from 'styled-components'
+import { styled } from 'styled-components'
 import { LightCard } from 'components/Card'
 import { MinimalPositionCard } from 'components/PositionCard'
 import { PairState, useV2Pair } from 'hooks/usePairs'

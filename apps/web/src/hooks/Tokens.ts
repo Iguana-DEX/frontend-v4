@@ -1,31 +1,33 @@
 /* eslint-disable no-param-reassign */
-import { ChainId, ERC20Token } from '@pancakeswap/sdk'
+import { ChainId } from '@pancakeswap/chains'
+import { ERC20Token } from '@pancakeswap/sdk'
 import { Currency, NativeCurrency } from '@pancakeswap/swap-sdk-core'
 
 import { TokenAddressMap } from '@pancakeswap/token-lists'
 import { GELATO_NATIVE } from 'config/constants'
+import { UnsafeCurrency } from 'config/constants/types'
 import { useAtomValue } from 'jotai'
 import { useMemo } from 'react'
-import { useToken as useToken_ } from 'wagmi'
 import {
   combinedCurrenciesMapFromActiveUrlsAtom,
   combinedTokenMapFromActiveUrlsAtom,
   combinedTokenMapFromOfficialsUrlsAtom,
   useUnsupportedTokenList,
   useWarningTokenList,
-} from '../state/lists/hooks'
+} from 'state/lists/hooks'
+import { safeGetAddress } from 'utils'
+import { useToken as useToken_ } from 'wagmi'
 import useUserAddedTokens from '../state/user/hooks/useUserAddedTokens'
-import { isAddress } from '../utils'
 import { useActiveChainId } from './useActiveChainId'
 import useNativeCurrency from './useNativeCurrency'
 
 const mapWithoutUrls = (tokenMap?: TokenAddressMap<ChainId>, chainId?: number) => {
   if (!tokenMap || !chainId) return {}
   return Object.keys(tokenMap[chainId] || {}).reduce<{ [address: string]: ERC20Token }>((newMap, address) => {
-    const checksummedAddress = isAddress(address)
+    const checksumAddress = safeGetAddress(address)
 
-    if (checksummedAddress && !newMap[checksummedAddress]) {
-      newMap[checksummedAddress] = tokenMap[chainId][address].token
+    if (checksumAddress && !newMap[checksumAddress]) {
+      newMap[checksumAddress] = tokenMap[chainId][address].token
     }
 
     return newMap
@@ -54,10 +56,10 @@ export function useAllTokens(): { [address: string]: ERC20Token } {
         // reduce into all ALL_TOKENS filtered by the current chain
         .reduce<{ [address: string]: ERC20Token }>(
           (tokenMap_, token) => {
-            const checksummedAddress = isAddress(token.address)
+            const checksumAddress = safeGetAddress(token.address)
 
-            if (checksummedAddress) {
-              tokenMap_[checksummedAddress] = token
+            if (checksumAddress) {
+              tokenMap_[checksumAddress] = token
             }
 
             return tokenMap_
@@ -92,10 +94,10 @@ export function useOfficialsAndUserAddedTokens(): { [address: string]: ERC20Toke
         // reduce into all ALL_TOKENS filtered by the current chain
         .reduce<{ [address: string]: ERC20Token }>(
           (tokenMap_, token) => {
-            const checksummedAddress = isAddress(token.address)
+            const checksumAddress = safeGetAddress(token.address)
 
-            if (checksummedAddress) {
-              tokenMap_[checksummedAddress] = token
+            if (checksumAddress) {
+              tokenMap_[checksumAddress] = token
             }
 
             return tokenMap_
@@ -127,9 +129,9 @@ export function useIsTokenActive(token: ERC20Token | undefined | null): boolean 
     return false
   }
 
-  const tokenAddress = isAddress(token.address)
+  const tokenAddress = safeGetAddress(token.address)
 
-  return tokenAddress && !!activeTokens[tokenAddress]
+  return Boolean(tokenAddress && !!activeTokens[tokenAddress])
 }
 
 // Check if currency is included in custom list from user storage
@@ -148,9 +150,10 @@ export function useIsUserAddedToken(currency: Currency | undefined | null): bool
 // otherwise returns the token
 export function useToken(tokenAddress?: string): ERC20Token | undefined | null {
   const { chainId } = useActiveChainId()
+  const unsupportedTokens = useUnsupportedTokens()
   const tokens = useAllTokens()
 
-  const address = isAddress(tokenAddress)
+  const address = safeGetAddress(tokenAddress)
 
   const token: ERC20Token | undefined = address ? tokens[address] : undefined
 
@@ -164,6 +167,7 @@ export function useToken(tokenAddress?: string): ERC20Token | undefined | null {
   return useMemo(() => {
     if (token) return token
     if (!chainId || !address) return undefined
+    if (unsupportedTokens[address]) return undefined
     if (isLoading) return null
     if (data) {
       return new ERC20Token(
@@ -175,34 +179,35 @@ export function useToken(tokenAddress?: string): ERC20Token | undefined | null {
       )
     }
     return undefined
-  }, [token, chainId, address, isLoading, data])
+  }, [token, chainId, address, isLoading, data, unsupportedTokens])
 }
 
-export function useOnRampToken(tokenAddress?: string): Currency | undefined {
+export function useOnRampToken(currencyId?: string): Currency | undefined {
   const { chainId } = useActiveChainId()
   const tokens = useAllOnRampTokens()
-  const address = isAddress(tokenAddress)
-  const token = tokens[tokenAddress]
+  const token = currencyId && tokens[currencyId]
 
   return useMemo(() => {
     if (token) return token
-    if (!chainId || !address) return undefined
+    if (!chainId || !currencyId) return undefined
     return undefined
-  }, [token, chainId, address])
+  }, [token, chainId, currencyId])
 }
 
-export function useCurrency(currencyId: string | undefined): Currency | ERC20Token | null | undefined {
-  const native = useNativeCurrency()
+export function useCurrency(currencyId: string | undefined): UnsafeCurrency {
+  const native: NativeCurrency = useNativeCurrency()
   const isNative =
     currencyId?.toUpperCase() === native.symbol?.toUpperCase() || currencyId?.toLowerCase() === GELATO_NATIVE
+
   const token = useToken(isNative ? undefined : currencyId)
   return isNative ? native : token
 }
 
 export function useOnRampCurrency(currencyId: string | undefined): NativeCurrency | Currency | null | undefined {
-  const native = useNativeCurrency()
+  const native: NativeCurrency = useNativeCurrency()
   const isNative =
     currencyId?.toUpperCase() === native.symbol?.toUpperCase() || currencyId?.toLowerCase() === GELATO_NATIVE
   const token = useOnRampToken(currencyId)
+
   return isNative ? native : token
 }

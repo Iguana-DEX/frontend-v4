@@ -1,36 +1,36 @@
+import { ChainId } from '@pancakeswap/chains'
+import { useTranslation } from '@pancakeswap/localization'
+import { WNATIVE } from '@pancakeswap/sdk'
 import {
   Box,
   Button,
+  CopyAddress,
   Flex,
+  FlexGap,
+  InfoFilledIcon,
   InjectedModalProps,
   LinkExternal,
   Message,
+  ScanLink,
   Skeleton,
   Text,
-  CopyAddress,
-  FlexGap,
-  useTooltip,
   TooltipText,
-  InfoFilledIcon,
-  ScanLink,
+  useTooltip,
 } from '@pancakeswap/uikit'
-import { ChainId, WNATIVE } from '@pancakeswap/sdk'
+import { ChainLogo } from 'components/Logo/ChainLogo'
 import { FetchStatus } from 'config/constants/types'
 import useActiveWeb3React from 'hooks/useActiveWeb3React'
-import { useTranslation } from '@pancakeswap/localization'
 import useAuth from 'hooks/useAuth'
 import useNativeCurrency from 'hooks/useNativeCurrency'
 import useTokenBalance, { useBSCCakeBalance } from 'hooks/useTokenBalance'
-import { ChainLogo } from 'components/Logo/ChainLogo'
 
-import { getBlockExploreLink, getBlockExploreName } from 'utils'
-import { getFullDisplayBalance, formatBigInt } from '@pancakeswap/utils/formatBalance'
-import { useBalance } from 'wagmi'
-import { useDomainNameForAddress } from 'hooks/useDomain'
-import { isMobile } from 'react-device-detect'
-import { useState } from 'react'
+import { formatBigInt, getFullDisplayBalance } from '@pancakeswap/utils/formatBalance'
 import InternalLink from 'components/Links'
-import CakeBenefitsCard from './CakeBenefitsCard'
+import { useDomainNameForAddress } from 'hooks/useDomain'
+import { useState } from 'react'
+import { isMobile } from 'react-device-detect'
+import { getBlockExploreLink, getBlockExploreName } from 'utils'
+import { Address, useBalance } from 'wagmi'
 
 const COLORS = {
   ETH: '#627EEA',
@@ -46,14 +46,14 @@ interface WalletInfoProps {
 const WalletInfo: React.FC<WalletInfoProps> = ({ hasLowNativeBalance, onDismiss }) => {
   const { t } = useTranslation()
   const { account, chainId, chain } = useActiveWeb3React()
-  const { domainName } = useDomainNameForAddress(account)
+  const { domainName } = useDomainNameForAddress(account ?? '')
   const isBSC = chainId === ChainId.BSC
-  const bnbBalance = useBalance({ address: account, chainId: ChainId.BSC })
-  const nativeBalance = useBalance({ address: account, enabled: !isBSC })
+  const bnbBalance = useBalance({ address: account ?? undefined, chainId: ChainId.BSC })
+  const nativeBalance = useBalance({ address: account ?? undefined, enabled: !isBSC })
   const native = useNativeCurrency()
-  const wNativeToken = !isBSC ? WNATIVE[chainId] : null
+  const wNativeToken = !isBSC ? WNATIVE[chainId as ChainId] : null
   const wBNBToken = WNATIVE[ChainId.BSC]
-  const { balance: wNativeBalance, fetchStatus: wNativeFetchStatus } = useTokenBalance(wNativeToken?.address)
+  const { balance: wNativeBalance, fetchStatus: wNativeFetchStatus } = useTokenBalance(wNativeToken?.address as Address)
   const { balance: wBNBBalance, fetchStatus: wBNBFetchStatus } = useTokenBalance(wBNBToken?.address, true)
   const { balance: cakeBalance, fetchStatus: cakeFetchStatus } = useBSCCakeBalance()
   const [mobileTooltipShow, setMobileTooltipShow] = useState(false)
@@ -90,13 +90,16 @@ const WalletInfo: React.FC<WalletInfoProps> = ({ hasLowNativeBalance, onDismiss 
     },
   )
 
+  const showBscEntryPoint = Number(bnbBalance?.data?.value) === 0
+  const showNativeEntryPoint = Number(nativeBalance?.data?.value) === 0
+
   return (
     <>
       <Text color="secondary" fontSize="12px" textTransform="uppercase" fontWeight="bold" mb="8px">
         {t('Your Address')}
       </Text>
       <FlexGap flexDirection="column" mb="24px" gap="8px">
-        <CopyAddress tooltipMessage={t('Copied')} account={account} />
+        <CopyAddress tooltipMessage={t('Copied')} account={account ?? undefined} />
         {domainName ? <Text color="textSubtle">{domainName}</Text> : null}
       </FlexGap>
       {hasLowNativeBalance && (
@@ -137,7 +140,25 @@ const WalletInfo: React.FC<WalletInfoProps> = ({ hasLowNativeBalance, onDismiss 
             {!nativeBalance.isFetched ? (
               <Skeleton height="22px" width="60px" />
             ) : (
-              nativeBalance && <Text>{formatBigInt(nativeBalance?.data?.value ?? 0n, 6)}</Text>
+              <Flex>
+                <Text
+                  color={showNativeEntryPoint ? 'warning' : 'text'}
+                  fontWeight={showNativeEntryPoint ? 'bold' : 'normal'}
+                >
+                  {formatBigInt(nativeBalance?.data?.value ?? 0n, 6)}
+                </Text>
+                {showNativeEntryPoint ? (
+                  <TooltipText
+                    ref={buyCryptoTargetRef}
+                    onClick={() => setMobileTooltipShow(false)}
+                    display="flex"
+                    style={{ justifyContent: 'center' }}
+                  >
+                    <InfoFilledIcon pl="2px" fill="#000" color="#D67E0A" width="22px" />
+                  </TooltipText>
+                ) : null}
+                {buyCryptoTooltipVisible && (!isMobile || mobileTooltipShow) && buyCryptoTooltip}
+              </Flex>
             )}
           </Flex>
           {wNativeBalance && wNativeBalance.gt(0) && (
@@ -156,6 +177,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({ hasLowNativeBalance, onDismiss 
           )}
         </Box>
       )}
+
       <Box mb="24px">
         <Flex justifyContent="space-between" alignItems="center" mb="8px">
           <Flex bg={COLORS.BNB} borderRadius="16px" pl="4px" pr="8px" py="2px">
@@ -164,7 +186,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({ hasLowNativeBalance, onDismiss 
               BNB Smart Chain
             </Text>
           </Flex>
-          <ScanLink chainId={ChainId.BSC} href={getBlockExploreLink(account, 'address', ChainId.BSC)}>
+          <ScanLink useBscCoinFallback href={getBlockExploreLink(account, 'address', ChainId.BSC)}>
             {getBlockExploreName(ChainId.BSC)}
           </ScanLink>
         </Flex>
@@ -176,21 +198,21 @@ const WalletInfo: React.FC<WalletInfoProps> = ({ hasLowNativeBalance, onDismiss 
             ) : (
               <Flex alignItems="center" justifyContent="center">
                 <Text
-                  fontWeight={Number(bnbBalance?.data?.value) === 0 ? 'bold' : 'normal'}
-                  color={Number(bnbBalance?.data?.value) === 0 ? 'warning' : 'normal'}
+                  fontWeight={showBscEntryPoint ? 'bold' : 'normal'}
+                  color={showBscEntryPoint ? 'warning' : 'normal'}
                 >
                   {formatBigInt(bnbBalance?.data?.value ?? 0n, 6)}
                 </Text>
-                <TooltipText
-                  ref={buyCryptoTargetRef}
-                  onClick={() => setMobileTooltipShow(false)}
-                  display="flex"
-                  style={{ justifyContent: 'center' }}
-                >
-                  {Number(bnbBalance?.data?.value) === 0 ? (
+                {showBscEntryPoint ? (
+                  <TooltipText
+                    ref={buyCryptoTargetRef}
+                    onClick={() => setMobileTooltipShow(false)}
+                    display="flex"
+                    style={{ justifyContent: 'center' }}
+                  >
                     <InfoFilledIcon pl="2px" fill="#000" color="#D67E0A" width="22px" />
-                  ) : null}
-                </TooltipText>
+                  </TooltipText>
+                ) : null}
                 {buyCryptoTooltipVisible && (!isMobile || mobileTooltipShow) && buyCryptoTooltip}
               </Flex>
             )}
@@ -215,7 +237,6 @@ const WalletInfo: React.FC<WalletInfoProps> = ({ hasLowNativeBalance, onDismiss 
           )}
         </Flex>
       </Box>
-      <CakeBenefitsCard onDismiss={onDismiss} />
       <Button variant="secondary" width="100%" minHeight={48} onClick={handleLogout}>
         {t('Disconnect Wallet')}
       </Button>

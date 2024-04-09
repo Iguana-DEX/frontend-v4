@@ -4,17 +4,20 @@ import {
   AutoColumn,
   Box,
   Flex,
-  NextLinkFromReactRouter,
   SortArrowIcon,
   Text,
   useMatchBreakpoints,
 } from '@pancakeswap/uikit'
-import { useActiveChainId } from 'hooks/useActiveChainId'
+import { NextLinkFromReactRouter } from '@pancakeswap/widgets-internal'
+
 import { useTranslation } from '@pancakeswap/localization'
+import { useActiveChainId } from 'hooks/useActiveChainId'
 import useTheme from 'hooks/useTheme'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { multiChainId } from 'state/info/constant'
 import { useChainNameByQuery, useMultiChainPath } from 'state/info/hooks'
-import styled from 'styled-components'
+import { styled } from 'styled-components'
+import { getTokenNameAlias, getTokenSymbolAlias } from 'utils/getTokenAlias'
 import { CurrencyLogo } from 'views/Info/components/CurrencyLogo'
 import { Arrow, Break, ClickableColumnHeader, PageButtons, TableWrapper } from 'views/Info/components/InfoTables/shared'
 import { TOKEN_HIDE, v3InfoPath } from '../../constants'
@@ -60,7 +63,7 @@ const ResponsiveGrid = styled.div`
 
 const LinkWrapper = styled(NextLinkFromReactRouter)`
   text-decoration: none;
-  :hover {
+  &:hover {
     cursor: pointer;
     opacity: 0.7;
   }
@@ -76,6 +79,9 @@ const ResponsiveLogo = styled(CurrencyLogo)`
 const DataRow = ({ tokenData, index, chainPath }: { tokenData: TokenData; index: number; chainPath: string }) => {
   const { theme } = useTheme()
   const chainName = useChainNameByQuery()
+  const chainId = multiChainId[chainName]
+  const tokenSymbol = getTokenSymbolAlias(tokenData.address, chainId, tokenData.symbol) ?? ''
+  const tokenName = getTokenNameAlias(tokenData.address, chainId, tokenData.name) ?? ''
   const { isMobile } = useMatchBreakpoints()
   return (
     <LinkWrapper to={`/${v3InfoPath}${chainPath}/tokens/${tokenData.address}`}>
@@ -88,10 +94,10 @@ const DataRow = ({ tokenData, index, chainPath }: { tokenData: TokenData; index:
 
           <Text style={{ marginLeft: '10px' }}>
             <RowFixed>
-              {isMobile ? <HoverInlineText text={tokenData.symbol} /> : <HoverInlineText text={tokenData.name} />}
+              {isMobile ? <HoverInlineText text={tokenSymbol} /> : <HoverInlineText text={tokenName} />}
               {!isMobile && (
                 <Text ml="8px" color={theme.colors.text99}>
-                  ({tokenData.symbol})
+                  ({tokenSymbol})
                 </Text>
               )}
             </RowFixed>
@@ -148,7 +154,7 @@ export default function TokenTable({
   }, [maxItems, tokenDatas])
 
   const sortedTokens = useMemo(() => {
-    return tokenDatas
+    return tokenDatas && chainId
       ? tokenDatas
           .filter((x) => !!x && !TOKEN_HIDE?.[chainId]?.includes(x.address))
           .sort((a, b) => {

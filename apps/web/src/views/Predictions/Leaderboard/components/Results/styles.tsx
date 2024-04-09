@@ -1,9 +1,7 @@
+import { useTranslation } from '@pancakeswap/localization'
 import { Token } from '@pancakeswap/sdk'
 import { Flex, FlexProps, Text } from '@pancakeswap/uikit'
-import { useTranslation } from '@pancakeswap/localization'
-import useBUSDPrice from 'hooks/useBUSDPrice'
-import { multiplyPriceByAmount } from 'utils/prices'
-import { useConfig } from 'views/Predictions/context/ConfigProvider'
+import { useTokenUsdPriceBigNumber } from 'views/Predictions/hooks/useTokenPrice'
 
 export const Row: React.FC<React.PropsWithChildren<FlexProps>> = ({ children, ...props }) => {
   return (
@@ -17,26 +15,25 @@ interface NetWinningsProps extends FlexProps {
   amount: number
   textPrefix?: string
   textColor?: string
+  token: Token | undefined
 }
 
-export const NetWinnings: React.FC<React.PropsWithChildren<NetWinningsProps>> = (props) => {
-  const { token } = useConfig()
+export const NetWinnings: React.FC<React.PropsWithChildren<NetWinningsProps>> = ({ token, ...props }) => {
   return <NetWinningsView token={token} {...props} />
 }
 
-export const NetWinningsView: React.FC<React.PropsWithChildren<NetWinningsProps & { token: Token }>> = ({
+export const NetWinningsView: React.FC<React.PropsWithChildren<NetWinningsProps>> = ({
   token,
   amount,
   textPrefix = '',
   textColor = 'text',
   ...props
 }) => {
-  const bnbBusdPrice = useBUSDPrice(token)
-  const value = multiplyPriceByAmount(bnbBusdPrice, Math.abs(amount))
-
+  const tokenPrice = useTokenUsdPriceBigNumber(token, !!amount)
   if (!amount) {
     return null
   }
+  const value = tokenPrice.multipliedBy(Math.abs(amount)).toNumber()
 
   return (
     <Flex flexDirection="column" alignItems="flex-end" {...props}>
@@ -50,16 +47,23 @@ export const NetWinningsView: React.FC<React.PropsWithChildren<NetWinningsProps 
   )
 }
 
-export const NetWinningsRow: React.FC<React.PropsWithChildren<{ amount: number }>> = ({ amount }) => {
+export const NetWinningsRow: React.FC<React.PropsWithChildren<{ amount: number; token: Token | undefined }>> = ({
+  amount,
+  token,
+}) => {
   const { t } = useTranslation()
-  const { token } = useConfig()
 
   return (
     <Row mb="4px">
       <Text fontSize="12px" color="textSubtle">
-        {t('Net Winnings (%symbol%)', { symbol: token.symbol })}
+        {t('Net Winnings (%symbol%)', { symbol: token?.symbol })}
       </Text>
-      <NetWinnings amount={amount} textPrefix={amount > 0 ? '+' : ''} textColor={amount > 0 ? 'success' : 'failure'} />
+      <NetWinnings
+        amount={amount}
+        token={token}
+        textPrefix={amount > 0 ? '+' : ''}
+        textColor={amount > 0 ? 'success' : 'failure'}
+      />
     </Row>
   )
 }

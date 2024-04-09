@@ -1,16 +1,15 @@
-import styled from 'styled-components'
+import { styled } from 'styled-components'
 import { useAccount } from 'wagmi'
-import { Price, Currency } from '@pancakeswap/sdk'
 import { Button, Grid, Text, Flex, Box, BinanceIcon, useModal, Skeleton } from '@pancakeswap/uikit'
 import { formatNumber } from '@pancakeswap/utils/formatBalance'
 import { ContextApi, useTranslation } from '@pancakeswap/localization'
-import { useBNBBusdPrice } from 'hooks/useBUSDPrice'
-import { multiplyPriceByAmount } from 'utils/prices'
 import { NftToken } from 'state/nftMarket/types'
 import BuyModal from 'views/Nft/market/components/BuySellModals/BuyModal'
 import SellModal from 'views/Nft/market/components/BuySellModals/SellModal'
 import ProfileCell from 'views/Nft/market/components/ProfileCell'
-import { isAddress } from 'utils'
+import { safeGetAddress } from 'utils'
+import { useBNBPrice } from 'hooks/useBNBPrice'
+import BigNumber from 'bignumber.js'
 import { ButtonContainer } from '../../shared/styles'
 
 const OwnersTableRow = styled(Grid)`
@@ -26,15 +25,18 @@ const OwnersTableRow = styled(Grid)`
 interface RowProps {
   t: ContextApi['t']
   nft: NftToken
-  bnbBusdPrice: Price<Currency, Currency>
-  account: string
+  bnbBusdPrice: BigNumber
+  account?: string
   onSuccessSale: () => void
 }
 
 const Row: React.FC<React.PropsWithChildren<RowProps>> = ({ t, nft, bnbBusdPrice, account, onSuccessSale }) => {
-  const priceInUsd = multiplyPriceByAmount(bnbBusdPrice, parseFloat(nft?.marketData?.currentAskPrice))
+  const priceInUsd =
+    nft?.marketData?.currentAskPrice && bnbBusdPrice
+      ? bnbBusdPrice.multipliedBy(parseFloat(nft?.marketData?.currentAskPrice)).toNumber()
+      : undefined
 
-  const ownNft = account ? isAddress(nft.marketData.currentSeller) === isAddress(account) : false
+  const ownNft = account ? safeGetAddress(nft?.marketData?.currentSeller) === safeGetAddress(account) : false
   const [onPresentBuyModal] = useModal(<BuyModal nftToBuy={nft} />)
   const [onPresentAdjustPriceModal] = useModal(
     <SellModal variant="edit" nftToSell={nft} onSuccessSale={onSuccessSale} />,
@@ -45,9 +47,11 @@ const Row: React.FC<React.PropsWithChildren<RowProps>> = ({ t, nft, bnbBusdPrice
       <Box pl="24px">
         <Flex justifySelf="flex-start" alignItems="center" width="max-content">
           <BinanceIcon width="24px" height="24px" mr="8px" />
-          <Text bold>{formatNumber(parseFloat(nft?.marketData?.currentAskPrice), 0, 5)}</Text>
+          {nft?.marketData?.currentAskPrice ? (
+            <Text bold>{formatNumber(parseFloat(nft?.marketData?.currentAskPrice), 0, 5)}</Text>
+          ) : null}
         </Flex>
-        {bnbBusdPrice ? (
+        {priceInUsd ? (
           <Text fontSize="12px" color="textSubtle">
             {`(~${formatNumber(priceInUsd, 2, 2)} USD)`}
           </Text>
@@ -56,9 +60,11 @@ const Row: React.FC<React.PropsWithChildren<RowProps>> = ({ t, nft, bnbBusdPrice
         )}
       </Box>
       <Box>
-        <Flex width="max-content" alignItems="center">
-          <ProfileCell accountAddress={nft.marketData.currentSeller} />
-        </Flex>
+        {nft?.marketData?.currentSeller ? (
+          <Flex width="max-content" alignItems="center">
+            <ProfileCell accountAddress={nft.marketData.currentSeller} />
+          </Flex>
+        ) : null}
       </Box>
       <ButtonContainer>
         {ownNft ? (
@@ -95,7 +101,7 @@ interface ForSaleTableRowsProps {
 const ForSaleTableRow: React.FC<React.PropsWithChildren<ForSaleTableRowsProps>> = ({ nftsForSale, onSuccessSale }) => {
   const { address: account } = useAccount()
   const { t } = useTranslation()
-  const bnbBusdPrice = useBNBBusdPrice()
+  const bnbBusdPrice = useBNBPrice()
   return (
     <OwnersTableRow>
       {nftsForSale.map((nft) => (

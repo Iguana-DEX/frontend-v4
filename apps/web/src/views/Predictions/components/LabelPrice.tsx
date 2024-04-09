@@ -1,8 +1,8 @@
-import { useMemo, memo } from 'react'
-import CountUp from 'react-countup'
 import { Text } from '@pancakeswap/uikit'
 import { formatBigIntToFixed } from '@pancakeswap/utils/formatBalance'
-import styled from 'styled-components'
+import { memo, useMemo } from 'react'
+import CountUp from 'react-countup'
+import { styled } from 'styled-components'
 
 const Price = styled(Text)`
   height: 18px;

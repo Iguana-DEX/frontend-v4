@@ -1,38 +1,45 @@
 import { languageList, useTranslation } from '@pancakeswap/localization'
-import { footerLinks, Menu as UikitMenu, NextLinkFromReactRouter, useModal } from '@pancakeswap/uikit'
+import { Menu as UikitMenu, footerLinks, useModal } from '@pancakeswap/uikit'
+import { BIG_ZERO } from '@pancakeswap/utils/bigNumber'
+import { usePhishingBanner } from '@pancakeswap/utils/user'
+import { NextLinkFromReactRouter } from '@pancakeswap/widgets-internal'
 import USCitizenConfirmModal from 'components/Modal/USCitizenConfirmModal'
 import { NetworkSwitcher } from 'components/NetworkSwitcher'
 import PhishingWarningBanner from 'components/PhishingWarningBanner'
-import { useCakeBusdPrice } from 'hooks/useBUSDPrice'
-import useTheme from 'hooks/useTheme'
-import { useRouter } from 'next/router'
-import { useMemo } from 'react'
 import { useActiveChainId } from 'hooks/useActiveChainId'
-import { usePhishingBanner } from '@pancakeswap/utils/user'
+import { useCakePrice } from 'hooks/useCakePrice'
+import useTheme from 'hooks/useTheme'
 import { IdType } from 'hooks/useUserIsUsCitizenAcknowledgement'
+import { useWebNotifications } from 'hooks/useWebNotifications'
+import { useRouter } from 'next/router'
+import { Suspense, lazy, useMemo } from 'react'
 import GlobalSettings from './GlobalSettings'
 import { SettingsMode } from './GlobalSettings/types'
-import { useMenuItems } from './hooks/useMenuItems'
 import UserMenu from './UserMenu'
+import { useMenuItems } from './hooks/useMenuItems'
 import { getActiveMenuItem, getActiveSubMenuItem } from './utils'
+
+const Notifications = lazy(() => import('views/Notifications'))
 
 const LinkComponent = (linkProps) => {
   return <NextLinkFromReactRouter to={linkProps.href} {...linkProps} prefetch={false} />
 }
 
 const Menu = (props) => {
+  const { enabled } = useWebNotifications()
   const { chainId } = useActiveChainId()
   const { isDark, setTheme } = useTheme()
-  const cakePriceUsd = useCakeBusdPrice({ forceMainnet: true })
+  const cakePrice = useCakePrice()
   const { currentLanguage, setLanguage, t } = useTranslation()
   const { pathname } = useRouter()
+
   const [onUSCitizenModalPresent] = useModal(
-    <USCitizenConfirmModal title={t('IguanaDEX Perpetuals')} id={IdType.PERPETUALS} />,
-    false,
+    <USCitizenConfirmModal title={t('PancakeSwap Perpetuals')} id={IdType.PERPETUALS} />,
+    true,
     false,
     'usCitizenConfirmModal',
   )
-  const [showPhishingWarningBanner] = [false] // usePhishingBanner()
+  const [showPhishingWarningBanner] = usePhishingBanner()
 
   const menuItems = useMenuItems(onUSCitizenModalPresent)
 
@@ -54,6 +61,11 @@ const Menu = (props) => {
         rightSide={
           <>
             <GlobalSettings mode={SettingsMode.GLOBAL} />
+            {enabled && (
+              <Suspense fallback={null}>
+                <Notifications />
+              </Suspense>
+            )}
             <NetworkSwitcher />
             <UserMenu />
           </>
@@ -65,14 +77,14 @@ const Menu = (props) => {
         currentLang={currentLanguage.code}
         langs={languageList}
         setLang={setLanguage}
-        cakePriceUsd={cakePriceUsd}
+        cakePriceUsd={cakePrice.eq(BIG_ZERO) ? undefined : cakePrice}
         links={menuItems}
         subLinks={activeMenuItem?.hideSubNav || activeSubMenuItem?.hideSubNav ? [] : activeMenuItem?.items}
         footerLinks={getFooterLinks}
         activeItem={activeMenuItem?.href}
         activeSubItem={activeSubMenuItem?.href}
-        buyCakeLabel={t('Buy IGN')}
-        buyCakeLink={`https://iguanadex.com/swap?outputCurrency=0xBeEfb119631691a1e0D9378fA7864fC6E67A72Ad&chainId=${chainId}`}
+        buyCakeLabel={t('Buy CAKE')}
+        buyCakeLink="https://pancakeswap.finance/swap?outputCurrency=0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82&chainId=56"
         {...props}
       />
     </>

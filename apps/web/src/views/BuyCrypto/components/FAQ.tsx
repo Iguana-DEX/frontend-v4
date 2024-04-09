@@ -1,9 +1,15 @@
 import { useTranslation } from '@pancakeswap/localization'
-import { Card, CardHeader, Heading, CardBody, Text, LinkExternal } from '@pancakeswap/uikit'
+import { Card, CardBody, CardHeader, Heading, LinkExternal, Text } from '@pancakeswap/uikit'
 
 import FoldableText from 'components/FoldableSection/FoldableText'
 
 const config = (t) => [
+  {
+    title: t("Why can't I see my bitcoin purchase"),
+    description: t(
+      'Transfers through the Bitcoin network may take longer due to network congestion. Please check your BTC address again after a few hours.',
+    ),
+  },
   {
     title: t('Why can’t I see quotes from providers?'),
     description: t('Some providers might not operate in your region or support the currency/token exchange requested.'),
@@ -50,7 +56,7 @@ const config = (t) => [
   },
 ]
 
-export const OnRamoFaqs = () => {
+export const OnRampFaqs = () => {
   const { t } = useTranslation()
 
   return (

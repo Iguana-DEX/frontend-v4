@@ -1,32 +1,35 @@
-import { Flex, Pool, Text } from '@pancakeswap/uikit'
-import { useAccount } from 'wagmi'
+import { Flex, Text } from '@pancakeswap/uikit'
+import { BIG_ZERO } from '@pancakeswap/utils/bigNumber'
+import { Pool } from '@pancakeswap/widgets-internal'
+
 import { useTranslation } from '@pancakeswap/localization'
-import { usePriceCakeUSD } from 'state/farms/hooks'
-import { useVaultPoolByKey } from 'state/pools/hooks'
-import { VaultKey, DeserializedLockedVaultUser } from 'state/types'
 import { Token } from '@pancakeswap/sdk'
+import { useCakePrice } from 'hooks/useCakePrice'
+import { useVaultPoolByKey } from 'state/pools/hooks'
+import { DeserializedLockedVaultUser, VaultKey } from 'state/types'
 import { getCakeVaultEarnings } from 'views/Pools/helpers'
+import { useAccount } from 'wagmi'
 import RecentCakeProfitBalance from './RecentCakeProfitBalance'
 
 const RecentCakeProfitCountdownRow = ({ pool }: { pool: Pool.DeserializedPool<Token> }) => {
   const { t } = useTranslation()
   const { address: account } = useAccount()
   const { pricePerFullShare, userData } = useVaultPoolByKey(pool.vaultKey)
-  const cakePriceBusd = usePriceCakeUSD()
+  const cakePriceBusd = useCakePrice()
   const { hasAutoEarnings, autoCakeToDisplay } = getCakeVaultEarnings(
     account,
-    userData.cakeAtLastUserAction,
-    userData.userShares,
-    pricePerFullShare,
+    userData?.cakeAtLastUserAction || BIG_ZERO,
+    userData?.userShares || BIG_ZERO,
+    pricePerFullShare || BIG_ZERO,
     cakePriceBusd.toNumber(),
     pool.vaultKey === VaultKey.CakeVault
       ? (userData as DeserializedLockedVaultUser).currentPerformanceFee.plus(
           (userData as DeserializedLockedVaultUser).currentOverdueFee,
         )
-      : null,
+      : undefined,
   )
 
-  if (!(userData.userShares.gt(0) && account)) {
+  if (!(userData?.userShares.gt(0) && account)) {
     return null
   }
 

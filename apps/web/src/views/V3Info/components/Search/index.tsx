@@ -5,13 +5,14 @@ import { MINIMUM_SEARCH_CHARACTERS } from 'config/constants/info'
 import orderBy from 'lodash/orderBy'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { checkIsStableSwap, subgraphTokenName, subgraphTokenSymbol } from 'state/info/constant'
+import { checkIsStableSwap, multiChainId } from 'state/info/constant'
 import { useChainNameByQuery, useMultiChainPath } from 'state/info/hooks'
 import { useWatchlistPools, useWatchlistTokens } from 'state/user/hooks'
-import styled from 'styled-components'
+import { styled } from 'styled-components'
 import { formatAmount } from 'utils/formatInfoNumbers'
 import { CurrencyLogo, DoubleCurrencyLogo } from 'views/Info/components/CurrencyLogo'
 
+import { getTokenNameAlias, getTokenSymbolAlias } from 'utils/getTokenAlias'
 import { v3InfoPath } from '../../constants'
 import { usePoolsData, useSearchData, useTokensData } from '../../hooks'
 import { PoolData } from '../../types'
@@ -92,14 +93,14 @@ const HoverText = styled.div`
   color: ${({ theme }) => theme.colors.secondary};
   display: block;
   margin-top: 16px;
-  :hover {
+  &:hover {
     cursor: pointer;
     opacity: 0.6;
   }
 `
 
 const HoverRowLink = styled.div`
-  :hover {
+  &:hover {
     cursor: pointer;
     opacity: 0.6;
   }
@@ -117,7 +118,7 @@ const OptionButton = styled.div<{ enabled: boolean }>`
   align-items: center;
   background-color: ${({ theme, enabled }) => (enabled ? theme.colors.primary : 'transparent')};
   color: ${({ theme, enabled }) => (enabled ? theme.card.background : theme.colors.secondary)};
-  :hover {
+  &:hover {
     opacity: 0.6;
     cursor: pointer;
   }
@@ -127,19 +128,23 @@ type BasicTokenData = {
   symbol: string
   name: string
 }
-const tokenIncludesSearchTerm = (token: BasicTokenData, value: string) => {
+const tokenIncludesSearchTerm = (token: BasicTokenData, chainId: number, value: string) => {
+  const tokenSymbolAlias = getTokenSymbolAlias(token.address, chainId, token.symbol)
+  const tokenNameAlias = getTokenNameAlias(token.address, chainId, token.name)
   return (
     token.address.toLowerCase().includes(value.toLowerCase()) ||
     token.symbol.toLowerCase().includes(value.toLowerCase()) ||
-    token.name.toLowerCase().includes(value.toLowerCase())
+    token.name.toLowerCase().includes(value.toLowerCase()) ||
+    (tokenSymbolAlias && tokenSymbolAlias.toLowerCase().includes(value.toLowerCase())) ||
+    (tokenNameAlias && tokenNameAlias.toLowerCase().includes(value.toLowerCase()))
   )
 }
 
-const poolIncludesSearchTerm = (pool: PoolData, value: string) => {
+const poolIncludesSearchTerm = (pool: PoolData, chainId: number, value: string) => {
   return (
     pool.address.toLowerCase().includes(value.toLowerCase()) ||
-    tokenIncludesSearchTerm(pool.token0, value) ||
-    tokenIncludesSearchTerm(pool.token1, value)
+    tokenIncludesSearchTerm(pool.token0, chainId, value) ||
+    tokenIncludesSearchTerm(pool.token1, chainId, value)
   )
 }
 
@@ -147,6 +152,8 @@ const Search = () => {
   const router = useRouter()
   const { isXs, isSm } = useMatchBreakpoints()
   const { t } = useTranslation()
+  const chainName = useChainNameByQuery()
+  const chainId = multiChainId[chainName]
 
   const inputRef = useRef<HTMLInputElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -181,12 +188,17 @@ const Search = () => {
   }
 
   useEffect(() => {
+    const body = document.querySelector('body')
     if (showMenu) {
       document.addEventListener('click', handleOutsideClick)
-      document.querySelector('body').style.overflow = 'hidden'
+      if (body) {
+        body.style.overflow = 'hidden'
+      }
     } else {
       document.removeEventListener('click', handleOutsideClick)
-      document.querySelector('body').style.overflow = 'visible'
+      if (body) {
+        body.style.overflow = 'visible'
+      }
     }
     return () => {
       document.removeEventListener('click', handleOutsideClick)
@@ -213,17 +225,17 @@ const Search = () => {
   const [showWatchlist, setShowWatchlist] = useState(false)
   const tokensForList = useMemo(() => {
     if (showWatchlist) {
-      return watchListTokenData?.filter((token) => tokenIncludesSearchTerm(token, value))
+      return watchListTokenData?.filter((token) => tokenIncludesSearchTerm(token, chainId, value)) ?? []
     }
     return orderBy(tokens, (token) => token.volumeUSD, 'desc')
-  }, [showWatchlist, tokens, watchListTokenData, value])
+  }, [showWatchlist, tokens, watchListTokenData, chainId, value])
 
   const poolForList = useMemo(() => {
     if (showWatchlist) {
-      return watchListPoolData?.filter((pool) => poolIncludesSearchTerm(pool, value))
+      return watchListPoolData?.filter((pool) => poolIncludesSearchTerm(pool, chainId, value)) ?? []
     }
     return orderBy(pools, (pool) => pool.volumeUSD, 'desc')
-  }, [pools, showWatchlist, watchListPoolData, value])
+  }, [showWatchlist, pools, watchListPoolData, chainId, value])
 
   const contentUnderTokenList = () => {
     const isLoading = loading
@@ -261,7 +273,6 @@ const Search = () => {
     )
   }
   const chainPath = useMultiChainPath()
-  const chainName = useChainNameByQuery()
   const stableSwapQuery = checkIsStableSwap() ? '?type=stableSwap' : ''
   return (
     <>
@@ -323,8 +334,9 @@ const Search = () => {
                     <Flex>
                       <CurrencyLogo address={token.address} chainName={chainName} />
                       <Text ml="10px">
-                        <Text>{`${subgraphTokenName[token.address] ?? token.name} (${
-                          subgraphTokenSymbol[token.address] ?? token.symbol
+                        <Text>{`${token.address && getTokenNameAlias(token.address, chainId, token.name)} (${
+                          token.address && getTokenSymbolAlias(token.address, chainId, token.symbol)
+                        }
                         })`}</Text>
                       </Text>
                       {/* <SaveIcon
@@ -352,7 +364,7 @@ const Search = () => {
                 else setTokensShown(tokensForList.length)
               }}
               ref={showMoreTokenRef}
-              style={{ display: tokensForList.length <= tokensShown && 'none' }}
+              style={{ display: tokensForList.length <= tokensShown ? 'none' : 'block' }}
             >
               {t('See more...')}
             </HoverText>
@@ -392,9 +404,11 @@ const Search = () => {
                         chainName={chainName}
                       />
                       <Text ml="10px" style={{ whiteSpace: 'nowrap' }}>
-                        <Text>{`${subgraphTokenSymbol[p.token0.address] ?? p.token0.symbol} / ${
-                          subgraphTokenSymbol[p.token1.address] ?? p.token1.symbol
-                        }`}</Text>
+                        <Text>{`${getTokenSymbolAlias(
+                          p.token0.address,
+                          chainId,
+                          p.token0.symbol,
+                        )} / ${getTokenSymbolAlias(p.token1.address, chainId, p.token1.symbol)}`}</Text>
                       </Text>
                       <GreyBadge ml="10px" style={{ fontSize: 14 }}>
                         {feeTierPercent(p.feeTier)}
@@ -423,7 +437,7 @@ const Search = () => {
                 else setPoolsShown(poolForList?.length)
               }}
               ref={showMorePoolRef}
-              style={{ display: poolForList?.length <= poolsShown && 'none' }}
+              style={{ display: poolForList?.length <= poolsShown ? 'none' : 'block' }}
             >
               {t('See more...')}
             </HoverText>

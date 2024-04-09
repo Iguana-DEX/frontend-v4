@@ -5,16 +5,18 @@ import {
   Breadcrumbs,
   Button,
   Card,
+  CopyButton,
   Flex,
   Heading,
   Image,
-  NextLinkFromReactRouter,
+  ScanLink,
   Spinner,
   Text,
   Link as UIKitLink,
   useMatchBreakpoints,
-  ScanLink,
 } from '@pancakeswap/uikit'
+import { NextLinkFromReactRouter } from '@pancakeswap/widgets-internal'
+
 import useInfoUserSavedTokensAndPools from 'hooks/useInfoUserSavedTokensAndPoolsList'
 import { NextSeo } from 'next-seo'
 
@@ -22,24 +24,26 @@ import truncateHash from '@pancakeswap/utils/truncateHash'
 import Page from 'components/Layout/Page'
 import { CHAIN_QUERY_NAME } from 'config/chains'
 import { ONE_HOUR_SECONDS } from 'config/constants/info'
-import { Duration } from 'date-fns'
+import dayjs from 'dayjs'
+import duration from 'dayjs/plugin/duration'
 import { useMemo } from 'react'
-import { multiChainId, multiChainScan, subgraphTokenName, subgraphTokenSymbol } from 'state/info/constant'
+import { ChainLinkSupportChains, multiChainId, multiChainScan } from 'state/info/constant'
 import {
   useChainIdByQuery,
   useChainNameByQuery,
   useMultiChainPath,
-  usePoolDatasSWR,
-  usePoolsForTokenSWR,
+  usePoolDatasQuery,
+  usePoolsForTokenQuery,
   useStableSwapPath,
-  useTokenChartDataSWR,
-  useTokenDataSWR,
-  useTokenPriceDataSWR,
-  useTokenTransactionsSWR,
+  useTokenChartDataQuery,
+  useTokenDataQuery,
+  useTokenPriceDataQuery,
+  useTokenTransactionsQuery,
 } from 'state/info/hooks'
-import styled from 'styled-components'
+import { styled } from 'styled-components'
 import { getBlockExploreLink } from 'utils'
 import { formatAmount } from 'utils/formatInfoNumbers'
+import { getTokenNameAlias, getTokenSymbolAlias } from 'utils/getTokenAlias'
 import { CurrencyLogo } from 'views/Info/components/CurrencyLogo'
 import ChartCard from 'views/Info/components/InfoCharts/ChartCard'
 import PoolTable from 'views/Info/components/InfoTables/PoolsTable'
@@ -47,6 +51,8 @@ import TransactionTable from 'views/Info/components/InfoTables/TransactionsTable
 import Percent from 'views/Info/components/Percent'
 import SaveIcon from 'views/Info/components/SaveIcon'
 import useCMCLink from 'views/Info/hooks/useCMCLink'
+
+dayjs.extend(duration)
 
 const ContentLayout = styled.div`
   margin-top: 16px;
@@ -64,11 +70,11 @@ const StyledCMCLink = styled(UIKitLink)`
   height: 24px;
   margin-right: 8px;
 
-  & :hover {
+  &:hover {
     opacity: 0.8;
   }
 `
-const DEFAULT_TIME_WINDOW: Duration = { weeks: 1 }
+const DEFAULT_TIME_WINDOW = dayjs.duration(1, 'weeks')
 
 const TokenPage: React.FC<React.PropsWithChildren<{ routeAddress: string }>> = ({ routeAddress }) => {
   const { isXs, isSm } = useMatchBreakpoints()
@@ -81,14 +87,14 @@ const TokenPage: React.FC<React.PropsWithChildren<{ routeAddress: string }>> = (
 
   const cmcLink = useCMCLink(address)
 
-  const tokenData = useTokenDataSWR(address)
-  const poolsForToken = usePoolsForTokenSWR(address)
-  const poolDatas = usePoolDatasSWR(useMemo(() => poolsForToken ?? [], [poolsForToken]))
-  const transactions = useTokenTransactionsSWR(address)
-  const chartData = useTokenChartDataSWR(address)
+  const tokenData = useTokenDataQuery(address)
+  const poolsForToken = usePoolsForTokenQuery(address)
+  const poolDatas = usePoolDatasQuery(useMemo(() => poolsForToken ?? [], [poolsForToken]))
+  const transactions = useTokenTransactionsQuery(address)
+  const chartData = useTokenChartDataQuery(address)
 
   // pricing data
-  const priceData = useTokenPriceDataSWR(address, ONE_HOUR_SECONDS, DEFAULT_TIME_WINDOW)
+  const priceData = useTokenPriceDataQuery(address, ONE_HOUR_SECONDS, DEFAULT_TIME_WINDOW)
   const adjustedPriceData = useMemo(() => {
     // Include latest available price
     if (priceData && tokenData && priceData.length > 0) {
@@ -109,6 +115,8 @@ const TokenPage: React.FC<React.PropsWithChildren<{ routeAddress: string }>> = (
   const chainPath = useMultiChainPath()
   const chainName = useChainNameByQuery()
   const infoTypeParam = useStableSwapPath()
+  const tokenSymbol = tokenData ? getTokenSymbolAlias(tokenData.address, chainId, tokenData.symbol) : ''
+  const tokenName = tokenData ? getTokenNameAlias(tokenData.address, chainId, tokenData.name) : ''
 
   return (
     <Page>
@@ -137,7 +145,7 @@ const TokenPage: React.FC<React.PropsWithChildren<{ routeAddress: string }>> = (
                   <Text color="primary">{t('Tokens')}</Text>
                 </NextLinkFromReactRouter>
                 <Flex>
-                  <Text mr="8px">{tokenData.symbol}</Text>
+                  <Text mr="8px">{tokenSymbol}</Text>
                   <Text>{`(${truncateHash(address)})`}</Text>
                 </Flex>
               </Breadcrumbs>
@@ -145,17 +153,23 @@ const TokenPage: React.FC<React.PropsWithChildren<{ routeAddress: string }>> = (
                 <ScanLink
                   mr="8px"
                   color="primary"
-                  chainId={multiChainId[chainName]}
+                  useBscCoinFallback={ChainLinkSupportChains.includes(multiChainId[chainName])}
                   href={getBlockExploreLink(address, 'address', multiChainId[chainName])}
                 >
                   {t('View on %site%', { site: multiChainScan[chainName] })}
                 </ScanLink>
                 {cmcLink && (
-                  <StyledCMCLink href={cmcLink} rel="noopener noreferrer nofollow" target="_blank">
+                  <StyledCMCLink
+                    href={cmcLink}
+                    rel="noopener noreferrer nofollow"
+                    target="_blank"
+                    title="CoinMarketCap"
+                  >
                     <Image src="/images/CMC-logo.svg" height={22} width={22} alt={t('View token on CoinMarketCap')} />
                   </StyledCMCLink>
                 )}
                 <SaveIcon fill={savedTokens.includes(address)} onClick={() => addToken(address)} />
+                <CopyButton ml="4px" text={address} tooltipMessage={t('Token address copied')} />
               </Flex>
             </Flex>
             <Flex justifyContent="space-between" flexDirection={['column', 'column', 'column', 'row']}>
@@ -169,10 +183,10 @@ const TokenPage: React.FC<React.PropsWithChildren<{ routeAddress: string }>> = (
                     fontSize={isXs || isSm ? '24px' : '40px'}
                     id="info-token-name-title"
                   >
-                    {subgraphTokenName[tokenData.address] ?? tokenData.name}
+                    {tokenName}
                   </Text>
                   <Text ml="12px" lineHeight="1" color="textSubtle" fontSize={isXs || isSm ? '14px' : '20px'}>
-                    ({subgraphTokenSymbol[tokenData.address] ?? tokenData.symbol})
+                    ({tokenSymbol})
                   </Text>
                 </Flex>
                 <Flex mt="8px" ml="46px" alignItems="center">

@@ -1,5 +1,6 @@
-import { renderWithProvider } from "../../testHelpers";
+import { expect, it } from "vitest";
 import Progress from "../../components/Progress/Progress";
+import { renderWithProvider } from "../../testHelpers";
 
 it("renders correctly", () => {
   const { asFragment } = renderWithProvider(<Progress primaryStep={50} />);
@@ -11,7 +12,6 @@ it("renders correctly", () => {
       left: 0;
       background: var(--colors-secondary);
       height: 100%;
-      -webkit-transition: width 200ms ease;
       transition: width 200ms ease;
     }
 
@@ -32,6 +32,7 @@ it("renders correctly", () => {
     <div
         class="c0"
         scale="md"
+        variant="round"
       >
         <div
           class="c1 c2"

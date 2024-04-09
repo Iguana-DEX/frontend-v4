@@ -1,15 +1,15 @@
 import { useRef, useState, useEffect, useCallback, Dispatch, SetStateAction } from 'react'
 import { useTranslation } from '@pancakeswap/localization'
 import { ColorType, createChart, IChartApi } from 'lightweight-charts'
-import { format } from 'date-fns'
 import { useTheme } from '@pancakeswap/hooks'
 import { CandleChartLoader } from 'components/ChartLoaders'
-import { baseColors, lightColors, darkColors } from '@pancakeswap/ui/tokens/colors'
+import { baseColors, lightColors, darkColors } from '@pancakeswap/uikit'
+import dayjs from 'dayjs'
 
 const CANDLE_CHART_HEIGHT = 250
 
 export type LineChartProps = {
-  data: any[]
+  data: any[] | undefined
   setValue?: Dispatch<SetStateAction<number | undefined>> // used for value on hover
   setLabel?: Dispatch<SetStateAction<string | undefined>> // used for value label on hover
 } & React.HTMLAttributes<HTMLDivElement>
@@ -34,7 +34,7 @@ const CandleChart = ({ data, setValue, setLabel, ...rest }: LineChartProps) => {
   const isClient = typeof window === 'object'
   useEffect(() => {
     if (!isClient) {
-      return null
+      return undefined
     }
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
@@ -66,7 +66,7 @@ const CandleChart = ({ data, setValue, setLabel, ...rest }: LineChartProps) => {
           borderVisible: false,
           secondsVisible: true,
           tickMarkFormatter: (unixTime: number) => {
-            return format(unixTime * 1000, 'MM/dd h:mm a')
+            return dayjs.unix(unixTime).format('MM/DD h:mm a')
           },
         },
         watermark: {
